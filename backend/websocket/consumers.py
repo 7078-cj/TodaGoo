@@ -9,6 +9,15 @@ class MyWebSocketConsumer(AsyncWebsocketConsumer):
             f'group_{self.id}',
             self.channel_name
         )
+            
+        user = self.scope.get('user')
+        
+        if not user or not user.is_authenticated or str(user.id) != str(self.id):
+            await self.close(code=4003)
+            return
+        
+        #a
+        
         await self.accept()
         await self.send(text_data=json.dumps({
             'message': 'WebSocket connection established'
