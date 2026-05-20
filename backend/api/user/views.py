@@ -20,13 +20,16 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
         token = super().get_token(user)
         
         token['username'] = user.username
-        
+        token['role'] = 'admin' if hasattr(user, 'admin') else 'passenger' if hasattr(user, 'passenger') else 'driver' if hasattr(user, 'driver') else 'unknown'
+        if token['role'] == 'admin':
+            token['department'] = user.admin.department
+
         return token
     
 class MyTokenObtainPairView(TokenObtainPairView):
     serializer_class = MyTokenObtainPairSerializer
 
-       
+
 @api_view(['POST'])
 def registerUser(request):
 
