@@ -27,7 +27,6 @@ RUN pip install honcho
 COPY . .
 
 RUN dos2unix ./executables/start_web.sh && chmod +x ./executables/start_web.sh
-RUN dos2unix ./executables/start_beat.sh && chmod +x ./executables/start_beat.sh
 
 EXPOSE 8000 6379
 

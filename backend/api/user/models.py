@@ -3,11 +3,16 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 from datetime import timedelta
 
-class Test(models.Model):
-    name = models.CharField(max_length=30, unique=True)
-    description = models.TextField(default="set a description")
-    created_at = models.DateTimeField(auto_now_add=True)
+class Admin(models.Model):
+    department_choices = [
+        ('TODA', 'Toda'),
+        ('MDRRMO', 'MDRRMO'),
+    ]
+    
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    department = models.CharField(max_length=100, choices=department_choices)
+
 
     def __str__(self):
-        return self.name
+        return self.user.username
     
