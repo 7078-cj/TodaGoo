@@ -8,7 +8,7 @@ import {
     MapRoute,
     useMap,
 } from "@/components/ui/map";
-import { MapEventListener } from "../utils/map_utils/MapEventListener";
+import { MapEventListener } from "../utils/map_utils/mapEventListener";
 import { handleSearch } from "../utils/map_utils/map";
 import SearchInput from "./SearchInput";
 import { fetchOsrmRoutes } from "../utils/map_utils/fetch_routes";
