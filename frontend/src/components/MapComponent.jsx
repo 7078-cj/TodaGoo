@@ -240,14 +240,21 @@ function AreaLayers({ areas }) {
     // Cleanup all layers/sources on unmount
     useEffect(() => {
         return () => {
+            // map may already be destroyed (e.g. user navigated away / logged out)
+            // guard every call so we never touch a torn-down instance
             if (!map) return;
+            try {
+                if (!map.getStyle()) return; // map is destroyed if getStyle() returns null
+            } catch {
+                return;
+            }
             normalisedAreas.forEach(({ id }) => {
                 const fillId = `area-fill-${id}`;
                 const lineId = `area-line-${id}`;
                 const sourceId = `area-source-${id}`;
-                if (map.getLayer(fillId)) map.removeLayer(fillId);
-                if (map.getLayer(lineId)) map.removeLayer(lineId);
-                if (map.getSource(sourceId)) map.removeSource(sourceId);
+                try { if (map.getLayer(fillId)) map.removeLayer(fillId); } catch { /* already gone */ }
+                try { if (map.getLayer(lineId)) map.removeLayer(lineId); } catch { /* already gone */ }
+                try { if (map.getSource(sourceId)) map.removeSource(sourceId); } catch { /* already gone */ }
             });
         };
     }, [map]);
@@ -270,6 +277,7 @@ export default function MapComponent({
     userLocation = false,
     externalMapRef = null,
     routeSources = [],
+    Search = false,
     /**
      * areas – one or more polygon definitions. Each item may be:
      *   • A coordinate ring:          [[lng,lat], [lng,lat], ...]
@@ -337,7 +345,7 @@ export default function MapComponent({
 
     return (
         <>
-            {location && editMode && (
+            {location && editMode && Search && (
                 <SearchInput
                     searchQuery={searchQuery}
                     setSearchQuery={setSearchQuery}
@@ -355,7 +363,7 @@ export default function MapComponent({
                     dark: "https://tiles.openfreemap.org/styles/bright",
                 }}
             >
-                {location && (
+                {editMode && (
                     <MapEventListener setLocation={setLocation} editMode={editMode} />
                 )}
 
