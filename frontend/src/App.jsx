@@ -11,6 +11,8 @@ import ForgotPasswordPage from "./pages/ForgotPassword";
 import MDRRMORoutes from "./context/MDRRMOroutes";
 import TODARoutes from "./context/TODAroutes";
 import Unauthorized from "./pages/Unauthorized";
+import MdrrmoDashboard from "./pages/MdrrmoDashboard";
+import TodaDashboard from "./pages/TodaDashboard";
 
 
 function AppContent() {
