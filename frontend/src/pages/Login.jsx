@@ -1,4 +1,4 @@
-import React, { useContext } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useDispatch } from "react-redux";
 import { loginUser } from '../utils/auth';
@@ -6,17 +6,34 @@ import { loginUser } from '../utils/auth';
 function Login() {
   const dispatch = useDispatch()
   const nav = useNavigate()
+  const [error, setError] = useState(null)
 
+  useEffect(() => {
+    if (!error) return;
+
+    const timer = setTimeout(() => {
+      setError(null);
+    }, 5000);
+
+    return () => clearTimeout(timer);
+  }, [error]);
 
   return (
     <div className="flex min-h-screen bg-gray-100">
-
-      {/* Main content */}
       <div className="flex-1 flex justify-center items-center p-6">
         <div className="w-full max-w-md bg-white shadow-md rounded-lg p-8">
           <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">Login</h2>
-          
-          <form onSubmit={(e)=>loginUser(e,dispatch,nav)} className="flex flex-col space-y-4">
+
+          {error && (
+            <p className="text-red-500 text-center mb-4">
+              {error}
+            </p>
+          )}
+
+          <form
+            onSubmit={(e) => loginUser(e, dispatch, nav, setError)}
+            className="flex flex-col space-y-4"
+          >
             <label className="flex flex-col text-gray-700 font-medium">
               Username
               <input

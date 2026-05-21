@@ -13,7 +13,7 @@ export const logoutUser = (dispatch, navigate) => {
     navigate("/login", { replace: true });
 };
 
-export const loginUser = async (e, dispatch, navigate) => {
+export const loginUser = async (e, dispatch, navigate,setError) => {
     e.preventDefault();
 
     const username = e.target.username.value;
@@ -21,7 +21,7 @@ export const loginUser = async (e, dispatch, navigate) => {
     const { valid, errors } = validateLoginFields(username, password);
     if (!valid) {
         const first = Object.values(errors)[0];
-        toast.error(first);
+        setError(first);
         return false;
     }
 
@@ -36,13 +36,12 @@ export const loginUser = async (e, dispatch, navigate) => {
                 password,
             }),
         });
-
-        const data = await response.json().catch(() => ({}));
-
-        if (!response.ok) {
-            toast.error(getApiErrorMessage(data));
+        if (response.status === 401) {
+            setError("Invalid username or password.");
             return false;
         }
+
+        const data = await response.json().catch(() => ({}));
 
         const tokens = data;
         const user = jwtDecode(tokens.access);
