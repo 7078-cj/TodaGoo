@@ -3,7 +3,7 @@ import MapComponent from '../MapComponent';
 import { MapPin, Plus, Trash2, CheckCircle } from 'lucide-react';
 
 
-function AddBoundaries({ name, setName, selectedColor, setColor, area, setArea, TODA_COLORS }) {
+function AddBoundaries({ name, setName, selectedColor, setColor, area, setArea, TODA_COLORS, handleSubmit }) {
     const [pendingPoint, setPendingPoint] = useState({ lat: null, lng: null });
 
     // Derive markers purely from area — single source of truth
@@ -40,10 +40,12 @@ function AddBoundaries({ name, setName, selectedColor, setColor, area, setArea, 
         setArea((prev) => prev.filter((_, i) => i !== index));
     };
 
-    const handleAddBoundaries = (e) => {
+    const handleAddBoundaries = async (e) => {
         e.preventDefault();
         if (!name) { alert("Please provide a name."); return; }
         if (area.length < 3) { alert("At least 3 points are needed to define an area."); return; }
+
+        await handleSubmit();
 
         setName("");
         setColor("blue");

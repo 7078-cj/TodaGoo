@@ -8,6 +8,7 @@ import {
     DialogTrigger,
 } from "@/components/ui/dialog"
 import AddBoundaries from './AddBoundaries'
+import { createTODA } from '../../api/toda';
 
 const TODA_COLORS = {
     red: { label: "Red", value: "red", hex: "#EF4444", number: 1 },
@@ -30,6 +31,18 @@ function AddBoundariesModal() {
     const [area, setArea] = useState([]);
 
     const selectedColor = TODA_COLORS[color].hex;
+
+    const handleSubmit = async () => {
+        if (!name) { alert("Please provide a name."); return; }
+        if (area.length < 3) { alert("At least 3 points are needed to define an area."); return; }
+
+        await createTODA({ name, color: selectedColor, area });
+        console.log("Submitting TODA Boundary:", { name, color: selectedColor, area });
+        // Reset form after submission
+        setName("");
+        setColor("blue");
+        setArea([]);
+    }
         
     return (
         <Dialog>
@@ -49,6 +62,7 @@ function AddBoundariesModal() {
                         area={area}
                         setArea={setArea}
                         TODA_COLORS={TODA_COLORS}
+                        handleSubmit={handleSubmit}
                     />
 
             </DialogContent>

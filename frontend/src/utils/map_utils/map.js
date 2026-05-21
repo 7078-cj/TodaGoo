@@ -17,15 +17,19 @@ export async function ReverseGeolocation(lat, lng){
     return newLoc
 }
 
-export default async function MapClickHandler({ lat, lng, setLocation, editMode }) {
+export default async function MapClickHandler({ lat, lng, setLocation, editMode, reverse_lat }) {
     if (!editMode) return;
 
-    try {
-    const res = await ReverseGeolocation(lat, lng)
+    if (reverse_lat) {
+        try {
+        const res = await ReverseGeolocation(lat, lng)
 
-    setLocation(res);
-    } catch (err) {
-        console.error("Reverse geocoding failed:", err);
+        setLocation(res);
+        } catch (err) {
+            console.error("Reverse geocoding failed:", err);
+            setLocation({ lat, lng, city: "", country: "", full: "" });
+        }
+    } else {
         setLocation({ lat, lng, city: "", country: "", full: "" });
     }
 }

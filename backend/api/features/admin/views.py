@@ -15,19 +15,19 @@ class TodaStationListCreateAPIView(ListCreateAPIView):
     queryset = Toda.objects.all()
     
     def get_serializer_class(self):
-        if self.action in ['create']:
+        if self.request.method == "POST":
             return TodaWriteSerializer
         return TodaReadSerializer
-    
+
+
 class TodaStationRetrieveUpdateDestroyAPIView(RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAuthenticated, TodaAdminPermission]
     queryset = Toda.objects.all()
     
     def get_serializer_class(self):
-        if self.action in ['update', 'partial_update']:
+        if self.request.method in ["PUT", "PATCH"]:
             return TodaWriteSerializer
         return TodaReadSerializer
-    
     
 
 class TODAListCreateAPIView(ListCreateAPIView):

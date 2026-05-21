@@ -278,6 +278,7 @@ export default function MapComponent({
     externalMapRef = null,
     routeSources = [],
     Search = false,
+    reverse_lat = false,
     /**
      * areas – one or more polygon definitions. Each item may be:
      *   • A coordinate ring:          [[lng,lat], [lng,lat], ...]
@@ -364,7 +365,7 @@ export default function MapComponent({
                 }}
             >
                 {editMode && (
-                    <MapEventListener setLocation={setLocation} editMode={editMode} />
+                    <MapEventListener setLocation={setLocation} editMode={editMode} reverse_lat={reverse_lat} />
                 )}
 
                 {/* Polygon / GeoJSON area overlays */}

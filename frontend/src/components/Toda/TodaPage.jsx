@@ -19,6 +19,9 @@ function addPolygonToMap(name, color, area) {
 function TodaPage() {
 
     const [todas , setTodas] = useState([])
+    const [polygons, setPolygons] = useState([]);
+
+    
 
     return (
         <>

@@ -27,13 +27,19 @@ class TodaWriteSerializer(serializers.ModelSerializer):
         if value is None:
             return value
         try:
-            # [[[lng, lat], ...]]
-            polygon = Polygon(value[0])
-            return polygon
+            ring = value
+            if ring[0] != ring[-1]:
+                ring = ring + [ring[0]]
+            if len(ring) < 4:
+                raise serializers.ValidationError(
+                    f"LinearRing requires at least 4 points, got {len(ring)}."
+                )
+            return Polygon(ring)
         except (TypeError, IndexError, ValueError) as e:
-            raise serializers.ValidationError(
-                f"Invalid polygon coordinates: {e}"
-            )
+            raise serializers.ValidationError(f"Invalid polygon coordinates: {e}")
+
+    def to_representation(self, instance):
+        return TodaReadSerializer(instance, context=self.context).data
 
     def create(self, validated_data):
         return Toda.objects.create(**validated_data)

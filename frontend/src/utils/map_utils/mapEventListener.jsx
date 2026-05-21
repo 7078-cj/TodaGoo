@@ -2,7 +2,7 @@ import {useMap } from "@/components/ui/map";
 import { useEffect } from "react";
 import MapClickHandler from "./map";
 
-export function MapEventListener({ editMode, setLocation }) {
+export function MapEventListener({ editMode, setLocation, reverse_lat }) {
     const { map, isLoaded } = useMap();
 
     useEffect(() => {
@@ -12,7 +12,7 @@ export function MapEventListener({ editMode, setLocation }) {
     const handleClick = async (e) => {
         const lat = e.lngLat.lat;
         const lng = e.lngLat.lng;
-        await MapClickHandler({ lat, lng, setLocation, editMode });
+        await MapClickHandler({ lat, lng, setLocation, editMode, reverse_lat });
     };
 
     map.on("click", handleClick);
