@@ -10,7 +10,6 @@ function Login() {
 
   return (
     <div className="flex min-h-screen bg-gray-100">
-     
 
       {/* Main content */}
       <div className="flex-1 flex justify-center items-center p-6">
@@ -44,15 +43,6 @@ function Login() {
             </button>
           </form>
 
-          <p className="mt-4 text-center text-gray-600 text-sm">
-            Don't have an account?{' '}
-            <a href="/register" className="text-cyan-500 hover:underline">
-              Register
-            </a>
-            <a href="/forgot_password" className="text-cyan-500 hover:underline">
-              Forgot Password
-            </a>
-          </p>
         </div>
       </div>
     </div>

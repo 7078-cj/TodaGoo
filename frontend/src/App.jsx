@@ -3,7 +3,6 @@ import { Provider, useDispatch, useSelector } from "react-redux";
 import { useEffect } from "react";
 
 import Login from "./pages/Login";
-import Register from "./pages/Register";
 import DashBoard from "./pages/DashBoard";
 
 import PrivateRoutes from "./context/PrivateRoutes";
@@ -34,7 +33,6 @@ function AppContent() {
       <Routes>
 
         <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
         <Route path="/forgot_password" element={<ForgotPasswordPage />} />
 
         <Route element={<PrivateRoutes />}>
