@@ -6,7 +6,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from ...permissions import TodaAdminPermission
 from .models import RegisteredToda, Toda
-from .serializers import RegisteredTodaSerializer, TodaReadSerializer, TodaWriteSerializer
+from .serializers import RegisteredTodaSerializer, TodaReadSerializer, TodaWriteSerializer, RegisterWriteTodaSerializer, RegisteredReadTodaSerializer
 from rest_framework.parsers import MultiPartParser, FormParser
 import pandas as pd
 
@@ -33,7 +33,7 @@ class TodaStationRetrieveUpdateDestroyAPIView(RetrieveUpdateDestroyAPIView):
 class TODAListCreateAPIView(ListCreateAPIView):
     permission_classes = [IsAuthenticated, TodaAdminPermission]
     queryset = RegisteredToda.objects.all()
-    serializer_class = RegisteredTodaSerializer
+    serializer_class = RegisteredReadTodaSerializer
     parser_classes = [MultiPartParser, FormParser]
     
     def get_queryset(self):
@@ -81,3 +81,8 @@ class TODAListCreateAPIView(ListCreateAPIView):
             RegisteredToda.objects.bulk_create(objects)
         else:
             serializer.save()
+
+class TODARetrieveUpdateDestroyAPIView(RetrieveUpdateDestroyAPIView):
+    permission_classes = [IsAuthenticated, TodaAdminPermission]
+    queryset = RegisteredToda.objects.all()
+    serializer_class = RegisterWriteTodaSerializer

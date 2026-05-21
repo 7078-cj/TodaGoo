@@ -44,9 +44,14 @@ class TodaWriteSerializer(serializers.ModelSerializer):
         instance.save()
         return instance
     
-class RegisteredTodaSerializer(serializers.ModelSerializer):
+class RegisteredReadTodaSerializer(serializers.ModelSerializer):
     toda_name = serializers.CharField(source='toda.name', read_only=True)
     class Meta:
         model = RegisteredToda
         fields = '__all__'
         read_only_fields = ['toda', 'toda_name']
+
+class RegisterWriteTodaSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RegisteredToda
+        fields = '__all__'
