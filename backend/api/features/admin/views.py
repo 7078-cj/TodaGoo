@@ -5,10 +5,30 @@ from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIV
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from ...permissions import TodaAdminPermission
-from .models import RegisteredToda
-from .serializers import RegisteredTodaSerializer
+from .models import RegisteredToda, Toda
+from .serializers import RegisteredTodaSerializer, TodaReadSerializer, TodaWriteSerializer
 from rest_framework.parsers import MultiPartParser, FormParser
 import pandas as pd
+
+class TodaStationListCreateAPIView(ListCreateAPIView):
+    permission_classes = [IsAuthenticated, TodaAdminPermission]
+    queryset = Toda.objects.all()
+    
+    def get_serializer_class(self):
+        if self.action in ['create']:
+            return TodaWriteSerializer
+        return TodaReadSerializer
+    
+class TodaStationRetrieveUpdateDestroyAPIView(RetrieveUpdateDestroyAPIView):
+    permission_classes = [IsAuthenticated, TodaAdminPermission]
+    queryset = Toda.objects.all()
+    
+    def get_serializer_class(self):
+        if self.action in ['update', 'partial_update']:
+            return TodaWriteSerializer
+        return TodaReadSerializer
+    
+    
 
 class TODAListCreateAPIView(ListCreateAPIView):
     permission_classes = [IsAuthenticated, TodaAdminPermission]
@@ -43,11 +63,14 @@ class TODAListCreateAPIView(ListCreateAPIView):
             df = pd.read_excel(file)
             objects = []
             for _, row in df.iterrows():
+                toda = Toda.objects.filter(toda_name=row['toda_name']).first()
+                
                 obj = RegisteredToda(
                     toda_number=row['toda_number'],
                     vehicle_plate=row['vehicle_plate'],
                     driver_name=row['driver_name'],
-                    registration_date=row['registration_date']
+                    registration_date=row['registration_date'],
+                    toda=toda
                 )
                 objects.append(obj)
                 
