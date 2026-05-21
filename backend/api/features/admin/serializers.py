@@ -2,10 +2,7 @@ from rest_framework import serializers
 from .models import RegisteredToda, Toda
 from django.contrib.gis.geos import Polygon
 
-class RegisteredTodaSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = RegisteredToda
-        fields = '__all__'
+
         
 class TodaReadSerializer(serializers.ModelSerializer):
     area = serializers.SerializerMethodField()
@@ -46,3 +43,10 @@ class TodaWriteSerializer(serializers.ModelSerializer):
             setattr(instance, attr, value)
         instance.save()
         return instance
+    
+class RegisteredTodaSerializer(serializers.ModelSerializer):
+    toda_name = serializers.CharField(source='toda.name', read_only=True)
+    class Meta:
+        model = RegisteredToda
+        fields = '__all__'
+        read_only_fields = ['toda', 'toda_name']

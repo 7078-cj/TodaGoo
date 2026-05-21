@@ -13,6 +13,6 @@ class RegisteredToda(models.Model):
         return f"{self.toda_number} - {self.driver_name}"
     
 class Toda(models.Model):
-    toda_name = models.CharField(max_length=100)
+    name = models.CharField(max_length=100)
     area = geomodels.PolygonField()
     created_at = models.DateTimeField(auto_now_add=True)

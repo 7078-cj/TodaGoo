@@ -55,6 +55,10 @@ class TODAListCreateAPIView(ListCreateAPIView):
         if registration_date:
             queryset = queryset.filter(registration_date__date=registration_date)
             
+        toda_station = self.request.query_params.get('toda_station')
+        if toda_station:
+            queryset = queryset.filter(toda__name__icontains=toda_station)
+            
         return queryset
     
     def perform_create(self, serializer):
@@ -63,7 +67,7 @@ class TODAListCreateAPIView(ListCreateAPIView):
             df = pd.read_excel(file)
             objects = []
             for _, row in df.iterrows():
-                toda = Toda.objects.filter(toda_name=row['toda_name']).first()
+                toda = Toda.objects.filter(name=row['toda_name']).first()
                 
                 obj = RegisteredToda(
                     toda_number=row['toda_number'],
