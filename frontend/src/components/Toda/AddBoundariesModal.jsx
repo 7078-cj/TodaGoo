@@ -24,7 +24,7 @@ const TODA_COLORS = {
     brown: { label: "Brown", value: "brown", hex: "#92400E", number: 11 },
 };
 
-function AddBoundariesModal() {
+function AddBoundariesModal({fetchTodas}) {
     const [location, setLocation] = useState(null);
     const [name, setName] = useState("");
     const [color, setColor] = useState("blue");
@@ -42,6 +42,7 @@ function AddBoundariesModal() {
         setName("");
         setColor("blue");
         setArea([]);
+        await fetchTodas();
     }
         
     return (
