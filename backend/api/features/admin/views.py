@@ -6,7 +6,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from ...permissions import TodaAdminPermission
 from .models import RegisteredToda, Toda
-from .serializers import RegisteredTodaSerializer, TodaReadSerializer, TodaWriteSerializer, RegisterWriteTodaSerializer, RegisteredReadTodaSerializer
+from .serializers import  TodaReadSerializer, TodaWriteSerializer, RegisterWriteTodaSerializer, RegisteredReadTodaSerializer
 from rest_framework.parsers import MultiPartParser, FormParser
 import pandas as pd
 
