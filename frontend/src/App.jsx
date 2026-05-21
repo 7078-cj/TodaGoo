@@ -8,7 +8,6 @@ import DashBoard from "./pages/DashBoard";
 import PrivateRoutes from "./context/PrivateRoutes";
 import { updateToken } from "./utils/auth";
 import ForgotPasswordPage from "./pages/ForgotPassword";
-import MdrrmoDashboard from "./pages/mdrrmoDashboard";
 import TodaDashboard from "./pages/todaDashboard";
 import MDRRMORoutes from "./context/MDRRMOroutes";
 import TODARoutes from "./context/TODAroutes";
