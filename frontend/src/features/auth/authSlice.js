@@ -33,7 +33,6 @@ const authSlice = createSlice({
             Cookie.delete("access");
             Cookie.delete("refresh");
             Cookie.delete("user");
-            Cookie.delete("profile");
         },
     },
 });
