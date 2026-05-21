@@ -32,7 +32,7 @@ class TodaStationRetrieveUpdateDestroyAPIView(RetrieveUpdateDestroyAPIView):
 
 class TODAListCreateAPIView(ListCreateAPIView):
     permission_classes = [IsAuthenticated, TodaAdminPermission]
-    queryset = RegisteredToda.objects.all()
+    queryset = RegisteredToda.objects.all().select_related('toda')
     serializer_class = RegisteredReadTodaSerializer
     parser_classes = [MultiPartParser, FormParser]
     

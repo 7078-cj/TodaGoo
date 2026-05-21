@@ -2,7 +2,7 @@ import React from "react";
 import { useDispatch } from "react-redux";
 import { logout } from "../features/auth/authSlice";
 import MapComponent from "../components/MapComponent";
-import AddToda from "../components/Toda/AddToda";
+import TodaPage from "../components/Toda/TodaPage";
 
 function TodaDashboard() {
     const dispatch = useDispatch();
@@ -13,7 +13,7 @@ function TodaDashboard() {
         <button onClick={() => dispatch(logout())}>Logout</button>
 
         <div className="h-screen">
-            <AddToda/>
+            <TodaPage/>
         </div>
         
 

@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react'
 import MapComponent from '../MapComponent';
 import { MapPin, Plus, Trash2, CheckCircle } from 'lucide-react';
 
-function AddBoundaries({ name, setName, selectedColor, setColor, area, setArea, setPolygons, TODA_COLORS }) {
+
+function AddBoundaries({ name, setName, selectedColor, setColor, area, setArea, TODA_COLORS }) {
     const [pendingPoint, setPendingPoint] = useState({ lat: null, lng: null });
 
     // Derive markers purely from area — single source of truth
@@ -43,22 +44,6 @@ function AddBoundaries({ name, setName, selectedColor, setColor, area, setArea, 
         e.preventDefault();
         if (!name) { alert("Please provide a name."); return; }
         if (area.length < 3) { alert("At least 3 points are needed to define an area."); return; }
-
-        setPolygons((prev) => [
-            ...prev,
-            {
-                type: "Feature",
-                properties: {
-                    name,
-                    color: TODA_COLORS[selectedColor]?.hex ?? selectedColor,
-                    fillOpacity: 0.3,
-                },
-                geometry: {
-                    type: "Polygon",
-                    coordinates: [area],
-                },
-            },
-        ]);
 
         setName("");
         setColor("blue");

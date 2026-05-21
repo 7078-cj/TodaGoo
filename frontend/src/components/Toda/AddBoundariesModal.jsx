@@ -1,6 +1,13 @@
 import React, { useState } from 'react'
-import MapComponent from '../MapComponent';
-import AddBoudaries from './AddBoudaries';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/components/ui/dialog"
+import AddBoundaries from './AddBoundaries'
 
 const TODA_COLORS = {
     red: { label: "Red", value: "red", hex: "#EF4444", number: 1 },
@@ -16,36 +23,37 @@ const TODA_COLORS = {
     brown: { label: "Brown", value: "brown", hex: "#92400E", number: 11 },
 };
 
-function AddToda() {
+function AddBoundariesModal() {
     const [location, setLocation] = useState(null);
     const [name, setName] = useState("");
     const [color, setColor] = useState("blue");
     const [area, setArea] = useState([]);
-    const [polygons, setPolygons] = useState([]);
 
     const selectedColor = TODA_COLORS[color].hex;
-    
-
+        
     return (
-        <>
-            
-            <AddBoudaries
-                name={name}
-                setName={setName}
-                selectedColor={selectedColor}
-                setColor={setColor}
-                area={area}
-                setArea={setArea}
-                setPolygons={setPolygons}
-                TODA_COLORS={TODA_COLORS}
-            />
-            
-            <div className="h-[50%] rounded-xl overflow-hidden border">
+        <Dialog>
+            <DialogTrigger>Add TODA Stations</DialogTrigger>
+            <DialogContent className="bg-amber-50">
+                <DialogHeader>
+                    <DialogTitle>Add Boundaries</DialogTitle>
+                    <DialogDescription>
+                        Define the boundaries for your area.
+                    </DialogDescription>
+                </DialogHeader>
+                    <AddBoundaries
+                        name={name}
+                        setName={setName}
+                        selectedColor={selectedColor}
+                        setColor={setColor}
+                        area={area}
+                        setArea={setArea}
+                        TODA_COLORS={TODA_COLORS}
+                    />
 
-                <MapComponent areas={polygons} />
-            </div>
-        </>
+            </DialogContent>
+        </Dialog>
     )
 }
 
-export default AddToda
+export default AddBoundariesModal
