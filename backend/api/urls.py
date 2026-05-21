@@ -7,4 +7,5 @@ urlpatterns = [
      path('driver/', include('api.features.driver.urls')),
      path('booking/', include('api.features.booking.urls')),
      path('reports/', include('api.features.reports.urls')),
+     path('admin/', include('api.features.admin.urls'))
 ]

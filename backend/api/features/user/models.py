@@ -16,3 +16,28 @@ class Admin(models.Model):
     def __str__(self):
         return self.user.username
     
+class Driver(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    address= models.CharField(max_length=255)
+    profile_picture = models.ImageField(upload_to='driver_profiles/', null=True, blank=True)
+    toda_number = models.CharField(max_length=20)
+    franchise_permit_number = models.CharField(max_length=20)
+    license_number = models.CharField(max_length=20)
+    vehicle_plate = models.CharField(max_length=20)
+    vehicle_front_picture = models.ImageField(upload_to='vehicle_fronts/', null=True, blank=True)
+    vehicle_back_picture = models.ImageField(upload_to='vehicle_backs/', null=True, blank=True)
+
+    def __str__(self):
+        return self.user.username
+
+class Passenger(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    address = models.CharField(max_length=255)
+    profile_picture = models.ImageField(upload_to='passenger_profiles/', null=True, blank=True)
+    contact_number = models.CharField(max_length=20)
+    emergency_contact_name = models.CharField(max_length=100)
+    emergency_contact_number = models.CharField(max_length=20)
+
+    def __str__(self):
+        return self.user.username
+    
