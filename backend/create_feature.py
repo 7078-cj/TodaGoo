@@ -1,7 +1,7 @@
 import os
 
 # Base path to the api folder
-base_path = os.path.join("api")
+base_path = os.path.join("api", "features")
 
 # Make sure the api folder exists
 if not os.path.exists(base_path):
@@ -38,7 +38,7 @@ for file in files:
         print(f"File '{file_path}' already exists.")
 
 # Update parent models.py inside /backend/api to import from the new folder
-parent_models = os.path.join(base_path, "models.py")
+parent_models = os.path.join(base_path,"models.py")
 import_line = f"from .{folder_name}.models import *\n"
 
 if os.path.exists(parent_models):
@@ -52,7 +52,7 @@ else:
 
 # Update parent urls.py inside /backend/api to include the new folder
 parent_urls = os.path.join(base_path, "urls.py")
-include_line = f"    path('{folder_name}/', include('api.{folder_name}.urls')),\n"
+include_line = f"    path('{folder_name}/', include('api.features.{folder_name}.urls')),\n"
 
 if os.path.exists(parent_urls):
     # Check if 'urlpatterns' exists in the file

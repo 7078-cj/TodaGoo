@@ -217,8 +217,7 @@ use_postgres = all([PG_NAME, PG_USER, PG_PASSWORD, PG_HOST, PG_PORT])
 if use_postgres:
     DATABASES = {
         "default": {
-            # Use postgis engine if USE_POSTGIS=True, else plain postgres
-            "ENGINE": "django.contrib.gis.db.backends.postgis" if USE_POSTGIS else "django.db.backends.postgresql",
+            "ENGINE": "django.contrib.gis.db.backends.postgis",
             "NAME": PG_NAME,
             "USER": PG_USER,
             "PASSWORD": PG_PASSWORD,

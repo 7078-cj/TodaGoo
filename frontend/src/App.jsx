@@ -18,11 +18,11 @@ import TodaDashboard from "./pages/TodaDashboard";
 function AppContent() {
 
   const dispatch = useDispatch();
-  const tokens = useSelector((state) => state.auth.tokens);
+  const access = useSelector((state) => state.auth.access);
 
   useEffect(() => {
 
-    if (!tokens) return;
+    if (!access) return;
 
     const interval = setInterval(() => {
       updateToken(dispatch);
@@ -30,7 +30,7 @@ function AppContent() {
 
     return () => clearInterval(interval);
 
-  }, [tokens]);
+  }, [access]);
 
   return (
     <Router>

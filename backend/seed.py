@@ -5,7 +5,7 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "backend.settings")
 django.setup()
 
 from django.contrib.auth.models import User
-from api.user.models import Admin 
+from backend.api.features.user.models import Admin 
 
 
 def create_admin(username, password, department):
