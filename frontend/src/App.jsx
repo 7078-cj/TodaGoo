@@ -8,6 +8,11 @@ import DashBoard from "./pages/DashBoard";
 import PrivateRoutes from "./context/PrivateRoutes";
 import { updateToken } from "./utils/auth";
 import ForgotPasswordPage from "./pages/ForgotPassword";
+import MdrrmoDashboard from "./pages/mdrrmoDashboard";
+import TodaDashboard from "./pages/todaDashboard";
+import MDRRMORoutes from "./context/MDRRMOroutes";
+import TODARoutes from "./context/TODAroutes";
+import Unauthorized from "./pages/Unauthorized";
 
 
 function AppContent() {
@@ -34,10 +39,25 @@ function AppContent() {
 
         <Route path="/login" element={<Login />} />
         <Route path="/forgot_password" element={<ForgotPasswordPage />} />
+        <Route path="/unauthorized" element={<Unauthorized />} />
 
         <Route element={<PrivateRoutes />}>
           <Route path="/" element={<DashBoard />} />
+
+          {/* //routes for department-specific dashboards */}
+          <Route element={<MDRRMORoutes />}>
+
+            <Route path="/mdrrmo" element={<MdrrmoDashboard />} />
+
+          </Route>
+
+          <Route element={<TODARoutes />}>
+
+            <Route path="/toda" element={<TodaDashboard />} />
+
+          </Route>
         </Route>
+
 
       </Routes>
 
