@@ -8,10 +8,12 @@ import os
 from django.conf import settings
 from rest_framework.throttling import AnonRateThrottle
 from django.contrib.auth.models import User
-from ..rate_limit.TestThrottle import TestThrottle
+from ...rate_limit.TestThrottle import TestThrottle
 from rest_framework import status
 from .utils import generate_pin, send_reset_email
 from django.core.cache import cache
+from rest_framework import viewsets, permissions
+from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
 
 # Create your views here.
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
