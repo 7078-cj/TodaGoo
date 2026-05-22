@@ -28,8 +28,14 @@ class TodaWriteSerializer(serializers.ModelSerializer):
             return value
         try:
             ring = value
-            if ring[0] != ring[-1]:
-                ring = ring + [ring[0]]
+
+            
+            if ring[0] == ring[-1]:
+                ring = ring[:-1]
+
+            # close it cleanly once
+            ring = ring + [ring[0]]
+
             if len(ring) < 4:
                 raise serializers.ValidationError(
                     f"LinearRing requires at least 4 points, got {len(ring)}."

@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import {
     Dialog,
     DialogContent,
@@ -8,7 +8,7 @@ import {
     DialogTrigger,
 } from "@/components/ui/dialog"
 import AddBoundaries from './AddBoundaries'
-import { createTODA } from '../../api/toda';
+import { createTODA, updateTODA } from '../../api/toda';
 
 const TODA_COLORS = {
     red: { label: "Red", value: "red", hex: "#EF4444", number: 1 },
@@ -24,14 +24,38 @@ const TODA_COLORS = {
     brown: { label: "Brown", value: "brown", hex: "#92400E", number: 11 },
 };
 
-function AddBoundariesModal({ fetchTodas }) {
+const getColorKeyByHex = (hex) => {
+    return Object.keys(TODA_COLORS).find(
+        (key) => TODA_COLORS[key].hex === hex
+    );
+};
+
+function AddBoundariesModal({ fetchTodas, open, setOpen, toda }) {
     const [location, setLocation] = useState(null);
     const [name, setName] = useState("");
     const [color, setColor] = useState("blue");
-    const [area, setArea] = useState([]);
+    const [area, setArea] = useState();
     const [loading, setLoading] = useState(false);
 
-    const selectedColor = TODA_COLORS[color].hex;
+    const selectedColor = TODA_COLORS[color]?.hex ?? toda?.color
+
+    useEffect(() => {
+        if (toda) {
+            setName(toda.name);
+            setColor(getColorKeyByHex(toda.color));
+            var data = toda.area[0];
+
+            
+            const first = data[0];
+            const last = data[data.length - 1];
+            const isClosed = first[0] === last[0] && first[1] === last[1];
+            setArea(isClosed ? data.slice(0, -1) : data);
+        } else {
+            setName("");
+            setColor("blue");
+            setArea([]);
+        }
+    }, [open]);
 
     const handleSubmit = async () => {
         if (loading) return;
@@ -42,13 +66,19 @@ function AddBoundariesModal({ fetchTodas }) {
         try {
             setLoading(true);
 
-            await createTODA({ name, color: selectedColor, area });
+            if(toda){
+                await updateTODA({ name, color: selectedColor, area }, toda.id);
+            } else {
+                await createTODA({ name, color: selectedColor, area });
+            }
 
             setName("");
             setColor("blue");
             setArea([]);
 
+            
             await fetchTodas();
+            setOpen(false);
         } catch (err) {
             console.error(err);
             alert("Failed to create TODA");
@@ -58,14 +88,14 @@ function AddBoundariesModal({ fetchTodas }) {
     }
 
     return (
-        <Dialog>
+        <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger disabled={loading}>
                 {loading ? "Processing..." : "Add TODA Stations"}
             </DialogTrigger>
 
             <DialogContent className="bg-amber-50">
                 <DialogHeader>
-                    <DialogTitle>Add Boundaries</DialogTitle>
+                    <DialogTitle>{toda ? "Update" : "Add"} Boundaries</DialogTitle>
                     <DialogDescription>
                         Define the boundaries for your area.
                     </DialogDescription>

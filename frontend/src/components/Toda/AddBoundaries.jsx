@@ -55,7 +55,7 @@ function AddBoundaries({
 
         if (loading) return;
         if (!name) return alert("Please provide a name.");
-        if (area.length < 3) return alert("At least 3 points are needed to define an area.");
+        if (area.length < 4) return alert("At least 4 points are needed to define an area.");
 
         await handleSubmit();
     };
@@ -74,7 +74,7 @@ function AddBoundaries({
                 />
 
                 <select
-                    value={selectedColor}
+                    value={Object.keys(TODA_COLORS).find(k => TODA_COLORS[k].hex === selectedColor) ?? selectedColor}
                     onChange={(e) => setColor(e.target.value)}
                     disabled={loading}
                     className="px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
@@ -155,7 +155,7 @@ function AddBoundaries({
             {/* Submit */}
             <button
                 onClick={handleAddBoundaries}
-                disabled={loading || !name || area.length < 3}
+                disabled={loading || !name || area.length < 4}
                 className="flex items-center justify-center gap-2 w-full py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition disabled:opacity-40 disabled:cursor-not-allowed"
             >
                 {loading ? (
