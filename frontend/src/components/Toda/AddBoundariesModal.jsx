@@ -37,7 +37,7 @@ function AddBoundariesModal({ fetchTodas, open, setOpen, toda }) {
     const [area, setArea] = useState();
     const [loading, setLoading] = useState(false);
 
-    const selectedColor = toda ? toda.color : TODA_COLORS[color].hex;
+    const selectedColor = TODA_COLORS[color]?.hex ?? toda?.color
 
     useEffect(() => {
         if (toda) {

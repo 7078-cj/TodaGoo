@@ -74,7 +74,7 @@ function AddBoundaries({
                 />
 
                 <select
-                    value={selectedColor}
+                    value={Object.keys(TODA_COLORS).find(k => TODA_COLORS[k].hex === selectedColor) ?? selectedColor}
                     onChange={(e) => setColor(e.target.value)}
                     disabled={loading}
                     className="px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"

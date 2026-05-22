@@ -22,9 +22,9 @@ export async function updateTODA(data, id) {
     return response;
 }
 
-export async function deleteTODA(data, id) {
+export async function deleteTODA(id) {
     const access = Cookie.get("access");
-    const response = await deleteRequest(`admin/toda-stations/${id}/`, data, access);
+    const response = await deleteRequest(`admin/toda-stations/${id}/`, access);
     return response;
 }
 
