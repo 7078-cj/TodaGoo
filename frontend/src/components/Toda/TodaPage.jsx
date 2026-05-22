@@ -25,6 +25,7 @@ function TodaPage() {
 
     const [todas , setTodas] = useState([])
     const [polygons, setPolygons] = useState([]);
+    const [open, setOpen] = useState(false);
 
 
     const fetchTodas = async () => {
@@ -48,16 +49,16 @@ function TodaPage() {
         fetchTodas();
     }, []);
 
-    console.log(polygons)
+
     return (
         <>
             <div>
                 <h1>Toda Page</h1>
                 <p>Welcome to the Toda Page!</p>
             </div>
-            <AddBoundariesModal fetchTodas={fetchTodas}/>
+            <AddBoundariesModal open={open} setOpen={setOpen} fetchTodas={fetchTodas}/>
             <div>
-                <TodaList todas={todas}/>
+                <TodaList todas={todas} fetchTodas={fetchTodas}/>
             </div>
             <div className='h-[600px]'>
                 <MapComponent
