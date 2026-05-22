@@ -1,5 +1,5 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import { Provider, useDispatch, useSelector } from "react-redux";
+import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
 import { useEffect } from "react";
 
 import Login from "./pages/Login";
@@ -13,61 +13,95 @@ import TODARoutes from "./context/TODAroutes";
 import Unauthorized from "./pages/Unauthorized";
 import MdrrmoDashboard from "./pages/MdrrmoDashboard";
 import TodaDashboard from "./pages/TodaDashboard";
+import Header from "./components/Header";
+import SideBarComponent from "./components/SideBarComponent";
+import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
+import { LayoutDashboard, MapPin } from "lucide-react";
+import TodaBoundaries from "./pages/TodaBoundaries";
+import Footer from "./components/Footer";
+import RegisteredToda from "./pages/RegisteredToda";
 
+const MDRRMO_MENU = [
+    { label: "Dashboard", href: "/mdrrmo", icon: LayoutDashboard },
+];
+
+const TODA_MENU = [
+    { label: "Dashboard", href: "/toda", icon: LayoutDashboard },
+    { label: "Boundaries", href: "/toda/boundaries", icon: MapPin },
+    { label: "RegisteredToda", href: "/toda/registered", icon: MapPin },
+];
 
 function AppContent() {
+    const dispatch = useDispatch();
+    const access = useSelector((state) => state.auth.access);
+    const location = useLocation();
 
-  const dispatch = useDispatch();
-  const access = useSelector((state) => state.auth.access);
+    useEffect(() => {
+        if (!access) return;
+        const interval = setInterval(() => {
+            updateToken(dispatch);
+        }, 600000);
+        return () => clearInterval(interval);
+    }, [access]);
 
-  useEffect(() => {
+    const hideLayoutRoutes = ["/login", "/register", "/forgot_password"];
+    const showLayout = !hideLayoutRoutes.includes(location.pathname);
 
-    if (!access) return;
+    const getMenuItems = () => {
+        if (location.pathname.startsWith("/mdrrmo")) return MDRRMO_MENU;
+        if (location.pathname.startsWith("/toda")) return TODA_MENU;
+        return [];
+    };
 
-    const interval = setInterval(() => {
-      updateToken(dispatch);
-    }, 600000);
+    if (!showLayout) {
+        return (
+            <Routes>
+                <Route path="/login" element={<Login />} />
+                <Route path="/forgot_password" element={<ForgotPasswordPage />} />
+                <Route path="/unauthorized" element={<Unauthorized />} />
+            </Routes>
+        );
+    }
 
-    return () => clearInterval(interval);
+    return (
+        <SidebarProvider>
+            <SideBarComponent
+                menuItems={getMenuItems().map((item) => ({
+                    ...item,
+                    active: location.pathname === item.href,
+                }))}
+                footer={<Footer/>}
+            />
+            <SidebarInset>
+                <Header />
+                <main className="p-6">
+                    <Routes>
+                        <Route path="/unauthorized" element={<Unauthorized />} />
 
-  }, [access]);
+                        <Route element={<PrivateRoutes />}>
+                            <Route path="/" element={<DashBoard />} />
 
-  return (
-    <Router>
+                            <Route element={<MDRRMORoutes />}>
+                                <Route path="/mdrrmo" element={<MdrrmoDashboard />} />
+                            </Route>
 
-      <Routes>
-
-        <Route path="/login" element={<Login />} />
-        <Route path="/forgot_password" element={<ForgotPasswordPage />} />
-        <Route path="/unauthorized" element={<Unauthorized />} />
-
-        <Route element={<PrivateRoutes />}>
-          <Route path="/" element={<DashBoard />} />
-
-          {/* //routes for department-specific dashboards */}
-          <Route element={<MDRRMORoutes />}>
-
-            <Route path="/mdrrmo" element={<MdrrmoDashboard />} />
-
-          </Route>
-
-          <Route element={<TODARoutes />}>
-
-            <Route path="/toda" element={<TodaDashboard />} />
-
-          </Route>
-        </Route>
-
-
-      </Routes>
-
-    </Router>
-  );
+                            <Route element={<TODARoutes />}>
+                                <Route path="/toda" element={<TodaDashboard />} />
+                                <Route path="/toda/boundaries" element={<TodaBoundaries />} />
+                                <Route path="/toda/registered" element={<RegisteredToda/>} />
+                            </Route>
+                        </Route>
+                    </Routes>
+                </main>
+            </SidebarInset>
+        </SidebarProvider>
+    );
 }
 
-
 export default function App() {
-  return (
-      <AppContent />
-  );
+    return (
+        <Router>
+            <AppContent />
+        </Router>
+    );
 }

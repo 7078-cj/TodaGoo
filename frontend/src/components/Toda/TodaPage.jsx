@@ -19,8 +19,6 @@ function addPolygonToMap(name, color, area) {
     };
 }
 
-
-
 function TodaPage() {
 
     const [todas , setTodas] = useState([])
@@ -52,10 +50,6 @@ function TodaPage() {
 
     return (
         <>
-            <div>
-                <h1>Toda Page</h1>
-                <p>Welcome to the Toda Page!</p>
-            </div>
             <AddBoundariesModal open={open} setOpen={setOpen} fetchTodas={fetchTodas}/>
             <div>
                 <TodaList todas={todas} fetchTodas={fetchTodas}/>
