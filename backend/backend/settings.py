@@ -30,7 +30,10 @@ environ.Env.read_env(os.path.join(BASE_DIR, ".env"))
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = env('SECRET_KEY')
+STRIPE_SECRET_KEY = env('STRIPE_SECRET_KEY')
 
+CLOUDINARY_URL = os.environ.get("CLOUDINARY_URL", "")
+USE_CLOUDINARY = bool(CLOUDINARY_URL)
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
@@ -39,57 +42,6 @@ ALLOWED_HOSTS = env.list(
     default=[]
 )
 
-# =========================
-# GDAL AUTO-DETECT
-# =========================
-
-def find_gdal():
-    # 1. Respect explicit env var if set (.env or system)
-    explicit = os.environ.get('GDAL_PATH')
-    if explicit:
-        return explicit
-
-    # 2. Try to find it automatically (Linux/Mac)
-    lib = ctypes.util.find_library('gdal')
-    if lib:
-        return lib
-
-    # 3. Fallback: ask ldconfig (Linux only)
-    try:
-        output = subprocess.check_output(
-            ['ldconfig', '-p'], stderr=subprocess.DEVNULL
-        ).decode()
-        for line in output.splitlines():
-            if 'libgdal' in line:
-                return line.split('=>')[-1].strip()
-    except Exception:
-        pass
-
-    return None  # Let Django handle it or raise its own error
-
-def find_geos():
-    explicit = os.environ.get('GEOS_LIBRARY_PATH')
-    if explicit:
-        return explicit
-
-    lib = ctypes.util.find_library('geos_c')
-    if lib:
-        return lib
-
-    try:
-        output = subprocess.check_output(
-            ['ldconfig', '-p'], stderr=subprocess.DEVNULL
-        ).decode()
-        for line in output.splitlines():
-            if 'libgeos_c' in line:
-                return line.split('=>')[-1].strip()
-    except Exception:
-        pass
-
-    return None
-
-GDAL_LIBRARY_PATH = find_gdal()
-GEOS_LIBRARY_PATH = find_geos()
 
 # =========================
 # APPLICATION DEFINITION
@@ -111,8 +63,11 @@ INSTALLED_APPS = [
     'corsheaders',
     'tasks',
     'django_celery_beat',
-    "django.contrib.gis",
 ]
+
+if USE_CLOUDINARY:
+    INSTALLED_APPS.append('cloudinary_storage')
+    INSTALLED_APPS.append('cloudinary')
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
@@ -217,7 +172,8 @@ use_postgres = all([PG_NAME, PG_USER, PG_PASSWORD, PG_HOST, PG_PORT])
 if use_postgres:
     DATABASES = {
         "default": {
-            "ENGINE": "django.contrib.gis.db.backends.postgis",
+            # Use postgis engine if USE_POSTGIS=True, else plain postgres
+            "ENGINE": "django.contrib.gis.db.backends.postgis" if USE_POSTGIS else "django.db.backends.postgresql",
             "NAME": PG_NAME,
             "USER": PG_USER,
             "PASSWORD": PG_PASSWORD,
@@ -258,10 +214,27 @@ USE_TZ = True
 # =========================
 
 STATIC_URL = 'static/'
-MEDIA_URL = "/media/"
-MEDIA_ROOT = BASE_DIR / "media"
-
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+# --- Media / Storage ---
+if USE_CLOUDINARY:
+    STORAGES = {
+        "default": {
+            "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
+        },
+        "staticfiles": {
+            "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+        },
+    }
+else:
+    STORAGES = {
+        "default": {
+            "BACKEND": "django.core.files.storage.FileSystemStorage",
+        },
+        "staticfiles": {
+            "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+        },
+    }
+    MEDIA_URL = "/media/"
+    MEDIA_ROOT = BASE_DIR / "media"
 
 # =========================
 # CORS
