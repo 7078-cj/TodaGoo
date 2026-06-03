@@ -83,7 +83,7 @@ function AppContent() {
                         />
 
                         <SidebarInset>
-                            <main className="p-4 h-full overflow-y-auto">
+                            <main className=" h-full overflow-y-auto">
                                 <Routes>
                                     <Route path="/unauthorized" element={<Unauthorized />} />
 
