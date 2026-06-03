@@ -32,7 +32,7 @@ function TodaDashboard() {
             overview: [
                 { title: "Trips", value: 12, icon: <MapPin className="w-4 h-4" />, color: "blue" },
                 { title: "Earnings", value: 2400, icon: <DollarSign className="w-4 h-4" />, color: "green" },
-                { title: "Active Drivers", value: 18, icon: <User className="w-4 h-4" />, color: "yellow" },
+                { title: "Active Drivers", value: 18, icon: <User className="w-4 h-4" />, color: "amber" },
                 { title: "Incidents Today", value: 1, icon: <AlertTriangle className="w-4 h-4" />, color: "red" },
             ],
             labels: ["6AM", "9AM", "12PM", "3PM", "6PM", "9PM", "12AM"],
@@ -44,7 +44,7 @@ function TodaDashboard() {
             overview: [
                 { title: "Trips", value: 84, icon: <MapPin className="w-4 h-4" />, color: "blue" },
                 { title: "Earnings", value: 16800, icon: <DollarSign className="w-4 h-4" />, color: "green" },
-                { title: "Active Drivers", value: 25, icon: <User className="w-4 h-4" />, color: "yellow" },
+                { title: "Active Drivers", value: 25, icon: <User className="w-4 h-4" />, color: "amber" },
                 { title: "Incidents Today", value: 5, icon: <AlertTriangle className="w-4 h-4" />, color: "red" },
             ],
             labels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
@@ -56,7 +56,7 @@ function TodaDashboard() {
             overview: [
                 { title: "Trips", value: 340, icon: <MapPin className="w-4 h-4" />, color: "blue" },
                 { title: "Earnings", value: 68000, icon: <DollarSign className="w-4 h-4" />, color: "green" },
-                { title: "Active Drivers", value: 42, icon: <User className="w-4 h-4" />, color: "yellow" },
+                { title: "Active Drivers", value: 42, icon: <User className="w-4 h-4" />, color: "amber" },
                 { title: "Incidents Today", value: 18, icon: <AlertTriangle className="w-4 h-4" />, color: "red" },
             ],
             labels: ["W1", "W2", "W3", "W4", "W5", "W6", "W7"],
