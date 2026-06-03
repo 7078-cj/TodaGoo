@@ -13,7 +13,7 @@ export const logoutUser = (dispatch, navigate) => {
     navigate("/login", { replace: true });
 };
 
-export const loginUser = async (e, dispatch, navigate,setError) => {
+export const loginUser = async (e, dispatch, navigate,setError, setLoading) => {
     e.preventDefault();
 
     const username = e.target.username.value;
@@ -24,6 +24,7 @@ export const loginUser = async (e, dispatch, navigate,setError) => {
         setError(first);
         return false;
     }
+    setLoading(true);
 
     try {
         const response = await fetch(API_URL + "user/token/", {
@@ -38,6 +39,12 @@ export const loginUser = async (e, dispatch, navigate,setError) => {
         });
         if (response.status === 401) {
             setError("Invalid username or password.");
+            setLoading(false);
+            return false;
+        }
+        else if (response.status != 200) {
+            setError("An error occurred while logging in.");
+            setLoading(false);
             return false;
         }
 
@@ -60,6 +67,7 @@ export const loginUser = async (e, dispatch, navigate,setError) => {
         return true;
     } catch (error) {
         console.error("Error during login:", error);
+        setLoading(false);
         return false;
     }
 };
