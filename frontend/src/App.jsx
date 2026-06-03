@@ -64,37 +64,50 @@ function AppContent() {
     }
 
     return (
-        <SidebarProvider>
-            <SideBarComponent
-                menuItems={getMenuItems().map((item) => ({
-                    ...item,
-                    active: location.pathname === item.href,
-                }))}
-                footer={<Footer/>}
-            />
-            <SidebarInset>
+        <>
+            <div className="flex flex-col h-screen">
+                
+                {/* HEADER */}
                 <Header />
-                <main className="p-6">
-                    <Routes>
-                        <Route path="/unauthorized" element={<Unauthorized />} />
 
-                        <Route element={<PrivateRoutes />}>
-                            <Route path="/" element={<DashBoard />} />
+                {/* BODY */}
+                <div className="flex flex-1 overflow-hidden">
 
-                            <Route element={<MDRRMORoutes />}>
-                                <Route path="/mdrrmo" element={<MdrrmoDashboard />} />
-                            </Route>
+                    <SidebarProvider>
+                        <SideBarComponent
+                            menuItems={getMenuItems().map((item) => ({
+                                ...item,
+                                active: location.pathname === item.href,
+                            }))}
+                            footer={<Footer />}
+                        />
 
-                            <Route element={<TODARoutes />}>
-                                <Route path="/toda" element={<TodaDashboard />} />
-                                <Route path="/toda/boundaries" element={<TodaBoundaries />} />
-                                <Route path="/toda/registered" element={<RegisteredToda/>} />
-                            </Route>
-                        </Route>
-                    </Routes>
-                </main>
-            </SidebarInset>
-        </SidebarProvider>
+                        <SidebarInset>
+                            <main className="p-4 h-full overflow-y-auto">
+                                <Routes>
+                                    <Route path="/unauthorized" element={<Unauthorized />} />
+
+                                    <Route element={<PrivateRoutes />}>
+                                        <Route path="/" element={<DashBoard />} />
+
+                                        <Route element={<MDRRMORoutes />}>
+                                            <Route path="/mdrrmo" element={<MdrrmoDashboard />} />
+                                        </Route>
+
+                                        <Route element={<TODARoutes />}>
+                                            <Route path="/toda" element={<TodaDashboard />} />
+                                            <Route path="/toda/boundaries" element={<TodaBoundaries />} />
+                                            <Route path="/toda/registered" element={<RegisteredToda />} />
+                                        </Route>
+                                    </Route>
+                                </Routes>
+                            </main>
+                        </SidebarInset>
+
+                    </SidebarProvider>
+                </div>
+            </div>
+        </>
     );
 }
 

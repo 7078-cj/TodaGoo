@@ -13,19 +13,11 @@ import {
 } from "@/components/ui/sidebar"
 
 export default function SideBarComponent({ header, menuItems = [], footer }) {
-    return (
-        <Sidebar  className="w-64">
 
-            <SidebarHeader className="px-4 py-3 border-b">
-                {header ?? (
-                    <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-md bg-primary flex items-center justify-center text-primary-foreground text-xs font-bold">
-                            T
-                        </div>
-                        <span className="font-semibold text-sm">TODA Admin</span>
-                    </div>
-                )}
-            </SidebarHeader>
+    const menuButtonStyle = "flex items-center gap-2 text-sm";
+
+    return (
+        <Sidebar  className="top-16 h-[calc(100vh-4rem)] w-64 border-r">
 
             <SidebarContent>
                 <SidebarGroup>
@@ -34,8 +26,8 @@ export default function SideBarComponent({ header, menuItems = [], footer }) {
                         <SidebarMenu>
                             {menuItems.map((item) => (
                                 <SidebarMenuItem key={item.label}>
-                                    <SidebarMenuButton isActive={item.active}>
-                                        <a href={item.href} className="flex items-center gap-2 text-sm">
+                                    <SidebarMenuButton isActive={item.active} className={menuButtonStyle}>
+                                        <a href={item.href} className={menuButtonStyle}>
                                             {item.icon && <item.icon className="w-4 h-4" />}
                                             {item.label}
                                         </a>

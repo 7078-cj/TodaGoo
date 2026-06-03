@@ -216,7 +216,7 @@ PG_USER = env.str("PG_USER", default=None)
 PG_PASSWORD = env.str("PG_PASSWORD", default=None)
 PG_HOST = env.str("PG_HOST", default=None)
 PG_PORT = env.str("PG_PORT", default=None)
-USE_POSTGIS = env.bool("USE_POSTGIS", default=False)
+USE_POSTGIS = True  # Set to False if you want to use plain PostgreSQL without PostGIS extensions
 
 use_postgres = all([PG_NAME, PG_USER, PG_PASSWORD, PG_HOST, PG_PORT])
 

@@ -19,7 +19,7 @@ function Login() {
     return () => clearTimeout(timer);
   }, [error]);
 
-  const inputStyle = "mt-1 px-3 py-4 rounded-lg outline-none bg-green-200 focus:border-1 border-green-500 text-gray-700 my-1"
+  const inputStyle = "px-3 py-4 rounded-lg outline-none bg-green-200 focus:border-1 border-green-500 text-gray-700 my-1"
 
   return (
     <div className="grid grid-cols-[60%_40%] min-h-screen bg-gray-100">
