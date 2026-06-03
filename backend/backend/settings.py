@@ -41,6 +41,58 @@ ALLOWED_HOSTS = env.list(
     default=[]
 )
 
+# =========================
+# GDAL AUTO-DETECT
+# =========================
+
+def find_gdal():
+    # 1. Respect explicit env var if set (.env or system)
+    explicit = os.environ.get('GDAL_PATH')
+    if explicit:
+        return explicit
+
+    # 2. Try to find it automatically (Linux/Mac)
+    lib = ctypes.util.find_library('gdal')
+    if lib:
+        return lib
+
+    # 3. Fallback: ask ldconfig (Linux only)
+    try:
+        output = subprocess.check_output(
+            ['ldconfig', '-p'], stderr=subprocess.DEVNULL
+        ).decode()
+        for line in output.splitlines():
+            if 'libgdal' in line:
+                return line.split('=>')[-1].strip()
+    except Exception:
+        pass
+
+    return None  # Let Django handle it or raise its own error
+
+def find_geos():
+    explicit = os.environ.get('GEOS_LIBRARY_PATH')
+    if explicit:
+        return explicit
+
+    lib = ctypes.util.find_library('geos_c')
+    if lib:
+        return lib
+
+    try:
+        output = subprocess.check_output(
+            ['ldconfig', '-p'], stderr=subprocess.DEVNULL
+        ).decode()
+        for line in output.splitlines():
+            if 'libgeos_c' in line:
+                return line.split('=>')[-1].strip()
+    except Exception:
+        pass
+
+    return None
+
+GDAL_LIBRARY_PATH = find_gdal()
+GEOS_LIBRARY_PATH = find_geos()
+
 
 # =========================
 # APPLICATION DEFINITION
