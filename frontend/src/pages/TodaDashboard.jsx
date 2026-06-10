@@ -8,18 +8,20 @@ import {
     LinearScale,
     PointElement,
     LineElement,
+    ArcElement,   
     Title,
     Tooltip,
     Legend
 } from "chart.js";
 
-import { Line } from "react-chartjs-2";
+import { Line, Doughnut } from "react-chartjs-2"; 
 
 ChartJS.register(
     CategoryScale,
     LinearScale,
     PointElement,
     LineElement,
+    ArcElement,   
     Title,
     Tooltip,
     Legend
@@ -103,6 +105,24 @@ function TodaDashboard() {
         ]
     }), [activeData]);
 
+    const donutData = useMemo(() => ({
+    labels: ["Trips", "Earnings"],
+    datasets: [
+        {
+            data: [
+                activeData.trips.reduce((a, b) => a + b, 0),
+                activeData.earnings.reduce((a, b) => a + b, 0)
+            ],
+            backgroundColor: [
+                "rgba(34,197,94,0.8)",
+                "rgba(249,115,22,0.8)"
+            ],
+            borderWidth: 0,
+            hoverOffset: 6
+        }
+    ]
+}), [activeData]);
+
     const options = useMemo(() => ({
         responsive: true,
         maintainAspectRatio: false,
@@ -158,6 +178,18 @@ function TodaDashboard() {
         }
     }), []);
 
+    const donutOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    cutout: "70%", 
+
+    plugins: {
+        legend: {
+            position: "bottom"
+        }
+    }
+};
+
     return (
         <div className="p-4 h-full bg-green-200 overflow-y-auto flex flex-col gap-4">
 
@@ -200,10 +232,11 @@ function TodaDashboard() {
 
                 <div className="p-4 rounded-md h-full w-[43%] flex flex-col justify-center items-center gap-4">
                     <div className="w-full bg-white rounded-md p-4 mb-4 h-[50%]">
-                        a
+                        <Doughnut data={donutData} options={donutOptions} />
                     </div>
+
                     <div className="w-full bg-white rounded-md p-4 mb-4 h-[50%]">
-                        b
+                        <Doughnut data={donutData} options={donutOptions} />
                     </div>
                 </div>
             </div>
