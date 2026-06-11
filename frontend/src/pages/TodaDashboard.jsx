@@ -191,7 +191,7 @@ function TodaDashboard() {
 };
 
     return (
-        <div className="p-4 h-full bg-green-200 overflow-y-auto flex flex-col gap-4">
+        <div className="p-4 h-full bg-green-100 overflow-y-auto flex flex-col gap-4">
 
             <div className="flex w-full h-[5%] justify-between items-center">
                 <span className="text-2xl font-semibold text-gray-700">
