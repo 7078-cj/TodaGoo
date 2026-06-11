@@ -1,11 +1,25 @@
-import { Text, View } from "react-native";
+import { Button, Text, View } from "react-native";
+import { Href, router } from "expo-router";
 
 export default function Index() {
+
+  const handlePress = (destination: Href) => {
+    router.push(destination);
+  };
+
   return (
     <View
       className="bg-amber-50"
     >
-      <Text>Edit app/index.tsx to edit this screen.</Text>
+      <Button
+        title="Register as Driver"
+        onPress={() => handlePress("/(global)/register/driver")}
+      />
+
+      <Button
+        title="Register as Passenger"
+        onPress={() => handlePress("/(global)/register/passenger")}
+      />
     </View>
   );
 }
