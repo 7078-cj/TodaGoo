@@ -17,7 +17,15 @@ class Admin(models.Model):
         return self.user.username
     
 class Driver(models.Model):
+    STATUS_CHOICES = [
+        ('ACTIVE', 'Active'),
+        ('INACTIVE', 'Inactive'),
+        ('SUSPENDED', 'Suspended'),
+        ('BLACKLISTED', 'Blacklisted'),
+    ]
+
     user = models.OneToOneField(User, on_delete=models.CASCADE)
+    status = models.CharField(max_length=50, choices=STATUS_CHOICES, default='ACTIVE')
     address= models.CharField(max_length=255)
     profile_picture = models.ImageField(upload_to='driver_profiles/', null=True, blank=True)
     toda_number = models.CharField(max_length=20)
