@@ -1,11 +1,11 @@
 from rest_framework.permissions import BasePermission
-from ..utils.roles import is_admin, is_driver
+from ..utils.roles import is_passenger, is_admin
 
 
-class IsDriverOwnerOrAdmin(BasePermission):
+class IsPassengerOwnerOrAdmin(BasePermission):
     """
-    - Driver can edit ONLY his own profile
-    - Admin can edit ANY driver
+    - Passenger can edit only self
+    - Admin can edit all passengers
     """
 
     def has_object_permission(self, request, view, obj):
@@ -13,7 +13,7 @@ class IsDriverOwnerOrAdmin(BasePermission):
         if is_admin(request.user):
             return True
 
-        if is_driver(request.user):
+        if is_passenger(request.user):
             return obj == request.user
 
         return False

@@ -5,7 +5,7 @@ from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIV
 from django.contrib.auth.models import User
 from ..user.models import Driver
 from .serializers import DriverSerializer
-
+from .permissions import IsDriverOwnerOrAdmin
 
 class DriverListCreateView(ListCreateAPIView):
     queryset = User.objects.filter(driver__isnull=False)
@@ -15,4 +15,5 @@ class DriverListCreateView(ListCreateAPIView):
 class DriverRetrieveUpdateDestroyView(RetrieveUpdateDestroyAPIView):
     queryset = User.objects.filter(driver__isnull=False)
     serializer_class = DriverSerializer
+    permission_classes = [IsDriverOwnerOrAdmin]
     lookup_field = 'id'
