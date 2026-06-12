@@ -29,7 +29,9 @@ class DriverSerializer(serializers.ModelSerializer):
             'username',
             'email',
             'password',
-            'driver_profile'
+            'driver_profile',
+            'first_name',
+            'last_name'
         )
         extra_kwargs = {
             'password': {'write_only': True}
@@ -52,7 +54,6 @@ class DriverSerializer(serializers.ModelSerializer):
                 "TODA number and vehicle plate are not registered."
             )
 
-        # Optional: prevent duplicate vehicle registration
         if Driver.objects.filter(vehicle_plate=vehicle_plate).exists():
             raise serializers.ValidationError(
                 "This vehicle is already registered to a driver."
@@ -70,6 +71,8 @@ class DriverSerializer(serializers.ModelSerializer):
             username=validated_data['username'],
             email=validated_data['email'],
             password=validated_data['password'],
+            first_name=validated_data['first_name'],
+            last_name=validated_data['last_name'],
         )
 
         Driver.objects.create(
