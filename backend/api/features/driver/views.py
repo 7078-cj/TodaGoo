@@ -16,4 +16,4 @@ class DriverRetrieveUpdateDestroyView(RetrieveUpdateDestroyAPIView):
     queryset = User.objects.filter(driver__isnull=False)
     serializer_class = DriverSerializer
     permission_classes = [IsDriverOwnerOrAdmin]
-    lookup_field = 'id'
+    lookup_field = 'pk'

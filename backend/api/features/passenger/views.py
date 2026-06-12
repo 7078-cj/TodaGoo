@@ -14,4 +14,4 @@ class PassengerListCreateView(ListCreateAPIView):
 class PassengerRetrieveUpdateDestroyView(RetrieveUpdateDestroyAPIView):
     queryset = User.objects.filter(passenger__isnull=False)
     serializer_class = PassengerSerializer
-    lookup_field = 'id'
+    lookup_field = 'pk'
