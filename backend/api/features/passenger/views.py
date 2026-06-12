@@ -5,6 +5,7 @@ from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIV
 from django.contrib.auth.models import User
 from ..user.models import Passenger
 from .serializers import PassengerSerializer
+from rest_framework.permissions import IsAuthenticated
 
 class PassengerListCreateView(ListCreateAPIView):
     queryset = User.objects.filter(passenger__isnull=False)
@@ -13,5 +14,5 @@ class PassengerListCreateView(ListCreateAPIView):
 
 class PassengerRetrieveUpdateDestroyView(RetrieveUpdateDestroyAPIView):
     queryset = User.objects.filter(passenger__isnull=False)
-    serializer_class = PassengerSerializer
+    serializer_class = [PassengerSerializer, IsAuthenticated]
     lookup_field = 'pk'

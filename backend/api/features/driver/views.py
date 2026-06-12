@@ -6,6 +6,7 @@ from django.contrib.auth.models import User
 from ..user.models import Driver
 from .serializers import DriverSerializer
 from .permissions import IsDriverOwnerOrAdmin
+from rest_framework.permissions import IsAuthenticated
 
 class DriverListCreateView(ListCreateAPIView):
     queryset = User.objects.filter(driver__isnull=False)
@@ -15,5 +16,5 @@ class DriverListCreateView(ListCreateAPIView):
 class DriverRetrieveUpdateDestroyView(RetrieveUpdateDestroyAPIView):
     queryset = User.objects.filter(driver__isnull=False)
     serializer_class = DriverSerializer
-    permission_classes = [IsDriverOwnerOrAdmin]
+    permission_classes = [IsDriverOwnerOrAdmin, IsAuthenticated]
     lookup_field = 'pk'
