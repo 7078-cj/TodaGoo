@@ -1,16 +1,14 @@
-import { View, Text } from 'react-native'
+import { View, Text, ScrollView } from 'react-native'
 import React, { useState } from 'react'
+import UserRegisterForm from '../../../components/UserRegisterForm'
+import DriverProfileForm from '../../../components/DriverProfileForm'
 
 export default function driver() {
-    const [username, setUsername] = useState("")
-    const [firstName, setFirstName] = useState("")
-    const [lastName, setLastName] = useState("")
-    const [email, setEmail] = useState("")
-    const [password, setPassword] = useState("")
 
     return (
-        <View>
-        <Text>driver</Text>
-        </View>
+        <ScrollView className='flex-1'>
+            <UserRegisterForm/>
+            <DriverProfileForm/>
+        </ScrollView>
     )
 }
