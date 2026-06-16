@@ -20,7 +20,7 @@ export default function DriverProfileForm() {
 
     const pickImage = async (setImage) => {
         const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            mediaTypes: ImagePicker.MediaType,
             allowsEditing: true,
             quality: 1,
         })
