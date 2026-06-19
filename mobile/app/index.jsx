@@ -3,7 +3,7 @@ import { Href, router } from "expo-router";
 
 export default function Index() {
 
-  const handlePress = () => {
+  const handlePress = (destination) => {
     router.push(destination);
   };
 

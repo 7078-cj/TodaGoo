@@ -1,7 +1,7 @@
 import { View, Text, TextInput, TouchableOpacity } from 'react-native'
 import React, { useState } from 'react'
 
-export default function UserRegisterForm() {
+export default function UserRegisterForm({setPage,setFormData}) {
 
     const [firstName, setFirstName] = useState("")
     const [lastName, setLastName] = useState("")
@@ -40,8 +40,16 @@ export default function UserRegisterForm() {
 
     const handleSubmit = () => {
         if (validate()) {
-            console.log("Form Valid ✅")
+            setFormData((prev) => ({
+                ...prev,
+                firstName: firstName,
+                lastName: lastName,
+                email: email,
+                password: password
+            }))
+            setPage('driver')
         }
+        
     }
 
 
