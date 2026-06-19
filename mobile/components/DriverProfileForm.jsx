@@ -26,7 +26,7 @@ export default function DriverProfileForm() {
         })
 
         if (!result.canceled) {
-            setImage(result.assets[0].uri)
+            setImage(result.assets[0])
         }
     }
 
@@ -122,7 +122,7 @@ export default function DriverProfileForm() {
                 className={imageBox}
             >
                 {profilePicture ? (
-                    <Image source={{ uri: profilePicture }} className="w-full h-full rounded-lg" />
+                    <Image source={{ uri: profilePicture.uri }} className="w-full h-full rounded-lg" />
                 ) : (
                     <Text className="text-gray-500">Upload Profile Image</Text>
                 )}
@@ -135,7 +135,7 @@ export default function DriverProfileForm() {
                 className={imageBox}
             >
                 {vehicleFrontPicture ? (
-                    <Image source={{ uri: vehicleFrontPicture }} className="w-full h-full rounded-lg" />
+                    <Image source={{ uri: vehicleFrontPicture.uri }} className="w-full h-full rounded-lg" />
                 ) : (
                     <Text className="text-gray-500">Upload Front Image</Text>
                 )}
@@ -148,7 +148,7 @@ export default function DriverProfileForm() {
                 className={imageBox}
             >
                 {vehicleBackPicture ? (
-                    <Image source={{ uri: vehicleBackPicture }} className="w-full h-full rounded-lg" />
+                    <Image source={{ uri: vehicleBackPicture.uri }} className="w-full h-full rounded-lg" />
                 ) : (
                     <Text className="text-gray-500">Upload Back Image</Text>
                 )}
