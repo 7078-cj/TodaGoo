@@ -21,6 +21,6 @@ class IsDriverOwnerOrAdmin(BasePermission):
             return is_admin(request.user)
 
         if is_driver(request.user):
-            return obj.user == request.user
+            return obj.user.driver_profile == request.user
 
         return False

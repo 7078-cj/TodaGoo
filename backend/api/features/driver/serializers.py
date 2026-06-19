@@ -20,7 +20,7 @@ class DriverProfileSerializer(serializers.ModelSerializer):
 
 
 class DriverSerializer(serializers.ModelSerializer):
-    driver_profile = DriverProfileSerializer(write_only=True)
+    driver_profile = DriverProfileSerializer()
 
     class Meta:
         model = User
@@ -98,7 +98,7 @@ class DriverSerializer(serializers.ModelSerializer):
         instance.save()
 
         if driver_data:
-            driver = instance.driver
+            driver = instance.driver_profile
             for attr, value in driver_data.items():
                 setattr(driver, attr, value)
             driver.save()

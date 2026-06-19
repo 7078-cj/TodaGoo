@@ -3,6 +3,7 @@ import React, { useState } from 'react'
 
 export default function UserRegisterForm({setPage,setFormData}) {
 
+    const [username, setUsername] = useState("")
     const [firstName, setFirstName] = useState("")
     const [lastName, setLastName] = useState("")
     const [email, setEmail] = useState("")
@@ -13,6 +14,7 @@ export default function UserRegisterForm({setPage,setFormData}) {
     const validate = () => {
         let newErrors = {}
 
+        if (!username.trim()) newErrors.username = "Username is required"
         if (!firstName.trim()) newErrors.firstName = "First name is required"
         if (!lastName.trim()) newErrors.lastName = "Last name is required"
 
@@ -42,8 +44,9 @@ export default function UserRegisterForm({setPage,setFormData}) {
         if (validate()) {
             setFormData((prev) => ({
                 ...prev,
-                firstName: firstName,
-                lastName: lastName,
+                username: username,
+                first_name: firstName,
+                last_name: lastName,
                 email: email,
                 password: password
             }))
@@ -75,6 +78,18 @@ export default function UserRegisterForm({setPage,setFormData}) {
             <Text className={titleTextStyle}>
                 Register
             </Text>
+
+            {/* First Name */}
+            <Text className={fieldLabelStyle}>Username</Text>
+            <TextInput
+                className={`${inputBaseStyle} ${errors.firstName ? inputErrorStyle : ""}`}
+                value={username}
+                onChangeText={setUsername}
+                placeholder="Enter Username"
+            />
+            {errors.username && (
+                <Text className={errorTextStyle}>{errors.username}</Text>
+            )}
 
             {/* First Name */}
             <Text className={fieldLabelStyle}>First Name</Text>

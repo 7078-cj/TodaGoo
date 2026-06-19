@@ -56,7 +56,7 @@ class PassengerSerializer(serializers.ModelSerializer):
         instance.save()
 
         if passenger_data:
-            passenger = instance.passenger
+            passenger = instance.passenger_profile
             for attr, value in passenger_data.items():
                 setattr(passenger, attr, value)
             passenger.save()

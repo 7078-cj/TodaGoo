@@ -3,17 +3,17 @@ import React, { useState } from 'react'
 import {pickImage} from '../utils/imagePicker'
 
 
-export default function DriverProfileForm() {
+export default function DriverProfileForm({setFormData, onSubmit}) {
 
     const [address, setAddress] = useState("")
-    const [todaNumber, setTodaNumber] = useState("")
-    const [franchisePermitNumber, setFranchisePermitNumber] = useState("")
-    const [licenseNumber, setLicenseNumber] = useState("")
-    const [vehiclePlate, setVehiclePlate] = useState("")
+    const [toda_number, setTodaNumber] = useState("")
+    const [franchise_permit_number, setFranchisePermitNumber] = useState("")
+    const [license_number, setLicenseNumber] = useState("")
+    const [vehicle_plate, setVehiclePlate] = useState("")
 
-    const [profilePicture, setProfilePicture] = useState(null)
-    const [vehicleFrontPicture, setVehicleFrontPicture] = useState(null)
-    const [vehicleBackPicture, setVehicleBackPicture] = useState(null)
+    const [profile_picture, setProfilePicture] = useState(null)
+    const [vehicle_front_picture, setVehicleFrontPicture] = useState(null)
+    const [vehicle_back_picture, setVehicleBackPicture] = useState(null)
 
     const [errors, setErrors] = useState({})
 
@@ -23,10 +23,10 @@ export default function DriverProfileForm() {
         let newErrors = {}
 
         if (!address) newErrors.address = "Address is required"
-        if (!todaNumber) newErrors.todaNumber = "TODA number is required"
-        if (!franchisePermitNumber) newErrors.franchisePermitNumber = "Franchise permit required"
-        if (!licenseNumber) newErrors.licenseNumber = "License number is required"
-        if (!vehiclePlate) newErrors.vehiclePlate = "Vehicle plate is required"
+        if (!toda_number) newErrors.toda_number = "TODA number is required"
+        if (!franchise_permit_number) newErrors.franchise_permit_number = "Franchise permit required"
+        if (!license_number) newErrors.license_number = "License number is required"
+        if (!vehicle_plate) newErrors.vehicle_plate = "Vehicle plate is required"
 
         setErrors(newErrors)
         return Object.keys(newErrors).length === 0
@@ -34,7 +34,22 @@ export default function DriverProfileForm() {
 
     const handleSubmit = () => {
         if (validate()) {
-            console.log("Driver Profile Valid ✅")
+            const driverProfile = {
+                address,
+                toda_number,
+                franchise_permit_number,
+                license_number,
+                vehicle_plate,
+                profile_picture,
+                vehicle_front_picture,
+                vehicle_back_picture
+            }
+
+            setFormData((prev) => {
+                const updated = { ...prev, driver_profile: driverProfile }
+                onSubmit(updated)
+                return updated
+            })
         }
     }
 
@@ -53,7 +68,6 @@ export default function DriverProfileForm() {
                 Driver Profile
             </Text>
 
-            {/* ADDRESS */}
             <Text className={label}>Address</Text>
             <TextInput
                 className={input}
@@ -63,86 +77,78 @@ export default function DriverProfileForm() {
             />
             {errors.address && <Text className={errorText}>{errors.address}</Text>}
 
-            {/* TODA NUMBER */}
             <Text className={label}>TODA Number</Text>
             <TextInput
                 className={input}
-                value={todaNumber}
+                value={toda_number}
                 onChangeText={setTodaNumber}
                 placeholder="Enter TODA number"
             />
-            {errors.todaNumber && <Text className={errorText}>{errors.todaNumber}</Text>}
+            {errors.toda_number && <Text className={errorText}>{errors.toda_number}</Text>}
 
-            {/* FRANCHISE */}
             <Text className={label}>Franchise Permit Number</Text>
             <TextInput
                 className={input}
-                value={franchisePermitNumber}
+                value={franchise_permit_number}
                 onChangeText={setFranchisePermitNumber}
                 placeholder="Enter permit number"
             />
-            {errors.franchisePermitNumber && <Text className={errorText}>{errors.franchisePermitNumber}</Text>}
+            {errors.franchise_permit_number && <Text className={errorText}>{errors.franchise_permit_number}</Text>}
 
-            {/* LICENSE */}
             <Text className={label}>License Number</Text>
             <TextInput
                 className={input}
-                value={licenseNumber}
+                value={license_number}
                 onChangeText={setLicenseNumber}
                 placeholder="Enter license number"
             />
-            {errors.licenseNumber && <Text className={errorText}>{errors.licenseNumber}</Text>}
+            {errors.license_number && <Text className={errorText}>{errors.license_number}</Text>}
 
-            {/* VEHICLE PLATE */}
             <Text className={label}>Vehicle Plate</Text>
             <TextInput
                 className={input}
-                value={vehiclePlate}
+                value={vehicle_plate}
                 onChangeText={setVehiclePlate}
                 placeholder="Enter plate number"
             />
-            {errors.vehiclePlate && <Text className={errorText}>{errors.vehiclePlate}</Text>}
+            {errors.vehicle_plate && <Text className={errorText}>{errors.vehicle_plate}</Text>}
 
-            {/* PROFILE PICTURE */}
             <Text className={label}>Profile Picture</Text>
             <TouchableOpacity
                 onPress={() => pickImage(setProfilePicture)}
                 className={imageBox}
             >
-                {profilePicture ? (
-                    <Image source={{ uri: profilePicture.uri }} className="w-full h-full rounded-lg" />
+                {profile_picture ? (
+                    <Image source={{ uri: profile_picture.uri }} className="w-full h-full rounded-lg" />
                 ) : (
                     <Text className="text-gray-500">Upload Profile Image</Text>
                 )}
             </TouchableOpacity>
 
-            {/* VEHICLE FRONT */}
             <Text className={label}>Vehicle Front</Text>
             <TouchableOpacity
                 onPress={() => pickImage(setVehicleFrontPicture)}
                 className={imageBox}
             >
-                {vehicleFrontPicture ? (
-                    <Image source={{ uri: vehicleFrontPicture.uri }} className="w-full h-full rounded-lg" />
+                {vehicle_front_picture ? (
+                    <Image source={{ uri: vehicle_front_picture.uri }} className="w-full h-full rounded-lg" />
                 ) : (
                     <Text className="text-gray-500">Upload Front Image</Text>
                 )}
             </TouchableOpacity>
 
-            {/* VEHICLE BACK */}
             <Text className={label}>Vehicle Back</Text>
             <TouchableOpacity
                 onPress={() => pickImage(setVehicleBackPicture)}
                 className={imageBox}
             >
-                {vehicleBackPicture ? (
-                    <Image source={{ uri: vehicleBackPicture.uri }} className="w-full h-full rounded-lg" />
+                {vehicle_back_picture ? (
+                    <Image source={{ uri: vehicle_back_picture.uri }} className="w-full h-full rounded-lg" />
                 ) : (
                     <Text className="text-gray-500">Upload Back Image</Text>
                 )}
             </TouchableOpacity>
 
-            {/* SUBMIT */}
             <TouchableOpacity onPress={handleSubmit} className={button}>
                 <Text className={buttonText}>Submit Profile</Text>
             </TouchableOpacity>

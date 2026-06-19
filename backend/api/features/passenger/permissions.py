@@ -14,6 +14,6 @@ class IsPassengerOwnerOrAdmin(BasePermission):
             return True
 
         if is_passenger(request.user):
-            return obj == request.user
+            return obj.user.passenger_profile == request.user
 
         return False

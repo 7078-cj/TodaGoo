@@ -24,7 +24,7 @@ class Driver(models.Model):
         ('BLACKLISTED', 'Blacklisted'),
     ]
 
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="driver_profile")
     status = models.CharField(max_length=50, choices=STATUS_CHOICES, default='ACTIVE')
     address= models.CharField(max_length=255)
     profile_picture = models.ImageField(upload_to='driver_profiles/', null=True, blank=True)
@@ -39,7 +39,7 @@ class Driver(models.Model):
         return self.user.username
 
 class Passenger(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="passenger_profile")
     address = models.CharField(max_length=255)
     profile_picture = models.ImageField(upload_to='passenger_profiles/', null=True, blank=True)
     contact_number = models.CharField(max_length=20)
