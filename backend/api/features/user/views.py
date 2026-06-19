@@ -14,9 +14,12 @@ from .utils import generate_pin, send_reset_email
 from django.core.cache import cache
 from rest_framework import viewsets, permissions
 from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
+from django.contrib.auth import get_user_model
+from rest_framework import serializers
 
-# Create your views here.
-class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
+User = get_user_model()
+
+class AdminMyTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
     def get_token(cls, user):
         token = super().get_token(user)
@@ -26,6 +29,40 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
         if token['role'] == 'admin':
             token['department'] = user.admin.department
 
+        return token
+    
+class AdminMyTokenObtainPairView(TokenObtainPairView):
+    serializer_class = AdminMyTokenObtainPairSerializer
+
+
+class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
+    username_field = 'email'
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields[self.username_field] = serializers.EmailField()
+
+    def validate(self, attrs):
+        email = attrs.get('email')
+        password = attrs.get('password')
+
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            raise serializers.ValidationError('No active account found with the given credentials')
+
+        attrs['username'] = user.get_username()
+        data = super().validate(attrs)
+
+        return data
+
+    @classmethod
+    def get_token(cls, user):
+        token = super().get_token(user)
+        token['username'] = user.username
+        token['role'] = 'admin' if hasattr(user, 'admin') else 'passenger' if hasattr(user, 'passenger') else 'driver' if hasattr(user, 'driver') else 'unknown'
+        if token['role'] == 'admin':
+            token['department'] = user.admin.department
         return token
     
 class MyTokenObtainPairView(TokenObtainPairView):

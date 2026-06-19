@@ -27,7 +27,7 @@ export const loginUser = async (e, dispatch, navigate,setError, setLoading) => {
     setLoading(true);
 
     try {
-        const response = await fetch(API_URL + "user/token/", {
+        const response = await fetch(API_URL + "user/token/admin", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",

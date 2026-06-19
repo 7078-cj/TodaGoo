@@ -14,5 +14,5 @@
     ".expo/types/**/*.ts",
     "expo-env.d.ts",
     "nativewind-env.d.ts"
-  ]
+, "app/_layout.jsx", "app/index.jsx", "app/(global)/register/passenger.jsx", "app/(global)/register/driver.jsx", "app/(protected)/driver/home.jsx", "app/(global)/login.jsx", "app/(protected)/passenger/home.jsx"  ]
 }

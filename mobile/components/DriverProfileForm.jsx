@@ -1,9 +1,9 @@
 import { View, Text, TextInput, TouchableOpacity, Image, ScrollView } from 'react-native'
 import React, { useState } from 'react'
-import * as ImagePicker from "expo-image-picker"
+import {pickImage} from '../utils/imagePicker'
+
 
 export default function DriverProfileForm() {
-
 
     const [address, setAddress] = useState("")
     const [todaNumber, setTodaNumber] = useState("")
@@ -17,18 +17,6 @@ export default function DriverProfileForm() {
 
     const [errors, setErrors] = useState({})
 
-
-    const pickImage = async (setImage) => {
-        const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.MediaType,
-            allowsEditing: true,
-            quality: 1,
-        })
-
-        if (!result.canceled) {
-            setImage(result.assets[0])
-        }
-    }
 
 
     const validate = () => {
