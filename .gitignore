@@ -1,5 +1,7 @@
 env
 .env
+media/*
+backend/media
 __pycache__
 db.sqlite3
 celerybeat-*
