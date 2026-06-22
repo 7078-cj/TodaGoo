@@ -24,6 +24,8 @@ class PassengerSerializer(serializers.ModelSerializer):
             'id',
             'username',
             'email',
+            'first_name',
+            'last_name',
             'password',
             'passenger_profile',
         )
@@ -37,6 +39,8 @@ class PassengerSerializer(serializers.ModelSerializer):
             username=validated_data['username'],
             email=validated_data['email'],
             password=validated_data['password'],
+            first_name=validated_data['first_name'],
+            last_name=validated_data['last_name'],
         )
 
         Passenger.objects.create(
