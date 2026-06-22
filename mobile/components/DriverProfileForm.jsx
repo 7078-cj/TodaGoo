@@ -1,6 +1,7 @@
 import { View, Text, TextInput, TouchableOpacity, Image, ScrollView } from 'react-native'
 import React, { useState } from 'react'
 import {pickImage} from '../utils/imagePicker'
+import PickImageComponent from './PickImageComponent'
 
 
 export default function DriverProfileForm({setFormData, onSubmit}) {
@@ -59,7 +60,6 @@ export default function DriverProfileForm({setFormData, onSubmit}) {
     const errorText = "text-red-500 mb-2"
     const button = "bg-black p-4 rounded-xl mt-3"
     const buttonText = "text-white text-center font-semibold"
-    const imageBox = "w-full h-40 rounded-lg mb-2 bg-gray-100 justify-center items-center"
 
     return (
         <ScrollView className={container}>
@@ -113,41 +113,13 @@ export default function DriverProfileForm({setFormData, onSubmit}) {
             />
             {errors.vehicle_plate && <Text className={errorText}>{errors.vehicle_plate}</Text>}
 
-            <Text className={label}>Profile Picture</Text>
-            <TouchableOpacity
-                onPress={() => pickImage(setProfilePicture)}
-                className={imageBox}
-            >
-                {profile_picture ? (
-                    <Image source={{ uri: profile_picture.uri }} className="w-full h-full rounded-lg" />
-                ) : (
-                    <Text className="text-gray-500">Upload Profile Image</Text>
-                )}
-            </TouchableOpacity>
 
-            <Text className={label}>Vehicle Front</Text>
-            <TouchableOpacity
-                onPress={() => pickImage(setVehicleFrontPicture)}
-                className={imageBox}
-            >
-                {vehicle_front_picture ? (
-                    <Image source={{ uri: vehicle_front_picture.uri }} className="w-full h-full rounded-lg" />
-                ) : (
-                    <Text className="text-gray-500">Upload Front Image</Text>
-                )}
-            </TouchableOpacity>
+            <PickImageComponent label={"Profile Picture"} setImage={setProfilePicture} image={profile_picture}/>
 
-            <Text className={label}>Vehicle Back</Text>
-            <TouchableOpacity
-                onPress={() => pickImage(setVehicleBackPicture)}
-                className={imageBox}
-            >
-                {vehicle_back_picture ? (
-                    <Image source={{ uri: vehicle_back_picture.uri }} className="w-full h-full rounded-lg" />
-                ) : (
-                    <Text className="text-gray-500">Upload Back Image</Text>
-                )}
-            </TouchableOpacity>
+
+            <PickImageComponent label={"Vehicle Front"} setImage={setVehicleFrontPicture} image={vehicle_front_picture}/>
+
+            <PickImageComponent label={"Vehicle Back"} setImage={setVehicleBackPicture} image={vehicle_back_picture}/>
 
             <TouchableOpacity onPress={handleSubmit} className={button}>
                 <Text className={buttonText}>Submit Profile</Text>
