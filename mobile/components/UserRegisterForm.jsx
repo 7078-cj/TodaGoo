@@ -1,5 +1,6 @@
 import { View, Text, TextInput, TouchableOpacity } from 'react-native'
 import React, { useState } from 'react'
+import {normalizeUsername} from '@/utils/validation'
 
 export default function UserRegisterForm({setPage,setFormData}) {
 
@@ -44,7 +45,7 @@ export default function UserRegisterForm({setPage,setFormData}) {
         if (validate()) {
             setFormData((prev) => ({
                 ...prev,
-                username: username,
+                username: normalizeUsername(username),
                 first_name: firstName,
                 last_name: lastName,
                 email: email,

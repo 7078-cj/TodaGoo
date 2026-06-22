@@ -2,6 +2,7 @@ import { View, Text, ScrollView } from 'react-native'
 import React, { useEffect, useState } from 'react'
 import UserRegisterForm from '@/components/UserRegisterForm'
 import PassengerProfileForm from '@/components/PassengerProfileForm'
+import {passengerRegister} from '@/api/passenger'
 
 export default function passenger() {
     const [page, setPage] = useState('user')
@@ -12,7 +13,7 @@ export default function passenger() {
     },[formData])
 
     const submit = async (data) => {
-        // const res = await passengerRegister(data)
+        const res = await passengerRegister(data)
         console.log(res)
     }
 

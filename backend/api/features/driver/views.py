@@ -24,9 +24,13 @@ class DriverListCreateView(ListCreateAPIView):
     def create(self, request, *args, **kwargs):
         data = reconstruct_nested(request.data, prefix="driver_profile.")
         serializer = self.get_serializer(data=data)
-        serializer.is_valid(raise_exception=True)
+
+        if not serializer.is_valid():
+            print("VALIDATION ERRORS:", serializer.errors)
+            return Response(serializer.errors, status=400)
+
         self.perform_create(serializer)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.data, status=201)
 
 
 class DriverRetrieveUpdateDestroyView(RetrieveUpdateDestroyAPIView):

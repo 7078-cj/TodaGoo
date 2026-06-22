@@ -16,7 +16,7 @@ class PassengerProfileSerializer(serializers.ModelSerializer):
 
 
 class PassengerSerializer(serializers.ModelSerializer):
-    passenger_profile = PassengerProfileSerializer(write_only=True)
+    passenger_profile = PassengerProfileSerializer()
 
     class Meta:
         model = User
