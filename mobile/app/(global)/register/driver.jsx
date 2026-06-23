@@ -8,13 +8,9 @@ export default function driver() {
     const [page, setPage] = useState('user')
     const [formData, setFormData] = useState({})
 
-    useEffect(()=>{
-        console.log(formData)
-    },[formData])
-
     const submit = async (data) => {
         const res = await driverRegister(data)
-        console.log(res)
+        
     }
 
     return (

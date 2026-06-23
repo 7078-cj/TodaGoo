@@ -26,7 +26,6 @@ class DriverListCreateView(ListCreateAPIView):
         serializer = self.get_serializer(data=data)
 
         if not serializer.is_valid():
-            print("VALIDATION ERRORS:", serializer.errors)
             return Response(serializer.errors, status=400)
 
         self.perform_create(serializer)

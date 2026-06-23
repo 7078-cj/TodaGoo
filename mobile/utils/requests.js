@@ -117,7 +117,6 @@ export const postRequest = async (endpoint, data = {}, isToken = false) => {
         if (!isForm) {
             headers["Content-Type"] = "application/json";
         }
-        console.log(body)
 
         const res = await fetch(`${API}${endpoint}`, {
             method: "POST",
