@@ -11,6 +11,7 @@ class DriverProfileSerializer(DriverValidationMixin, serializers.ModelSerializer
         model = Driver
         fields = (
             'address',
+            'contact_number',
             'profile_picture',
             'toda_number',
             'franchise_permit_number',
