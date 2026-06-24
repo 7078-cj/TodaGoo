@@ -15,10 +15,31 @@ export default function PassengerProfileForm({ setFormData, onSubmit }) {
     const validate = () => {
         let newErrors = {}
 
-        if (!address) newErrors.address = "Address is required"
-        if (!contact_number) newErrors.contact_number = "Contact number is required"
-        if (!emergency_contact_name) newErrors.emergency_contact_name = "Emergency contact name is required"
-        if (!emergency_contact_number) newErrors.emergency_contact_number = "Emergency contact number is required"
+        // Address
+        if (!address || address.trim().length < 5) {
+            newErrors.address = "Address must be at least 5 characters"
+        }
+
+        // Contact number
+        if (!contact_number) {
+            newErrors.contact_number = "Contact number is required"
+        } else if (!/^\d{11}$/.test(contact_number)) {
+            newErrors.contact_number = "Must be exactly 11 digits"
+        }
+
+        // Emergency contact name
+        if (!emergency_contact_name) {
+            newErrors.emergency_contact_name = "Emergency contact name is required"
+        }
+
+        // Emergency contact number
+        if (!emergency_contact_number) {
+            newErrors.emergency_contact_number = "Emergency contact number is required"
+        } else if (!/^\d{11}$/.test(emergency_contact_number)) {
+            newErrors.emergency_contact_number = "Must be exactly 11 digits"
+        } else if (emergency_contact_number === contact_number) {
+            newErrors.emergency_contact_number = "Must not be the same as contact number"
+        }
 
         setErrors(newErrors)
         return Object.keys(newErrors).length === 0
@@ -69,7 +90,7 @@ export default function PassengerProfileForm({ setFormData, onSubmit }) {
             <TextInput
                 className={input}
                 value={contact_number}
-                onChangeText={setContactNumber}
+                onChangeText={(text) => setContactNumber(text.replace(/\D/g, ""))}
                 placeholder="Enter contact number"
                 keyboardType="phone-pad"
             />
@@ -88,14 +109,14 @@ export default function PassengerProfileForm({ setFormData, onSubmit }) {
             <TextInput
                 className={input}
                 value={emergency_contact_number}
-                onChangeText={setEmergencyContactNumber}
+                onChangeText={(text) => setEmergencyContactNumber(text.replace(/\D/g, ""))}
                 placeholder="Enter emergency contact number"
                 keyboardType="phone-pad"
             />
             {errors.emergency_contact_number && <Text className={errorText}>{errors.emergency_contact_number}</Text>}
 
             <PickImageComponent
-                label={"Profile Picture"}
+                label="Profile Picture"
                 setImage={setProfilePicture}
                 image={profile_picture}
             />

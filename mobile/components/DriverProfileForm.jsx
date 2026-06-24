@@ -1,10 +1,8 @@
-import { View, Text, TextInput, TouchableOpacity, Image, ScrollView } from 'react-native'
+import { View, Text, TextInput, TouchableOpacity, ScrollView } from 'react-native'
 import React, { useState } from 'react'
-import {pickImage} from '../utils/imagePicker'
 import PickImageComponent from './PickImageComponent'
 
-
-export default function DriverProfileForm({setFormData, onSubmit}) {
+export default function DriverProfileForm({ setFormData, onSubmit }) {
 
     const [address, setAddress] = useState("")
     const [toda_number, setTodaNumber] = useState("")
@@ -18,16 +16,44 @@ export default function DriverProfileForm({setFormData, onSubmit}) {
 
     const [errors, setErrors] = useState({})
 
-
-
     const validate = () => {
         let newErrors = {}
 
-        if (!address) newErrors.address = "Address is required"
-        if (!toda_number) newErrors.toda_number = "TODA number is required"
-        if (!franchise_permit_number) newErrors.franchise_permit_number = "Franchise permit required"
-        if (!license_number) newErrors.license_number = "License number is required"
-        if (!vehicle_plate) newErrors.vehicle_plate = "Vehicle plate is required"
+        // Address
+        if (!address || address.trim().length < 5) {
+            newErrors.address = "Address must be at least 5 characters"
+        }
+
+        // TODA number: (1-11)-DDD
+        const todaPattern = /^(?:[1-9]|1[0-1])-\d{3}$/
+        if (!toda_number) {
+            newErrors.toda_number = "TODA number is required"
+        } else if (!todaPattern.test(toda_number)) {
+            newErrors.toda_number = "Format must be (1-11)-XXX (e.g., 10-400)"
+        }
+
+        // Franchise permit
+        if (!franchise_permit_number || franchise_permit_number.trim().length < 5) {
+            newErrors.franchise_permit_number = "Franchise permit must be at least 5 characters"
+        }
+
+        // License number
+        if (!license_number || license_number.trim().length < 6) {
+            newErrors.license_number = "License number must be at least 6 characters"
+        }
+
+        // Vehicle plate
+        const platePattern = /^[A-Z]{2,3}[- ]?\d{3,4}$/i
+        if (!vehicle_plate) {
+            newErrors.vehicle_plate = "Vehicle plate is required"
+        } else if (!platePattern.test(vehicle_plate)) {
+            newErrors.vehicle_plate = "Invalid plate format (e.g., ABC1234)"
+        }
+
+        // Images
+        if (!profile_picture) newErrors.profile_picture = "Profile picture is required"
+        if (!vehicle_front_picture) newErrors.vehicle_front_picture = "Vehicle front image is required"
+        if (!vehicle_back_picture) newErrors.vehicle_back_picture = "Vehicle back image is required"
 
         setErrors(newErrors)
         return Object.keys(newErrors).length === 0
@@ -81,8 +107,8 @@ export default function DriverProfileForm({setFormData, onSubmit}) {
             <TextInput
                 className={input}
                 value={toda_number}
-                onChangeText={setTodaNumber}
-                placeholder="Enter TODA number"
+                onChangeText={(text) => setTodaNumber(text.replace(/\s/g, ""))}
+                placeholder="e.g. 10-400"
             />
             {errors.toda_number && <Text className={errorText}>{errors.toda_number}</Text>}
 
@@ -108,18 +134,19 @@ export default function DriverProfileForm({setFormData, onSubmit}) {
             <TextInput
                 className={input}
                 value={vehicle_plate}
-                onChangeText={setVehiclePlate}
-                placeholder="Enter plate number"
+                onChangeText={(text) => setVehiclePlate(text.toUpperCase())}
+                placeholder="e.g. ABC1234"
             />
             {errors.vehicle_plate && <Text className={errorText}>{errors.vehicle_plate}</Text>}
 
+            <PickImageComponent label="Profile Picture" setImage={setProfilePicture} image={profile_picture} />
+            {errors.profile_picture && <Text className={errorText}>{errors.profile_picture}</Text>}
 
-            <PickImageComponent label={"Profile Picture"} setImage={setProfilePicture} image={profile_picture}/>
+            <PickImageComponent label="Vehicle Front" setImage={setVehicleFrontPicture} image={vehicle_front_picture} />
+            {errors.vehicle_front_picture && <Text className={errorText}>{errors.vehicle_front_picture}</Text>}
 
-
-            <PickImageComponent label={"Vehicle Front"} setImage={setVehicleFrontPicture} image={vehicle_front_picture}/>
-
-            <PickImageComponent label={"Vehicle Back"} setImage={setVehicleBackPicture} image={vehicle_back_picture}/>
+            <PickImageComponent label="Vehicle Back" setImage={setVehicleBackPicture} image={vehicle_back_picture} />
+            {errors.vehicle_back_picture && <Text className={errorText}>{errors.vehicle_back_picture}</Text>}
 
             <TouchableOpacity onPress={handleSubmit} className={button}>
                 <Text className={buttonText}>Submit Profile</Text>
