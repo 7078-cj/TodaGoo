@@ -7,7 +7,7 @@ import {passengerRegister} from '@/api/passenger'
 export default function passenger() {
     const [page, setPage] = useState('user')
     const [formData, setFormData] = useState({})
-
+    // a
 
     const submit = async (data) => {
         const res = await passengerRegister(data)
