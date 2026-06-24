@@ -15,7 +15,14 @@ export default function UserRegisterForm({setPage,setFormData}) {
     const validate = () => {
         let newErrors = {}
 
-        if (!username.trim()) newErrors.username = "Username is required"
+        if (!username.trim()) {
+            newErrors.username = "Username is required"
+        } else if (username.trim().length < 3) {
+            newErrors.username = "Username must be at least 3 characters"
+        } else if (!/^[a-zA-Z0-9_]+$/.test(username.trim())) {
+            newErrors.username = "Username can only contain letters, numbers, and underscores"
+        }
+
         if (!firstName.trim()) newErrors.firstName = "First name is required"
         if (!lastName.trim()) newErrors.lastName = "Last name is required"
 
@@ -27,8 +34,14 @@ export default function UserRegisterForm({setPage,setFormData}) {
 
         if (!password) {
             newErrors.password = "Password is required"
-        } else if (password.length < 6) {
-            newErrors.password = "Minimum 6 characters"
+        } else if (password.length < 8) {
+            newErrors.password = "Minimum 8 characters"
+        } else if (!/[A-Z]/.test(password)) {
+            newErrors.password = "Must contain at least 1 uppercase letter"
+        } else if (!/[0-9]/.test(password)) {
+            newErrors.password = "Must contain at least 1 number"
+        } else if (!/[!@#$%^&*(),.?":{}|<>_\-+=\[\];'`~/\\]/.test(password)) {
+            newErrors.password = "Must contain at least 1 special character"
         }
 
         if (!confirmPassword) {
@@ -80,13 +93,14 @@ export default function UserRegisterForm({setPage,setFormData}) {
                 Register
             </Text>
 
-            {/* First Name */}
+            {/* Username */}
             <Text className={fieldLabelStyle}>Username</Text>
             <TextInput
-                className={`${inputBaseStyle} ${errors.firstName ? inputErrorStyle : ""}`}
+                className={`${inputBaseStyle} ${errors.username ? inputErrorStyle : ""}`}
                 value={username}
                 onChangeText={setUsername}
                 placeholder="Enter Username"
+                autoCapitalize="none"
             />
             {errors.username && (
                 <Text className={errorTextStyle}>{errors.username}</Text>
@@ -124,6 +138,7 @@ export default function UserRegisterForm({setPage,setFormData}) {
                 onChangeText={setEmail}
                 placeholder="Enter email"
                 keyboardType="email-address"
+                autoCapitalize="none"
             />
             {errors.email && (
                 <Text className={errorTextStyle}>{errors.email}</Text>

@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
 from ..user.models import Passenger
-
+from ..utils.validation import UserValidationMixin
 
 class PassengerProfileSerializer(serializers.ModelSerializer):
     class Meta:
@@ -15,7 +15,7 @@ class PassengerProfileSerializer(serializers.ModelSerializer):
         )
 
 
-class PassengerSerializer(serializers.ModelSerializer):
+class PassengerSerializer(UserValidationMixin,serializers.ModelSerializer):
     passenger_profile = PassengerProfileSerializer()
 
     class Meta:
@@ -55,7 +55,8 @@ class PassengerSerializer(serializers.ModelSerializer):
 
         instance.username = validated_data.get('username', instance.username)
         instance.email = validated_data.get('email', instance.email)
-
+        instance.first_name = validated_data.get('first_name', instance.first_name)
+        instance.last_name = validated_data.get('last_name', instance.last_name)
 
         instance.save()
 
