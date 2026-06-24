@@ -3,10 +3,10 @@ from django.contrib.auth.models import User
 from ..user.models import Driver
 from ..admin.models import RegisteredToda
 from ..user.serializers import UserSerializer
+from ..utils.validation import DriverValidationMixin
 
 
-
-class DriverProfileSerializer(serializers.ModelSerializer):
+class DriverProfileSerializer(DriverValidationMixin, serializers.ModelSerializer):
     class Meta:
         model = Driver
         fields = (

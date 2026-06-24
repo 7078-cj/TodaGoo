@@ -2,6 +2,7 @@
 from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
+import re
 
 
 class UserValidationMixin:
@@ -45,4 +46,77 @@ class PassengerValidationMixin:
                 "Emergency contact number must not be the same as the contact number."
             )
 
+        return value
+    
+
+
+class DriverValidationMixin:
+
+    def validate_address(self, value):
+        if not value or len(value.strip()) < 5:
+            raise serializers.ValidationError(
+                "Address must be at least 5 characters long."
+            )
+        return value
+
+    def validate_contact_number(self, value):
+        value = str(value)
+
+        if not value.isdigit():
+            raise serializers.ValidationError(
+                "Contact number must contain only digits."
+            )
+
+        if len(value) != 11:
+            raise serializers.ValidationError(
+                "Contact number must be exactly 11 digits."
+            )
+
+        return value
+
+    def validate_toda_number(self, value):
+        """
+        Format: (1-11)-DDD
+        Examples:
+        1-123
+        10-400
+        11-999
+        """
+
+        pattern = r'^(?:[1-9]|1[0-1])-\d{3}$'
+
+        if not re.match(pattern, value):
+            raise serializers.ValidationError(
+                "Invalid TODA number format. Expected (1-11)-XXX (e.g., 10-400)."
+            )
+
+        return value
+
+    def validate_vehicle_plate(self, value):
+        """
+        Basic PH plate validation (flexible).
+        Accepts formats like:
+        ABC1234, ABC-1234, XYZ 5678
+        """
+        pattern = r'^[A-Z]{2,3}[-\s]?\d{3,4}$'
+
+        if not re.match(pattern, value.upper()):
+            raise serializers.ValidationError(
+                "Invalid vehicle plate format (e.g., ABC1234 or ABC-1234)."
+            )
+
+        return value.upper()
+
+    def validate_license_number(self, value):
+        if not value or len(value.strip()) < 6:
+            raise serializers.ValidationError(
+                "License number must be at least 6 characters long."
+            )
+        return value
+
+    def validate_franchise_permit_number(self, value):
+        if not value or len(value.strip()) < 5:
+            raise serializers.ValidationError(
+                "Franchise permit number must be at least 5 characters long."
+            )
         return value
