@@ -2,6 +2,8 @@ from rest_framework import serializers
 from django.contrib.auth.models import User
 from ..user.models import Driver
 from ..admin.models import RegisteredToda
+from ..user.serializers import UserSerializer
+
 
 
 class DriverProfileSerializer(serializers.ModelSerializer):
@@ -37,19 +39,21 @@ class DriverSerializer(serializers.ModelSerializer):
             'password': {'write_only': True}
         }
 
-    # =========================
-    # VALIDATION LOGIC
-    # =========================
     def validate(self, attrs):
         driver_data = attrs.get('driver_profile')
+
+        if not driver_data:
+            raise serializers.ValidationError("driver_profile is required")
 
         toda_number = driver_data.get('toda_number')
         vehicle_plate = driver_data.get('vehicle_plate')
 
-        if not RegisteredToda.objects.filter(
+        registered_toda = RegisteredToda.objects.filter(
             toda_number=toda_number,
             vehicle_plate=vehicle_plate
-        ).exists():
+        ).select_related('toda').first()
+
+        if not registered_toda:
             raise serializers.ValidationError(
                 "TODA number and vehicle plate are not registered."
             )
@@ -59,50 +63,44 @@ class DriverSerializer(serializers.ModelSerializer):
                 "This vehicle is already registered to a driver."
             )
 
+        self._registered_toda = registered_toda
+
         return attrs
 
-    # =========================
-    # CREATE DRIVER + USER
-    # =========================
     def create(self, validated_data):
         driver_data = validated_data.pop('driver_profile')
 
-        user = User.objects.create_user(
-            username=validated_data['username'],
-            email=validated_data['email'],
-            password=validated_data['password'],
-            first_name=validated_data['first_name'],
-            last_name=validated_data['last_name'],
-        )
+        user_serializer = UserSerializer(data=validated_data)
+        user_serializer.is_valid(raise_exception=True)
+        user = user_serializer.save()
 
-        Driver.objects.create(
+        toda_station = self._registered_toda.toda
+
+        driver_serializer = DriverProfileSerializer(data=driver_data)
+        driver_serializer.is_valid(raise_exception=True)
+        driver_serializer.save(
             user=user,
-            status='PENDING',  
-            **driver_data
+            status='PENDING',
+            toda_station=toda_station
         )
 
         return user
 
-    # =========================
-    # UPDATE DRIVER + USER
-    # =========================
+
     def update(self, instance, validated_data):
         driver_data = validated_data.pop('driver_profile', None)
 
-        instance.username = validated_data.get('username', instance.username)
-        instance.email = validated_data.get('email', instance.email)
-        instance.first_name = validated_data.get('first_name', instance.first_name)
-        instance.last_name = validated_data.get('last_name', instance.last_name)
+        user_serializer = UserSerializer(instance, data=validated_data, partial=True)
+        user_serializer.is_valid(raise_exception=True)
+        user = user_serializer.save()
 
-        if 'password' in validated_data:
-            instance.set_password(validated_data['password'])
-
-        instance.save()
-
+        
         if driver_data:
             driver = instance.driver_profile
-            for attr, value in driver_data.items():
-                setattr(driver, attr, value)
-            driver.save()
+            driver_serializer = DriverProfileSerializer(
+                driver, data=driver_data, partial=True
+            )
+            driver_serializer.is_valid(raise_exception=True)
+            driver_serializer.save()
 
-        return instance
+        return user

@@ -21,3 +21,28 @@ class UserValidationMixin:
     def validate_password(self, value):
         validate_password(value)
         return value
+
+class PassengerValidationMixin:
+
+    def validate_address(self, value):
+        if not value or len(value.strip()) < 5:
+            raise serializers.ValidationError("Address must be at least 5 characters long.")
+        return value
+
+    def validate_contact_number(self, value):
+        if len(value) != 11:
+            raise serializers.ValidationError("Contact number must be exactly 11 digits.")
+        return value
+
+    def validate_emergency_contact_number(self, value):
+        if len(value) != 11:
+            raise serializers.ValidationError("Emergency contact number must be exactly 11 digits.")
+
+        contact_number = self.initial_data.get("contact_number")
+
+        if contact_number and value == contact_number:
+            raise serializers.ValidationError(
+                "Emergency contact number must not be the same as the contact number."
+            )
+
+        return value
