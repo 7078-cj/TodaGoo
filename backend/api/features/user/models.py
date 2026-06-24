@@ -29,7 +29,7 @@ class Driver(models.Model):
     status = models.CharField(max_length=50, choices=STATUS_CHOICES, default='ACTIVE')
     address= models.CharField(max_length=255)
     contact_number = models.IntegerField()
-    toda_station = models.ForeignKey(Toda, on_delete=models.CASCADE, related_name='toda_drivers')
+    toda_station = models.ForeignKey(Toda, on_delete=models.CASCADE, related_name='toda_drivers', null=True, blank=True)
     profile_picture = models.ImageField(upload_to='driver_profiles/', null=True, blank=True)
     toda_number = models.CharField(max_length=20)
     franchise_permit_number = models.CharField(max_length=20)
