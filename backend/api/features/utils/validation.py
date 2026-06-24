@@ -25,6 +25,23 @@ class UserValidationMixin:
 
 class PassengerValidationMixin:
 
+    def validate(self, attrs):
+        contact_number = attrs.get("contact_number")
+        emergency_contact_number = attrs.get("emergency_contact_number")
+
+        if emergency_contact_number:
+            if len(emergency_contact_number) != 11:
+                raise serializers.ValidationError({
+                    "emergency_contact_number": "Emergency contact number must be exactly 11 digits."
+                })
+
+            if contact_number and emergency_contact_number == contact_number:
+                raise serializers.ValidationError({
+                    "emergency_contact_number": "Emergency contact number must not be the same as the contact number."
+                })
+
+        return attrs
+
     def validate_address(self, value):
         if not value or len(value.strip()) < 5:
             raise serializers.ValidationError("Address must be at least 5 characters long.")
@@ -33,19 +50,6 @@ class PassengerValidationMixin:
     def validate_contact_number(self, value):
         if len(value) != 11:
             raise serializers.ValidationError("Contact number must be exactly 11 digits.")
-        return value
-
-    def validate_emergency_contact_number(self, value):
-        if len(value) != 11:
-            raise serializers.ValidationError("Emergency contact number must be exactly 11 digits.")
-
-        contact_number = self.initial_data.get("contact_number")
-
-        if contact_number and value == contact_number:
-            raise serializers.ValidationError(
-                "Emergency contact number must not be the same as the contact number."
-            )
-
         return value
     
 

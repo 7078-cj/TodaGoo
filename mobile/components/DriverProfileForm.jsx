@@ -5,6 +5,7 @@ import PickImageComponent from './PickImageComponent'
 export default function DriverProfileForm({ setFormData, onSubmit }) {
 
     const [address, setAddress] = useState("")
+    const [contact_number, setContactNumber] = useState("")
     const [toda_number, setTodaNumber] = useState("")
     const [franchise_permit_number, setFranchisePermitNumber] = useState("")
     const [license_number, setLicenseNumber] = useState("")
@@ -24,7 +25,14 @@ export default function DriverProfileForm({ setFormData, onSubmit }) {
             newErrors.address = "Address must be at least 5 characters"
         }
 
-        // TODA number: (1-11)-DDD
+        // Contact number
+        if (!contact_number) {
+            newErrors.contact_number = "Contact number is required"
+        } else if (!/^\d{11}$/.test(contact_number)) {
+            newErrors.contact_number = "Must be exactly 11 digits"
+        }
+
+        // TODA number
         const todaPattern = /^(?:[1-9]|1[0-1])-\d{3}$/
         if (!toda_number) {
             newErrors.toda_number = "TODA number is required"
@@ -63,6 +71,7 @@ export default function DriverProfileForm({ setFormData, onSubmit }) {
         if (validate()) {
             const driverProfile = {
                 address,
+                contact_number,
                 toda_number,
                 franchise_permit_number,
                 license_number,
@@ -102,6 +111,17 @@ export default function DriverProfileForm({ setFormData, onSubmit }) {
                 placeholder="Enter address"
             />
             {errors.address && <Text className={errorText}>{errors.address}</Text>}
+
+            <Text className={label}>Contact Number</Text>
+            <TextInput
+                className={input}
+                value={contact_number}
+                onChangeText={(text) => setContactNumber(text.replace(/\D/g, ""))}
+                placeholder="Enter contact number"
+                keyboardType="phone-pad"
+                maxLength={11}
+            />
+            {errors.contact_number && <Text className={errorText}>{errors.contact_number}</Text>}
 
             <Text className={label}>TODA Number</Text>
             <TextInput

@@ -31,6 +31,7 @@ class PassengerSerializer(serializers.ModelSerializer):
             'passenger_profile',
         )
         extra_kwargs = {'password': {'write_only': True}}
+        
 
     def create(self, validated_data):
         passenger_data = validated_data.pop('passenger_profile')
