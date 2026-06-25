@@ -1,6 +1,7 @@
 import { loginRequest } from "@/api/auth";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { createContext, ReactNode, useEffect, useState } from "react";
+import { jwtDecode } from "jwt-decode";
 
 const AuthContext = createContext(null);
 
@@ -13,53 +14,76 @@ export function AuthProvider({ children }) {
 
     useEffect(() => {
         const loadAuthData = async () => {
-        try {
-            const storedToken = await AsyncStorage.getItem("token");
-            const storedUser = await AsyncStorage.getItem("user");
+            try {
+                const storedToken = await AsyncStorage.getItem("token");
+                const storedUser = await AsyncStorage.getItem("user");
 
-            if (storedToken) setToken(JSON.parse(storedToken));
-            if (storedUser) setUser(JSON.parse(storedUser));
-        } catch (err) {
-            console.error("Failed to load auth data:", err);
-        } finally {
-            setAuthHydrated(true);
-        }
+                if (storedToken) setToken(JSON.parse(storedToken));
+                if (storedUser) setUser(JSON.parse(storedUser));
+            } catch (err) {
+                console.error("Failed to load auth data:", err);
+                await AsyncStorage.multiRemove(["token", "user"]).catch(() => {});
+            } finally {
+                setAuthHydrated(true);
+            }
         };
 
         loadAuthData();
     }, []);
 
-    const loginUser = async (
-        email,
-        password,
-    ) => {
+    const loginUser = async (email, password) => {
+        let data;
         try {
-        const data = await loginRequest(email, password);
-
-        if (data.token && data.user) {
-            setToken(data.token);
-            setUser(data.user);
-
-            await AsyncStorage.setItem("token", JSON.stringify(data.token));
-            await AsyncStorage.setItem("user", JSON.stringify(data.user));
-        }else{
-            return data
-        }
+            data = await loginRequest(email, password);
         } catch (err) {
-        return err;
+            const message =
+                err?.response?.data?.detail ||
+                err?.response?.data?.message ||
+                (err?.request ? "Network error. Please check your connection." : "Something went wrong. Please try again.");
+            console.error("Login request failed:", err);
+            return { success: false, error: message };
         }
+
+        if (!data?.access) {
+            console.log(data)
+            const message = data?.detail || data?.message || "Invalid email or password.";
+            return { success: false, error: message };
+        }
+
+        let decodedUser;
+        try {
+            decodedUser = jwtDecode(data.access);
+        } catch (err) {
+            console.error("Failed to decode JWT:", err);
+            return { success: false, error: "Received an invalid session token. Please try again." };
+        }
+
+        setToken(data);
+        setUser(decodedUser);
+
+        try {
+            await AsyncStorage.setItem("token", JSON.stringify(data));
+            await AsyncStorage.setItem("user", JSON.stringify(decodedUser));
+        } catch (err) {
+            console.error("Failed to persist auth data:", err);
+        }
+
+        return { success: true };
     };
 
     const logoutUser = async () => {
         setToken(null);
         setUser(null);
-        await AsyncStorage.removeItem("token");
-        await AsyncStorage.removeItem("user");
+        try {
+            await AsyncStorage.multiRemove(["token", "user"]);
+        } catch (err) {
+            console.error("Failed to clear auth data:", err);
+        }
     };
 
     return (
         <AuthContext.Provider value={{ token, user, authHydrated, loginUser, logoutUser }}>
-        {children}
+            {children}
         </AuthContext.Provider>
     );
 }

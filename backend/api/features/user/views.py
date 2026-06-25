@@ -84,8 +84,8 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
         token['username'] = user.username
         token['role'] = (
             'admin' if hasattr(user, 'admin')
-            else 'passenger' if hasattr(user, 'passenger')
-            else 'driver' if hasattr(user, 'driver')
+            else 'passenger' if hasattr(user, 'passenger_profile')
+            else 'driver' if hasattr(user, 'driver_profile')
             else 'unknown'
         )
         if token['role'] == 'admin':

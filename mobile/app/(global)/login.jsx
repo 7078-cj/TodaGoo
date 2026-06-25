@@ -5,7 +5,7 @@ import AuthContext from '@/contexts/AuthContext';
 
 
 export default function login() {
-    const {loginUser} = useContext(AuthContext)
+    const {loginUser, user} = useContext(AuthContext)
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
     const [errors, setErrors] = useState({})
@@ -38,7 +38,13 @@ export default function login() {
     const handleSubmit = async () => {
         if(validate()){
             const res = await loginUser(email, password)
-            console.log(res)
+            if (!res.success){
+                console.log(res)
+            }else{
+                if(user){
+                    user.role == 'passenger' ? router.push('/(protected)/passenger/home') : router.push('/(protected)/driver/home')
+                }
+            }
         }
     }
 
