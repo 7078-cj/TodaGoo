@@ -1,9 +1,11 @@
-import { View, Text, Button } from 'react-native'
-import React, { useState } from 'react'
+import { View, Text, Button, TextInput, TouchableOpacity } from 'react-native'
+import React, { useContext, useState } from 'react'
 import { Href, router } from "expo-router";
+import AuthContext from '@/contexts/AuthContext';
 
 
 export default function login() {
+    const {loginUser} = useContext(AuthContext)
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
     const [errors, setErrors] = useState({})
@@ -33,8 +35,11 @@ export default function login() {
         return Object.keys(newErrors).length === 0
     }
 
-    const handleSubmit = () => {
-        
+    const handleSubmit = async () => {
+        if(validate()){
+            const res = await loginUser(email, password)
+            console.log(res)
+        }
     }
 
     const handlePress = (destination) => {
@@ -45,8 +50,8 @@ export default function login() {
     const label = "text-gray-700 mb-1"
     const input = "border border-gray-300 rounded-lg p-3 mb-2"
     const errorText = "text-red-500 mb-2"
-    const button = "bg-black p-4 rounded-xl mt-3"
-    const buttonText = "text-white text-center font-semibold"
+    const buttonContainerStyle = "bg-black p-4 rounded-xl mt-3"
+    const buttonTextStyle = "text-white text-center font-semibold"
 
     return (
         <View className={container}>

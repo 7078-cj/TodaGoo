@@ -11,6 +11,7 @@ export default function passenger() {
 
     const submit = async (data) => {
         const res = await passengerRegister(data)
+        console.log(res)
     }
 
     return (

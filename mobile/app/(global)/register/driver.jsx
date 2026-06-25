@@ -10,6 +10,7 @@ export default function driver() {
 
     const submit = async (data) => {
         const res = await driverRegister(data)
+        console.log(res)
         
     }
 

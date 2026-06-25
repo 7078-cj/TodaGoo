@@ -29,10 +29,10 @@ export function AuthProvider({ children }) {
         loadAuthData();
     }, []);
 
-    const loginUser = async ({
+    const loginUser = async (
         email,
         password,
-    }) => {
+    ) => {
         try {
         const data = await loginRequest(email, password);
 

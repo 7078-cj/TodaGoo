@@ -1,21 +1,16 @@
-from django.shortcuts import render
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework.response import Response
 from rest_framework.decorators import api_view, throttle_classes
 from .serializers import UserSerializer
-import os
-from django.conf import settings
-from rest_framework.throttling import AnonRateThrottle
 from django.contrib.auth.models import User
 from ...rate_limit.TestThrottle import TestThrottle
 from rest_framework import status
 from .utils import generate_pin, send_reset_email
 from django.core.cache import cache
-from rest_framework import viewsets, permissions
-from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
+from django.contrib.auth import authenticate
 
 User = get_user_model()
 
@@ -38,6 +33,11 @@ class AdminMyTokenObtainPairView(TokenObtainPairView):
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
     username_field = 'email'
 
+    default_error_messages = {
+        'no_account': 'No active account found with the given credentials',
+        'inactive_account': 'User account is disabled',
+    }
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields[self.username_field] = serializers.EmailField()
@@ -46,25 +46,53 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
         email = attrs.get('email')
         password = attrs.get('password')
 
-        try:
-            user = User.objects.get(email=email)
-        except User.DoesNotExist:
-            raise serializers.ValidationError('No active account found with the given credentials')
+        user_obj = User.objects.filter(email__iexact=email).first()
 
-        attrs['username'] = user.get_username()
-        data = super().validate(attrs)
+        if user_obj is None:
+            raise serializers.ValidationError(
+                self.error_messages['no_account'],
+                code='no_active_account',
+            )
 
+        user = authenticate(
+            request=self.context.get('request'),
+            username=user_obj.username,
+            password=password,
+        )
+
+        if user is None:
+            raise serializers.ValidationError(
+                self.error_messages['no_account'],
+                code='no_active_account',
+            )
+
+        if not user.is_active:
+            raise serializers.ValidationError(
+                self.error_messages['inactive_account'],
+                code='inactive_account',
+            )
+
+        data = {}
+        refresh = self.get_token(user)
+        data['refresh'] = str(refresh)
+        data['access'] = str(refresh.access_token)
         return data
 
     @classmethod
     def get_token(cls, user):
         token = super().get_token(user)
         token['username'] = user.username
-        token['role'] = 'admin' if hasattr(user, 'admin') else 'passenger' if hasattr(user, 'passenger') else 'driver' if hasattr(user, 'driver') else 'unknown'
+        token['role'] = (
+            'admin' if hasattr(user, 'admin')
+            else 'passenger' if hasattr(user, 'passenger')
+            else 'driver' if hasattr(user, 'driver')
+            else 'unknown'
+        )
         if token['role'] == 'admin':
             token['department'] = user.admin.department
         return token
-    
+
+
 class MyTokenObtainPairView(TokenObtainPairView):
     serializer_class = MyTokenObtainPairSerializer
 
