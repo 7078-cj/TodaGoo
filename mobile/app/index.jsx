@@ -12,14 +12,11 @@ export default function Index() {
       className="bg-amber-50"
     >
       <Button
-        title="Register as Driver"
-        onPress={() => handlePress("/(global)/register/driver")}
+        title="Login"
+        onPress={() => handlePress("/(global)/login")}
       />
-
-      <Button
-        title="Register as Passenger"
-        onPress={() => handlePress("/(global)/register/passenger")}
-      />
+      
+      
     </View>
   );
 }
