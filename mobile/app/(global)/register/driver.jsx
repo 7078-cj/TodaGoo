@@ -1,16 +1,21 @@
 import { View, Text, ScrollView } from 'react-native'
-import React, { useEffect, useState } from 'react'
+import React, { useContext, useEffect, useState } from 'react'
 import UserRegisterForm from '../../../components/UserRegisterForm'
 import DriverProfileForm from '../../../components/DriverProfileForm'
 import {driverRegister} from '../../../api/driver'
+import AuthContext from '@/contexts/AuthContext'
 
 export default function driver() {
+    const {loginUser} = useContext(AuthContext)
     const [page, setPage] = useState('user')
     const [formData, setFormData] = useState({})
 
     const submit = async (data) => {
         const res = await driverRegister(data)
-        console.log(res)
+        if(res.success){
+            const login = await loginUser(formData.email, formData.password)
+            console.log(login)
+        }
         
     }
 
