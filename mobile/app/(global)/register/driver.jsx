@@ -4,6 +4,7 @@ import UserRegisterForm from '../../../components/UserRegisterForm'
 import DriverProfileForm from '../../../components/DriverProfileForm'
 import {driverRegister} from '../../../api/driver'
 import AuthContext from '@/contexts/AuthContext'
+import {router } from "expo-router";
 
 export default function driver() {
     const {loginUser} = useContext(AuthContext)
@@ -15,6 +16,7 @@ export default function driver() {
         if(res.success){
             const login = await loginUser(formData.email, formData.password)
             console.log(login)
+            res.success && router.push('/(protected)/driver/home')
         }
         
     }

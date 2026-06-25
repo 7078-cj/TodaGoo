@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react'
 import UserRegisterForm from '@/components/UserRegisterForm'
 import PassengerProfileForm from '@/components/PassengerProfileForm'
 import {passengerRegister} from '@/api/passenger'
+import {router } from "expo-router";
 
 export default function passenger() {
     const [page, setPage] = useState('user')
@@ -14,6 +15,7 @@ export default function passenger() {
         if(res.success){
             const login = await loginUser(formData.email, formData.password)
             console.log(login)
+            res.success && router.push('/(protected)/passenger/home')
         }
     }
 
