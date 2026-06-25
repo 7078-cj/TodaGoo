@@ -37,12 +37,12 @@ class PassengerSerializer(serializers.ModelSerializer):
         passenger_data = validated_data.pop('passenger_profile')
         
         if not passenger_data:
-            serializers.ValidationError("passenger_profile is required")
+            raise serializers.ValidationError("passenger_profile is required")
 
         
 
         if passenger_data['emergency_contact_name'] == validated_data['first_name'] or passenger_data['emergency_contact_name'] == validated_data['username']:
-            serializers.ValidationError("you should not be the emergency contact name")
+            raise serializers.ValidationError("you should not be the emergency contact name")
         
 
         user_serializer = UserSerializer(data=validated_data)
