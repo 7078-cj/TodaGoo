@@ -4,6 +4,7 @@ import MapComponent from "@/components/map/MapComponent";
 
 export default function home() {
     const [location, setLocation] = useState(null);
+    // a
 
 return (
     <View>
