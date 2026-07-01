@@ -90,12 +90,12 @@ export const updateToken = async (dispatch) => {
 
     if (response.ok) {
         const newAccess = data.access;
-
-        const user = await getRequest("user/profile/", newAccess);
+        const newRefresh = data.refresh;
+        const user = jwtDecode(newAccess);
 
         const newTokens = {
             access: newAccess,
-            refresh: refresh,
+            refresh: newRefresh,
         };
 
         dispatch(
@@ -106,7 +106,7 @@ export const updateToken = async (dispatch) => {
         );
 
         Cookie.set("access", newAccess, 540000);
-        Cookie.set("refresh", refresh, 604800);
+        Cookie.set("refresh", newRefresh, 604800);
     } else {
         dispatch(logout());
     }
