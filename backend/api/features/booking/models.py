@@ -17,7 +17,7 @@ class Booking(models.Model):
         CANCELLED = "cancelled", "Cancelled"
 
     passenger = models.ForeignKey(Passenger, on_delete=models.CASCADE, related_name="bookings")
-    driver = models.ForeignKey(Driver, on_delete=models.CASCADE, related_name="bookings")
+    driver = models.ForeignKey(Driver, on_delete=models.CASCADE, related_name="bookings", null=True, blank=True)
     start = geomodels.PointField()
     end = geomodels.PointField()
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
