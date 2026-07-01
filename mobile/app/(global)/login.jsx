@@ -42,7 +42,7 @@ export default function login() {
                 console.log(res)
             }else{
                 if(user){
-                    user.role == 'passenger' ? router.push('/(protected)/passenger/home') : router.push('/(protected)/driver/home')
+                    user.role == 'passenger' ? router.replace('/(protected)/passenger/home') : router.replace('/(protected)/driver/home')
                 }
             }
         }

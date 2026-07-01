@@ -14,9 +14,9 @@ export default function RootLayout() {
       const parsedUser = user ? JSON.parse(user) : null;
       if (parsedUser) {
         
-        parsedUser.role == "passenger" ? router.push("(protected)/passenger/home") : router.push("(protected)/driver/home");
+        parsedUser.role == "passenger" ? router.replace("(protected)/passenger/home") : router.replace("(protected)/driver/home");
       }else{
-        router.push("/(global)/login");
+        router.replace("/(global)/login");
       }
     };
 
