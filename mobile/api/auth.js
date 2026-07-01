@@ -13,7 +13,7 @@ export const updateToken = async (setToken, setUser, logoutUser) => {
 
     if (!token) return;
 
-    const response = await postRequest('user/token/refresh', {refresh: JSON.parse(token).refresh}, false);
+    const response = await postRequest('user/token/refresh/', {refresh: JSON.parse(token).refresh}, false);
 
     const data = await response.json();
 
@@ -21,6 +21,8 @@ export const updateToken = async (setToken, setUser, logoutUser) => {
 
         setToken(data);
         setUser(jwtDecode(data.access));
+
+        const user = jwtDecode(data.access);
 
         try {
             await AsyncStorage.setItem("token", JSON.stringify(data));

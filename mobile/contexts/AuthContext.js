@@ -1,4 +1,4 @@
-import { loginRequest } from "@/api/auth";
+import { loginRequest, updateToken } from "@/api/auth";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { createContext, ReactNode, useEffect, useState } from "react";
 import { jwtDecode } from "jwt-decode";
