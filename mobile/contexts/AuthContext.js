@@ -45,7 +45,6 @@ export function AuthProvider({ children }) {
         }
 
         if (!data?.access) {
-            console.log(data)
             const message = data?.detail || data?.message || "Invalid email or password.";
             return { success: false, error: message };
         }
@@ -80,6 +79,14 @@ export function AuthProvider({ children }) {
             console.error("Failed to clear auth data:", err);
         }
     };
+
+    useEffect(() => {
+        if (!token?.access) return;
+        const interval = setInterval(() => {
+            updateToken(setToken, setUser, logoutUser);
+        }, 600000);
+        return () => clearInterval(interval);
+    }, [token]);
 
     return (
         <AuthContext.Provider value={{ token, setToken, user, setUser, authHydrated, loginUser, logoutUser }}>
