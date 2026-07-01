@@ -7,6 +7,7 @@ import { initLocation } from "../../utils/mapUtils/initLocation";
 import { handleSearch } from "../../utils/mapUtils/handleSearch";
 import { fetchOsrmRoutes } from "../../utils/mapUtils/fetchOsrmRoutes";
 import { ReverseGeolocation } from "../../utils/mapUtils/reverseGeolocation";
+import MapControls from "./MapControls";
 
 export default function MapComponent({
     location = null,
@@ -122,6 +123,16 @@ export default function MapComponent({
             editMode={editMode}
             onMapPress={handleMapPress}
             onMarkerPress={(id) => console.log("Marker pressed:", id)}
+        />
+        <MapControls
+            mapRef={mapHandleRef}
+            onLocate={(coords) => {
+                // optional: drop/update a "user" marker at the new location
+                setMarkers((prev) => [
+                    ...prev.filter((m) => m.id !== "me"),
+                    { id: "me", lat: coords.lat, lng: coords.lng, type: "user" },
+                ]);
+            }}
         />
         </View>
     );
