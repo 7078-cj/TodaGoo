@@ -67,7 +67,7 @@ export function AuthProvider({ children }) {
             console.error("Failed to persist auth data:", err);
         }
 
-        return { success: true };
+        return { success: true, user: decodedUser };
     };
 
     const logoutUser = async () => {

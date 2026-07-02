@@ -9,29 +9,43 @@ export async function loginRequest(email, password) {
 }
 
 export const updateToken = async (setToken, setUser, logoutUser) => {
-    const token = await AsyncStorage.getItem("token");
+    const storedToken = await AsyncStorage.getItem("token");
 
-    if (!token) return;
+    if (!storedToken) return;
 
-    const response = await postRequest('user/token/refresh/', {refresh: JSON.parse(token).refresh}, false);
+    const currentToken = JSON.parse(storedToken);
 
-    const data = await response.json();
+    const response = await postRequest(
+        "user/token/refresh/",
+        {
+            refresh: currentToken.refresh,
+        },
+        false
+    );
 
-    if (response.ok) {
 
-        setToken(data);
-        setUser(jwtDecode(data.access));
-
-        const user = jwtDecode(data.access);
-
-        try {
-            await AsyncStorage.setItem("token", JSON.stringify(data));
-            await AsyncStorage.setItem("user", JSON.stringify(user));
-        } catch (err) {
-            console.error("Failed to persist auth data:", err);
-        }
-    }
-    else{
+    if (!response.success) {
         logoutUser();
+        return;
     }
+
+    const newToken = {
+        access: response.data.access,
+        refresh: response.data.refresh
+    };
+
+    setToken(newToken);
+
+    const user = jwtDecode(newToken.access);
+    setUser(user);
+
+    await AsyncStorage.setItem(
+        "token",
+        JSON.stringify(newToken)
+    );
+
+    await AsyncStorage.setItem(
+        "user",
+        JSON.stringify(user)
+    );
 };

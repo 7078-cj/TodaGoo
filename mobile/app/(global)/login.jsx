@@ -41,9 +41,8 @@ export default function login() {
             if (!res.success){
                 console.log(res)
             }else{
-                if(user){
-                    user.role == 'passenger' ? router.replace('/(protected)/passenger/home') : router.replace('/(protected)/driver/home')
-                }
+                res.user.role == 'passenger' ? router.replace('/(protected)/passenger/home') : router.replace('/(protected)/driver/home')
+                
             }
         }
     }
