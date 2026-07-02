@@ -19,7 +19,9 @@ class Booking(models.Model):
     passenger = models.ForeignKey(Passenger, on_delete=models.CASCADE, related_name="bookings")
     driver = models.ForeignKey(Driver, on_delete=models.CASCADE, related_name="bookings", null=True, blank=True)
     start = geomodels.PointField()
+    start_address = models.CharField(max_length=255)
     end = geomodels.PointField()
+    end_address = models.CharField(max_length=255)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
     price = models.IntegerField()
     created_at = models.DateTimeField(auto_now_add=True)
@@ -27,6 +29,7 @@ class Booking(models.Model):
 
 class Stop(models.Model):
     booking = models.ForeignKey(Booking, on_delete=models.CASCADE, related_name="stops")
+    address = models.CharField(max_length=255)
     point = geomodels.PointField()
     order = models.PositiveSmallIntegerField()
 

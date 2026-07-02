@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { View } from "react-native";
 import { LeafletMapView } from "./LeafletMapView";
@@ -9,6 +8,14 @@ import { fetchOsrmRoutes } from "../../utils/mapUtils/fetchOsrmRoutes";
 import { ReverseGeolocation } from "../../utils/mapUtils/reverseGeolocation";
 import MapControls from "./MapControls";
 
+
+function markerTypeFromId(id) {
+    if (id === "start") return "start";
+    if (id === "end") return "end";
+    if (typeof id === "string" && id.startsWith("stop-")) return "stop";
+    return "default";
+}
+
 export default function MapComponent({
     location = null,
     setLocation,
@@ -16,11 +23,10 @@ export default function MapComponent({
     editMode = false,
     userLocation = true,
     user,
-    routeSources = [],
 }) {
     const [searchQuery, setSearchQuery] = useState("");
     const [userLoc, setUserLoc] = useState(null);
-    const [routeCoordinates, setRouteCoordinates] = useState({});
+    const [route, setRoute] = useState([]);
     const mapHandleRef = useRef(null);
     const debounceTimer = useRef(null);
     const lastRequestId = useRef(0);
@@ -42,20 +48,30 @@ export default function MapComponent({
         }
     }, [location]);
 
+    // Derive the route straight from markers — no routeSources needed.
+    // Only fetch when there's more than one marker to connect.
     useEffect(() => {
-        if (!routeSources.length) return;
-        routeSources.forEach((source) => {
-        if (!source.from || !source.to) return;
+        const validMarkers = markers.filter((m) => m.lat != null && m.lng != null);
+
+        if (validMarkers.length < 2) {
+        setRoute([]);
+        return;
+        }
+
+        const coordinates = validMarkers.map((m) => ({ lat: m.lat, lng: m.lng }));
+
         fetchOsrmRoutes({
-            coordinates: [source.from, source.to],
-            setRoutes: (routes) => {
-            if (!routes.length) return;
+        coordinates,
+        setRoutes: (routes) => {
+            if (!routes.length) {
+            setRoute([]);
+            return;
+            }
             const converted = routes[0].coordinates.map(([lng, lat]) => ({ lat, lng }));
-            setRouteCoordinates((prev) => ({ ...prev, [source.id]: converted }));
-            },
+            setRoute(converted);
+        },
         });
-        });
-    }, [routeSources]);
+    }, [markers]);
 
     const center = location
         ? { lat: location.lat, lng: location.lng }
@@ -63,20 +79,25 @@ export default function MapComponent({
         ? { lat: userLoc.lat, lng: userLoc.lng }
         : { lat: 14.949553352698302, lng: 120.75886839058785 };
 
-    const flattenedRoute = Object.values(routeCoordinates)[0] || [];
-
     const mapMarkers = [
         ...markers
-        .filter((m) => m.latitude != null && m.longitude != null)
+        .filter((m) => m.lat != null && m.lng != null)
         .map((m) => ({
             id: m.id,
-            lat: m.latitude,
-            lng: m.longitude,
-            label: m.name,
-            type: "default",
+            lat: m.lat,
+            lng: m.lng,
+            // book.js passes address text as `full`, not `name` — fall
+            // back to it so labels actually show up too.
+            label: m.name ?? m.full,
+            // Respect an explicit type if one was ever passed in,
+            // otherwise recover it from the id ("start"/"end"/"stop-N").
+            type: m.type ?? markerTypeFromId(m.id),
         })),
         ...(location?.lat != null && location?.lng != null
         ? [{ id: "current-location", lat: location.lat, lng: location.lng, type: "user" }]
+        : []),
+        ...(userLoc?.lat != null && userLoc?.lng != null
+        ? [{ id: "me", lat: userLoc.lat, lng: userLoc.lng, type: "user" }]
         : []),
     ];
 
@@ -119,20 +140,14 @@ export default function MapComponent({
             center={center}
             zoom={16}
             markers={mapMarkers}
-            route={flattenedRoute}
+            route={route}
             editMode={editMode}
             onMapPress={handleMapPress}
             onMarkerPress={(id) => console.log("Marker pressed:", id)}
         />
         <MapControls
             mapRef={mapHandleRef}
-            onLocate={(coords) => {
-                // optional: drop/update a "user" marker at the new location
-                setMarkers((prev) => [
-                    ...prev.filter((m) => m.id !== "me"),
-                    { id: "me", lat: coords.lat, lng: coords.lng, type: "user" },
-                ]);
-            }}
+            onLocate={(coords) => setUserLoc(coords)}
         />
         </View>
     );
