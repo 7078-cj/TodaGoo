@@ -53,6 +53,7 @@ class BookingSerializer(serializers.ModelSerializer):
             "id",
             "passenger",
             "driver",
+            "price",
             "status",
             "created_at",
             "updated_at",
