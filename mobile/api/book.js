@@ -6,11 +6,11 @@ export const bookRide = async (body) =>{
 }
 
 export const getBooking = async (bookingId) =>{
-    const res = await getRequest(`booking/${bookingId}/`, false)
+    const res = await getRequest(`booking/${bookingId}/`, true)
     return res.data;
 }
 
 export const updateBooking = async (bookingId, body) =>{
-    const res = await putRequest(`booking/${bookingId}/`, body, false)
+    const res = await putRequest(`booking/${bookingId}/`, body, true)
     return res.data;
 }

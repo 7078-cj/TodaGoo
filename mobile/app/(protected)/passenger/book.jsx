@@ -150,16 +150,15 @@ export default function book() {
         }
 
         const formData = {
-            start_location: startLocation,
+            start: startLocation,
             start_address: startAddress,
-            end_location: endLocation,
+            end: endLocation,
             end_address: endAddress,
             stops: stops.map((stop, index) => ({
                 location: stop.location,
                 address: stop.address,
                 order: index + 1,
             })),
-            price: 123,
         };
         
         console.log("Booking data:", formData);
