@@ -164,6 +164,7 @@ export default function book() {
 
         try {
             const response = await bookRide(formData);
+            console.log("Booking response:", response);
             setBookingStatus("Booking successful!");
         }
         catch (error) {

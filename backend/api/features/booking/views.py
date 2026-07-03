@@ -30,6 +30,7 @@ class BookingView(APIView):
 
     def post(self, request):
         passenger = get_passenger(request.user)
+        print("Passenger:", passenger)
         if not passenger:
             return Response({"error": "User is not a passenger"}, status=400)
         
