@@ -1,6 +1,6 @@
 from django.core.cache import cache
 from requests import Response
-from rest_framework.decorators import api_view, throttle_classes
+from rest_framework.decorators import api_view, throttle_classes, permission_classes
 from rest_framework import viewsets, permissions
 from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
 from .serializers import BookingSerializer, StopSerializer, DriverQueueSerializer
@@ -62,3 +62,11 @@ class BookingDetailView(APIView):
 
         booking.delete()
         return Response(status=204)
+    
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def user_bookings(request):
+    user = request.user
+    bookings = Booking.objects.filter(passenger=user)
+    serializer = BookingSerializer(bookings, many=True)
+    return Response(serializer.data)
