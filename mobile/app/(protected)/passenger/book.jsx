@@ -2,6 +2,7 @@ import { View, Text, TouchableOpacity } from 'react-native'
 import React, { useState } from 'react'
 import MapComponent from "@/components/map/MapComponent";
 import SetLocationMapModal from '@/components/SetLocationMapModal';
+import {bookRide} from '../../../api/book'
 
 export default function book() {
     const [modalVisible, setModalVisible] = useState(false);
@@ -141,7 +142,39 @@ export default function book() {
         applyLocation(location, address);
         setModalVisible(false);
     };
-    
+
+    const handleBooking = async () => {
+        if (!startLocation || !endLocation) {
+            alert("Please select both start and end locations.");
+            return;
+        }
+
+        const formData = {
+            start_location: startLocation,
+            start_address: startAddress,
+            end_location: endLocation,
+            end_address: endAddress,
+            stops: stops.map((stop, index) => ({
+                location: stop.location,
+                address: stop.address,
+                order: index + 1,
+            })),
+            price: 123,
+        };
+        
+        console.log("Booking data:", formData);
+
+        try {
+            const response = await bookRide(formData);
+            console.log("Booking successful:", response);
+            setBookingStatus("Booking successful!");
+        }
+        catch (error) {
+            console.error("Booking failed:", error);
+            setBookingStatus("Booking failed. Please try again.");
+        }
+
+    }
 
 return (
         <View className="flex-1 p-5 bg-white">
@@ -207,6 +240,13 @@ return (
                 onLocationChange={handleLocationChange}
                 markers={markers}
             />
+
+            <TouchableOpacity className="bg-black p-4 rounded-xl mt-5" onPress={handleBooking}>
+                <Text className="text-white text-center font-semibold">
+                    {bookingStatus || "Book Ride"}
+                </Text>
+
+            </TouchableOpacity>
 
         </View>
     )
