@@ -4,9 +4,9 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
 from django.db import transaction
 
-from ..api.features.booking.models import Booking
-from ..api.features.booking.utils import assign_driver_sync
-from ..api.features.booking.models import DriverQueue
+from api.features.booking.models import Booking
+from api.features.booking.utils import assign_driver_sync
+from api.features.booking.models import DriverQueue
 from django.contrib.gis.geos import Point
 import asyncio
 
