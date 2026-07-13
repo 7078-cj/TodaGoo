@@ -1,0 +1,26 @@
+import json
+from channels.generic.websocket import AsyncWebsocketConsumer
+from channels.db import database_sync_to_async
+
+
+class BookingConsumer(AsyncWebsocketConsumer):
+    async def connect(self):
+        self.id = self.scope['url_route']['kwargs']['booking_id']
+        self.group_name = f'booking_{self.id}'
+
+        user = self.scope.get('user')
+        if not user or not user.is_authenticated or str(user.id) != str(self.id):
+            await self.close(code=4003)
+            return
+
+        await self.channel_layer.group_add(self.group_name, self.channel_name)
+        await self.accept()
+
+    async def disconnect(self, close_code):
+        await self.channel_layer.group_discard(self.group_name, self.channel_name)
+
+    # async def booking_accepted(self, event):
+    #     await self.send(text_data=json.dumps({
+    #         "type":"booking_accepted",
+    #         "data": event["data"]
+    #     }))

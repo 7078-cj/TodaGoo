@@ -6,6 +6,7 @@ from ..user.models import Passenger, Driver
 class DriverQueue(models.Model):
     driver = models.ForeignKey(Driver, on_delete=models.CASCADE, related_name="queue")
     location = geomodels.PointField()
+    created_at = models.DateTimeField(auto_now_add=True)
 
 
 class Booking(models.Model):
