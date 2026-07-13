@@ -16,4 +16,5 @@ class Toda(models.Model):
     name = models.CharField(max_length=100)
     area = geomodels.PolygonField()
     color = models.CharField(max_length=7)  
+    prefix = models.CharField(max_length=2, default=00)
     created_at = models.DateTimeField(auto_now_add=True)

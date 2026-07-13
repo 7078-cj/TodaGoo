@@ -12,6 +12,8 @@ from .serializers import  TodaReadSerializer, TodaWriteSerializer, RegisterWrite
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 import pandas as pd
 from django.db import transaction
+from django.template.context_processors import request
+import re
 
 
 class TodaStationListCreateAPIView(ListCreateAPIView):
@@ -69,13 +71,32 @@ class TODAListCreateAPIView(ListCreateAPIView):
 
         return self._handle_single_create(request)
 
+
+
     def _handle_single_create(self, request):
         data = request.data.copy()
-        toda_id = data.get("toda")
+        toda_number = data.get("toda_number", "").strip()
 
-        toda = Toda.objects.filter(id=toda_id).first()
+        if len(toda_number) < 2:
+            return Response(
+                {"error": "Invalid TODA number."},
+                status=400,
+            )
+
+        prefix = toda_number[:2]
+
+        if not re.fullmatch(r"\d{2}", prefix):
+            return Response(
+                {"error": "TODA prefix must be numeric."},
+                status=400,
+            )
+
+        toda = Toda.objects.filter(prefix=prefix).first()
         if not toda:
-            return Response({"error": "Invalid TODA"}, status=400)
+            return Response(
+                {"error": "Invalid TODA prefix."},
+                status=400,
+            )
 
         serializer = RegisteredReadTodaSerializer(data=data)
         serializer.is_valid(raise_exception=True)
@@ -100,15 +121,19 @@ class TODAListCreateAPIView(ListCreateAPIView):
                 status=400
             )
 
+        prefixes = df["toda_number"].str[:2].unique()
+
         toda_cache = {
-            t.name: t for t in Toda.objects.filter(name__in=df["toda_name"].unique())
+            t.prefix: t
+            for t in Toda.objects.filter(prefix__in=prefixes)
         }
 
         objects = []
 
         with transaction.atomic():
             for _, row in df.iterrows():
-                toda = toda_cache.get(row["toda_name"])
+                prefix = str(row["toda_number"])[:2]
+                toda = toda_cache.get(prefix)
 
                 objects.append(
                     RegisteredToda(
@@ -116,7 +141,7 @@ class TODAListCreateAPIView(ListCreateAPIView):
                         vehicle_plate=row["vehicle_plate"],
                         driver_name=row["driver_name"],
                         registration_date=row["registration_date"],
-                        toda=toda
+                        toda=toda,
                     )
                 )
 
@@ -131,3 +156,35 @@ class TODARetrieveUpdateDestroyAPIView(RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAuthenticated, TodaAdminPermission]
     queryset = RegisteredToda.objects.all()
     serializer_class = RegisterWriteTodaSerializer
+
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        data = request.data.copy()
+
+        toda_number = data.get("toda_number", "").strip()
+
+        if len(toda_number) < 2:
+            return Response(
+                {"error": "Invalid TODA number."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        prefix = toda_number[:2]
+
+        toda = Toda.objects.filter(prefix=prefix).first()
+        if not toda:
+            return Response(
+                {"error": "Invalid TODA prefix."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        serializer = self.get_serializer(
+            instance,
+            data=data,
+            partial=kwargs.get("partial", False),
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save(toda=toda)
+
+        return Response(serializer.data)
+        

@@ -36,6 +36,7 @@ function AddBoundariesModal({ fetchTodas, open, setOpen, toda }) {
     const [color, setColor] = useState("blue");
     const [area, setArea] = useState();
     const [loading, setLoading] = useState(false);
+    const [prefix, setPrefix] = useState();
 
     const selectedColor = TODA_COLORS[color]?.hex ?? toda?.color
 
@@ -50,6 +51,7 @@ function AddBoundariesModal({ fetchTodas, open, setOpen, toda }) {
             const last = data[data.length - 1];
             const isClosed = first[0] === last[0] && first[1] === last[1];
             setArea(isClosed ? data.slice(0, -1) : data);
+            setPrefix(toda.prefix)
         } else {
             setName("");
             setColor("blue");
@@ -67,9 +69,9 @@ function AddBoundariesModal({ fetchTodas, open, setOpen, toda }) {
             setLoading(true);
 
             if(toda){
-                await updateTODA({ name, color: selectedColor, area }, toda.id);
+                await updateTODA({ name, color: selectedColor, area, prefix }, toda.id);
             } else {
-                await createTODA({ name, color: selectedColor, area });
+                await createTODA({ name, color: selectedColor, area, prefix });
             }
 
             setName("");
@@ -111,6 +113,8 @@ function AddBoundariesModal({ fetchTodas, open, setOpen, toda }) {
                     TODA_COLORS={TODA_COLORS}
                     handleSubmit={handleSubmit}
                     loading={loading}   
+                    prefix={prefix}
+                    setPrefix={setPrefix}
                 />
             </DialogContent>
         </Dialog>

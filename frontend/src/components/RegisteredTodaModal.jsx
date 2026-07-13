@@ -4,13 +4,11 @@ import {
     Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription
 } from '@/components/ui/dialog'
 import { createRegisteredTODA, updateRegisteredTODA } from '../api/registered_toda';
-import { getTODAList } from '../api/toda';
 
-const EMPTY = { toda_number: '', driver_name: '', vehicle_plate: '', registration_date: '', toda: '' };
+const EMPTY = { toda_number: '', driver_name: '', vehicle_plate: '', registration_date: '' };
 
 export default function RegisteredTodaModal({ open, setOpen, selected, fetchList }) {
     const [form, setForm] = useState(EMPTY);
-    const [todaOptions, setTodaOptions] = useState([]);
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
@@ -20,22 +18,9 @@ export default function RegisteredTodaModal({ open, setOpen, selected, fetchList
                 driver_name: selected.driver_name ?? '',
                 vehicle_plate: selected.vehicle_plate ?? '',
                 registration_date: selected.registration_date ?? '',
-                toda: selected.toda ?? '',
             } : EMPTY);
         }
     }, [open, selected]);
-
-    useEffect(() => {
-        const fetchTodas = async () => {
-            try {
-                const res = await getTODAList()
-                setTodaOptions(res);
-            } catch (err) {
-                console.error(err);
-            }
-        };
-        fetchTodas();
-    }, []);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -92,23 +77,6 @@ export default function RegisteredTodaModal({ open, setOpen, selected, fetchList
                             />
                         </div>
                     ))}
-
-                    {/* TODA Station select */}
-                    <div className="flex flex-col gap-1">
-                        <label className="text-xs font-medium text-muted-foreground">TODA Station</label>
-                        <select
-                            name="toda"
-                            value={form.toda}
-                            onChange={handleChange}
-                            disabled={loading}
-                            className="px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
-                        >
-                            <option value="">— Select station —</option>
-                            {todaOptions?.map((t) => (
-                                <option key={t.id} value={t.id}>{t.name}</option>
-                            ))}
-                        </select>
-                    </div>
 
                     <button
                         onClick={handleSubmit}
