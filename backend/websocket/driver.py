@@ -94,6 +94,15 @@ class DriverConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def accept_booking(self, booking_id):
+
+        DriverQueue.objects.filter(driver=driver).exists()
+
+        if DriverQueue.objects.filter(driver=driver).exists():
+            return {
+                "success": False,
+                "message": "Your booking offer has expired."
+            }
+        
         with transaction.atomic():
             try:
                 booking = Booking.objects.select_for_update().get(id=booking_id)
