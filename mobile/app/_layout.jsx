@@ -1,21 +1,34 @@
-import { Stack } from "expo-router";
+import { Stack, router } from "expo-router";
 import "../global.css";
-import { AuthProvider } from "../contexts/AuthContext"
-import { Href, router } from "expo-router";
+import { AuthProvider, useAuth } from "../contexts/AuthContext";
 import { useEffect } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { updateToken } from "@/api/auth";
 
-
-export default function RootLayout() {
+function RootNavigator() {
+  const { setToken, setUser, logoutUser } = useAuth();
 
   useEffect(() => {
     const checkAuth = async () => {
+
       const user = await AsyncStorage.getItem("user");
+
+      if (!user) {
+          router.replace("/(global)/login");
+          return;
+      }
+
+      await updateToken(setToken, setUser, logoutUser);
+
       const parsedUser = user ? JSON.parse(user) : null;
+
       if (parsedUser) {
-        
-        parsedUser.role == "passenger" ? router.replace("(protected)/passenger/home") : router.replace("(protected)/driver/home");
-      }else{
+        if (parsedUser.role === "passenger") {
+          router.replace("/(protected)/passenger/home");
+        } else {
+          router.replace("/(protected)/driver/home");
+        }
+      } else {
         router.replace("/(global)/login");
       }
     };
@@ -23,9 +36,13 @@ export default function RootLayout() {
     checkAuth();
   }, []);
 
+  return <Stack screenOptions={{ headerShown: false }} />;
+}
+
+export default function RootLayout() {
   return (
     <AuthProvider>
-      <Stack />
+      <RootNavigator />
     </AuthProvider>
-    )
+  );
 }
