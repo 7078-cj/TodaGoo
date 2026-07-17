@@ -8,7 +8,7 @@ const PassengerContext = createContext(null);
 
 export default PassengerContext;
 
-export function PassengerProvider({ children }) {
+export async function PassengerProvider({ children }) {
     const user = await AsyncStorage.getItem("user");
 
     passengerListener(user.id, () => console.log('refresh'))

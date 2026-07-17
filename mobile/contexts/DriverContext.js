@@ -8,7 +8,7 @@ const DriverContext = createContext(null);
 
 export default DriverContext;
 
-export function DriverProvider({ children }) {
+export async function DriverProvider({ children }) {
     const user = await AsyncStorage.getItem("user");
 
     driverListener(user.id, () => console.log("refresh"))

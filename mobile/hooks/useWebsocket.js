@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react"
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 
-export default function useWebSocket(url, options = {}) {
+export default async function useWebSocket(url, options = {}) {
     const BASE_URL = process.env.EXPO_PUBLIC_WS_URL || "ws://localhost:8000"
     const fullUrl = url ? `${BASE_URL}${url}` : ""
     const socketRef = useRef(null)
