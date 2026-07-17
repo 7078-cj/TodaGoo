@@ -1,19 +1,30 @@
-
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import React, { createContext, ReactNode, useEffect, useState } from "react";
-import { jwtDecode } from "jwt-decode";
-import passengerListener from "../listeners/passengerListener"
+import React, { createContext, useEffect, useState } from "react";
+import passengerListener from "../listeners/passengerListener";
+import { store } from "expo-router/build/global-state/router-store";
 
 const PassengerContext = createContext(null);
 
 export default PassengerContext;
 
-export async function PassengerProvider({ children }) {
-    const user = await AsyncStorage.getItem("user");
+export function PassengerProvider({ children }) {
+    const [userId, setUserId] = useState(null);
 
-    passengerListener(user.id, () => console.log('refresh'))
+    useEffect(() => {
+        (async () => {
+            const stored = await AsyncStorage.getItem("user");
+            if (stored) {
+                const user = JSON.parse(stored);
+                setUserId(user.user_id);
+            }
+        })();
+    }, []);
+    
+    
+    const ws = passengerListener(userId, () => console.log("refresh"));
+
     return (
-        <PassengerContext.Provider value={{ }}>
+        <PassengerContext.Provider value={{  }}>
             {children}
         </PassengerContext.Provider>
     );

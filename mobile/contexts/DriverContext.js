@@ -8,10 +8,25 @@ const DriverContext = createContext(null);
 
 export default DriverContext;
 
-export async function DriverProvider({ children }) {
-    const user = await AsyncStorage.getItem("user");
+export function DriverProvider({ children }) {
+    const [userId, setUserId] = useState(null);
 
-    driverListener(user.id, () => console.log("refresh"))
+    useEffect(() => {
+        (async () => {
+            try {
+                const stored = await AsyncStorage.getItem("user");
+                if (stored) {
+                    const user = JSON.parse(stored);
+                    setUserId(user.user_id);
+                }
+            } catch (err) {
+                console.error("Failed to load user:", err);
+            }
+        })();
+    }, []);
+
+
+    const ws = driverListener(userId, () => console.log("refresh"))
     return (
         <DriverContext.Provider value={{ }}>
             {children}

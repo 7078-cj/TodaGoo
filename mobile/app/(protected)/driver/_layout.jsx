@@ -6,6 +6,7 @@ import { DriverProvider } from "../../../contexts/DriverContext";
 
 export default function DriverLayout() {
 
+    
     return <>
         <DriverProvider>
             <Stack screenOptions={{ headerShown: false }} />
