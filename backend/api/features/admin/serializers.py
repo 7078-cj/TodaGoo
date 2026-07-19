@@ -67,3 +67,4 @@ class RegisterWriteTodaSerializer(serializers.ModelSerializer):
     class Meta:
         model = RegisteredToda
         fields = '__all__'
+        read_only_fields = ['toda', 'toda_name']

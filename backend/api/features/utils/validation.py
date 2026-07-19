@@ -80,18 +80,18 @@ class DriverValidationMixin:
 
     def validate_toda_number(self, value):
         """
-        Format: (1-11)-DDD
+        Format: 01-DDD to 11-DDD
         Examples:
-        1-123
+        01-123
         10-400
         11-999
         """
 
-        pattern = r'^(?:[1-9]|1[0-1])-\d{3}$'
+        pattern = r'^(0[1-9]|1[01])-\d{3}$'
 
-        if not re.match(pattern, value):
+        if not re.fullmatch(pattern, value):
             raise serializers.ValidationError(
-                "Invalid TODA number format. Expected (1-11)-XXX (e.g., 10-400)."
+                "Format must be 01-XXX to 11-XXX (e.g., 01-123 or 10-400)"
             )
 
         return value

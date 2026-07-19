@@ -24,3 +24,9 @@ class PassengerConsumer(AsyncWebsocketConsumer):
             "type":"booking_accepted",
             "data": event["data"]
         }))
+    
+    async def booking_unavailable(self, event):
+        await self.send(text_data=json.dumps({
+            "type": "booking_unavailable",
+            "data": event["data"]
+        }))

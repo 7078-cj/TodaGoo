@@ -13,10 +13,8 @@ export default function passenger() {
 
     const submit = async (data) => {
         const res = await passengerRegister(data)
-        console.log(res)
         if(res.success){
             const login = await loginUser(formData.email, formData.password)
-            console.log(login)
             res.success && router.push('/(protected)/passenger/home')
         }
     }

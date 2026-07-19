@@ -18,23 +18,48 @@ class DriverListCreateView(ListCreateAPIView):
     serializer_class = DriverSerializer
 
     def get_permissions(self):
-        if self.request.method == 'POST':
+        if self.request.method == "POST":
             return [AllowAny()]
         return [IsDriverOwnerOrAdmin(), IsAuthenticated()]
 
     def create(self, request, *args, **kwargs):
+        print("\n========== DRIVER REGISTRATION ==========")
+
+        print("Raw request.data:")
+        print(request.data)
+
         data = reconstruct_nested(request.data, prefix="driver_profile.")
+
+        print("\nReconstructed data:")
+        print(data)
 
         license_image = request.data.get("driver_profile.license_id")
         first_name = data.get("first_name")
         last_name = data.get("last_name")
         license_number = data.get("driver_profile", {}).get("license_number")
 
+        print("\nExtracted fields:")
+        print(f"First Name     : {first_name}")
+        print(f"Last Name      : {last_name}")
+        print(f"License Number : {license_number}")
+        print(f"License Image  : {license_image}")
+
         if license_image:
+            print("\nRunning OCR verification...")
+
             ocr_result = verify_license_details(
-                license_image, first_name, last_name, license_number
+                license_image,
+                first_name,
+                last_name,
+                license_number,
             )
+
+            print("OCR Result:")
+            print(ocr_result)
+
             if not ocr_result["match"]:
+                print("❌ OCR verification failed.")
+
                 return Response(
                     {
                         "detail": "License details could not be verified against the uploaded document.",
@@ -42,19 +67,36 @@ class DriverListCreateView(ListCreateAPIView):
                     },
                     status=400,
                 )
+
+            print("✅ OCR verification passed.")
+
         else:
+            print("❌ No license image uploaded.")
+
             return Response(
-                    {
-                        "detail": "License details could not be verified against the uploaded document.",
-                    },
-                    status=400,
-                )
+                {
+                    "detail": "License details could not be verified against the uploaded document.",
+                },
+                status=400,
+            )
 
         serializer = self.get_serializer(data=data)
+
+        print("\nValidating serializer...")
+
         if not serializer.is_valid():
+            print("❌ Serializer errors:")
+            print(serializer.errors)
+
             return Response(serializer.errors, status=400)
 
+        print("✅ Serializer valid.")
+
         self.perform_create(serializer)
+
+        print("✅ Driver successfully created.")
+        print("=========================================\n")
+
         return Response(serializer.data, status=201)
 
 

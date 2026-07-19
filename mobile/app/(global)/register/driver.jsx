@@ -15,7 +15,6 @@ export default function driver() {
         const res = await driverRegister(data)
         if(res.success){
             const login = await loginUser(formData.email, formData.password)
-            console.log(login)
             res.success && router.push('/(protected)/driver/home')
         }
         

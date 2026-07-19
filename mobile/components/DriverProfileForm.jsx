@@ -33,12 +33,13 @@ export default function DriverProfileForm({ setFormData, onSubmit }) {
         }
 
         // TODA number
-        const todaPattern = /^(?:[1-9]|1[0-1])-\d{3}$/;
+        const todaPattern = /^(0[1-9]|1[01])-\d{3}$/;
+
         if (!toda_number) {
             newErrors.toda_number = "TODA number is required";
         } else if (!todaPattern.test(toda_number)) {
             newErrors.toda_number =
-                "Format must be (1-11)-XXX (e.g., 10-400)";
+                "Format must be 01-XXX to 11-XXX (e.g., 01-123 or 10-400)";
         }
 
         // Franchise permit

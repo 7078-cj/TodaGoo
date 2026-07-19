@@ -69,7 +69,7 @@ def assign_driver_sync(booking_id, exclude_driver_ids=None):
             nearest.delete()
             
         else:
-            user_id = booking.user_id
+            user_id = booking.passenger.user.id
             booking_id = booking.id
 
             booking.delete()
