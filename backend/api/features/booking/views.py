@@ -116,3 +116,60 @@ def user_bookings(request):
     bookings = Booking.objects.filter(passenger=passenger)
     serializer = BookingSerializer(bookings, many=True)
     return Response(serializer.data)
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def driver_queue(request):
+    driver = getattr(request.user, "driver_profile", None)
+    if driver is None:
+        return Response({"error": "no driver profile for this user"}, status=403)
+
+    lat = request.data.get("lat")
+    lng = request.data.get("lng")
+
+    if lat is None or lng is None:
+        return Response({"error": "lat and lng are required"}, status=400)
+
+    try:
+        lat = float(lat)
+        lng = float(lng)
+    except (TypeError, ValueError):
+        return Response({"error": "lat and lng must be numeric"}, status=400)
+
+    if not (-90 <= lat <= 90) or not (-180 <= lng <= 180):
+        return Response({"error": "lat/lng out of range"}, status=400)
+
+    location = Point(lng, lat)
+
+    exists = DriverQueue.objects.filter(driver=driver).exists()
+
+    if not exists:
+        queue_entry, created = DriverQueue.objects.create(
+            driver=driver,
+            defaults={"location": location},
+        )
+    else:
+        return Response({"error": "user already in queue"}, status=400)
+
+    return Response(
+        {
+            "driver_id": driver.id,
+            "location": {"lat": lat, "lng": lng},
+            "created": created,
+        },
+        status=200,
+    )
+
+@api_view(['DELETE'])
+@permission_classes([permissions.IsAuthenticated])
+def driver_dequeue(request):
+    driver = getattr(request.user, "driver_profile", None)
+    if driver is None:
+        return Response({"error": "no driver profile for this user"}, status=403)
+
+    deleted_count, _ = DriverQueue.objects.filter(driver=driver).delete()
+
+    if deleted_count == 0:
+        return Response({"error": "driver was not in queue"}, status=404)
+
+    return Response(status=204)

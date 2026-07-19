@@ -4,7 +4,7 @@ import React from 'react'
 export default function home() {
     return (
         <View>
-        <Text>passenger home</Text>
+        <Text>driver home</Text>
         </View>
     )
 }
