@@ -51,17 +51,22 @@ export default function RegisteredTodaList() {
 
     useEffect(() => {
         const handler = setTimeout(() => {
-            setPage(1);
-            fetchList(1);
+            if (page !== 1) {
+                setPage(1);
+            } else {
+                fetchList(1);
+            }
         }, 500);
 
         return () => clearTimeout(handler);
     }, [search]);
 
     useEffect(() => {
-        fetchList(page);
+        if (page !== 1) {
+            fetchList(page);
+        }
     }, [page]);
-
+    
     const handleEdit = (item) => {
         setSelected(item);
         setModalOpen(true);
