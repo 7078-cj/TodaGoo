@@ -3,6 +3,7 @@ import React, { useState, useEffect, useCallback } from 'react'
 import * as Location from 'expo-location'
 import ButtonComponent from '@/components/ButtonComponent'
 import { driverQueue, driverQueueStatus } from '@/api/driver'
+import {getLocation} from "@/utils/location"
 
 export default function home() {
     const [location, setLocation] = useState(null)
@@ -27,20 +28,6 @@ export default function home() {
     useEffect(() => {
         checkStatus()
     }, [checkStatus])
-
-    const getLocation = async () => {
-        const { status } = await Location.requestForegroundPermissionsAsync()
-        if (status !== 'granted') {
-            setErrorMsg('Permission to access location was denied')
-            return null
-        }
-
-        const loc = await Location.getCurrentPositionAsync({
-            accuracy: Location.Accuracy.High,
-        })
-        setLocation(loc)
-        return loc
-    }
 
     const driverReady = async () => {
         setErrorMsg(null)
