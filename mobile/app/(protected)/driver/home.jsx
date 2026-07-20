@@ -13,9 +13,9 @@ export default function home() {
     const checkStatus = useCallback(async () => {
         try {
             const res = await driverQueueStatus()
-            setIsReady(res.data.ready)
-            if (res.data.ready && res.data.location) {
-                setLocation({ coords: { latitude: res.data.location.lat, longitude: res.data.location.lng } })
+            setIsReady(res.ready)
+            if (res.ready && res.location) {
+                setLocation({ coords: { latitude: res.location.lat, longitude: res.location.lng } })
             }
         } catch (err) {
             setErrorMsg('Failed to fetch driver status')

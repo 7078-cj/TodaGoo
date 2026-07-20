@@ -120,16 +120,20 @@ def user_bookings(request):
 @api_view(['GET'])
 @permission_classes([permissions.IsAuthenticated])
 def driver_queue_status(request):
-    driver = request.user.driver_profile
-    if driver is None:
-        return Response({"ready": False}, status=200)
-    print(driver)
+    print(f"[driver_queue_status] request.user={request.user} (id={getattr(request.user, 'id', None)})")
 
-    entry = request.user.driver_profile.queue.first()
-    print(entry)
+    driver = getattr(request.user, "driver_profile", None)
+    print(f"[driver_queue_status] driver_profile={driver}")
+
+    if driver is None:
+        print("[driver_queue_status] no driver_profile found, returning not ready")
+        return Response({"ready": False}, status=200)
+
+    entry = driver.queue.first()
+    print(f"[driver_queue_status] driver_id={driver.id} queue entry={entry}")
 
     if entry is None:
-        print("not ready",entry)
+        print(f"[driver_queue_status] driver_id={driver.id} has no queue entry, not ready")
         return Response(
             {
                 "ready": False,
@@ -138,6 +142,7 @@ def driver_queue_status(request):
             status=200,
         )
 
+    print(f"[driver_queue_status] driver_id={driver.id} IS ready, location=({entry.location.y}, {entry.location.x})")
     return Response(
         {
             "ready": True,
