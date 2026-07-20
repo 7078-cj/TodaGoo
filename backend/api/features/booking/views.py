@@ -117,6 +117,36 @@ def user_bookings(request):
     serializer = BookingSerializer(bookings, many=True)
     return Response(serializer.data)
 
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def driver_queue_status(request):
+    driver = request.user.driver_profile
+    if driver is None:
+        return Response({"ready": False}, status=200)
+    print(driver)
+
+    entry = request.user.driver_profile.queue.first()
+    print(entry)
+
+    if entry is None:
+        print("not ready",entry)
+        return Response(
+            {
+                "ready": False,
+                "driver_id": driver.id,
+            },
+            status=200,
+        )
+
+    return Response(
+        {
+            "ready": True,
+            "driver_id": driver.id,
+            "location": {"lat": entry.location.y, "lng": entry.location.x},
+        },
+        status=200,
+    )
+
 @api_view(['POST'])
 @permission_classes([permissions.IsAuthenticated])
 def driver_queue(request):
@@ -141,12 +171,12 @@ def driver_queue(request):
 
     location = Point(lng, lat)
 
-    exists = DriverQueue.objects.filter(driver=driver).exists()
+    exists = request.user.driver_profile.queue.exists()
 
     if not exists:
-        queue_entry, created = DriverQueue.objects.create(
+        DriverQueue.objects.create(
             driver=driver,
-            defaults={"location": location},
+            location=location
         )
     else:
         return Response({"error": "user already in queue"}, status=400)
@@ -155,7 +185,6 @@ def driver_queue(request):
         {
             "driver_id": driver.id,
             "location": {"lat": lat, "lng": lng},
-            "created": created,
         },
         status=200,
     )
@@ -164,6 +193,7 @@ def driver_queue(request):
 @permission_classes([permissions.IsAuthenticated])
 def driver_dequeue(request):
     driver = getattr(request.user, "driver_profile", None)
+    print(driver)
     if driver is None:
         return Response({"error": "no driver profile for this user"}, status=403)
 

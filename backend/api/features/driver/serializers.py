@@ -81,7 +81,7 @@ class DriverSerializer(serializers.ModelSerializer):
         driver_serializer.is_valid(raise_exception=True)
         driver_serializer.save(
             user=user,
-            status='PENDING',
+            status='ACTIVE',
             toda_station=toda_station
         )
 

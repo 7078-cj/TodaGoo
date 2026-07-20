@@ -1,16 +1,16 @@
-
 from django.db import transaction
 from django.contrib.gis.db.models.functions import Distance
+from django.core.cache import cache
+
 from .models import Booking, DriverQueue
-from django.contrib.gis.db.models.functions import Distance
 from ..admin.models import Toda
 from ...broadcast import broadcast
 from .serializers import BookingSerializer
 
+
 def get_nearest_toda(booking):
     end = booking.end
 
-    
     toda = Toda.objects.filter(area__contains=end).first()
     if toda:
         return toda
@@ -21,6 +21,7 @@ def get_nearest_toda(booking):
         .order_by("distance")
         .first()
     )
+
 
 def assign_driver_sync(booking_id, exclude_driver_ids=None):
     if exclude_driver_ids is None:
@@ -37,7 +38,7 @@ def assign_driver_sync(booking_id, exclude_driver_ids=None):
 
         toda = get_nearest_toda(booking)
         if toda is None:
-            return 
+            return
 
         base_qs = (
             DriverQueue.objects
@@ -58,16 +59,28 @@ def assign_driver_sync(booking_id, exclude_driver_ids=None):
             nearest = (
                 base_qs
                 .annotate(distance=Distance("location", booking.start))
-                .order_by("distance","created_at")
+                .order_by("distance", "created_at")
                 .first()
             )
 
         data = BookingSerializer(booking).data
 
         if nearest:
-            broadcast(f'driver_{nearest.driver.user.id}','new_booking', data )
+            broadcast(f'driver_{nearest.driver.user.id}', 'new_booking', data)
+
+            cache.set(
+                f'driver_{nearest.driver.id}_location',
+                {"lat": nearest.location.y, "lng": nearest.location.x},
+                timeout=40,
+            )
+            cache.set(
+                f'driver_{nearest.driver.id}_booking',
+                data,
+                timeout=30,
+            )
+
             nearest.delete()
-            
+
         else:
             user_id = booking.passenger.user.id
             booking_id = booking.id
