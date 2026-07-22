@@ -5,6 +5,7 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
 from django.db import transaction
 from django.core.cache import cache
+from django.core.exceptions import ObjectDoesNotExist
 
 from api.features.booking.models import Booking
 from api.features.booking.utils import assign_driver_sync
@@ -25,6 +26,11 @@ class DriverConsumer(AsyncWebsocketConsumer):
             return
 
         self.user = user
+        self.driver = await self.get_driver()
+
+        if self.driver is None:
+            await self.close(code=4004)
+            return
 
         await self.channel_layer.group_add(self.group_name, self.channel_name)
         await self.accept()
@@ -58,11 +64,7 @@ class DriverConsumer(AsyncWebsocketConsumer):
             }))
 
     async def resume_pending_booking(self):
-        driver_id = await self.get_driver_id()
-        if driver_id is None:
-            return
-
-        data = await self.get_cached_booking(driver_id)
+        data = await self.get_cached_booking(self.driver.id)
         if data is None:
             return
 
@@ -76,10 +78,12 @@ class DriverConsumer(AsyncWebsocketConsumer):
         }))
 
     @database_sync_to_async
-    def get_driver_id(self):
-        driver = getattr(self.user, "driver_profile", None)
-        return driver.id if driver else None
-    
+    def get_driver(self):
+        try:
+            return self.user.driver_profile
+        except ObjectDoesNotExist:
+            return None
+
     @sync_to_async
     def get_cached_booking(self, driver_id):
         return cache.get(f"driver_{driver_id}_booking")
@@ -102,7 +106,6 @@ class DriverConsumer(AsyncWebsocketConsumer):
             return
         exc = task.exception()
         if exc:
-            # Replace with proper logging if desired
             pass
 
     async def booking_timeout(self, booking_id):
@@ -119,9 +122,7 @@ class DriverConsumer(AsyncWebsocketConsumer):
         if booking.status != Booking.Status.PENDING or booking.driver_id is not None:
             return
 
-        driver = getattr(self.user, "driver_profile", None)
-        if driver is None:
-            return
+        driver = self.driver
 
         cached_location = cache.get(f"driver_{driver.id}_location")
         if cached_location:
@@ -144,12 +145,7 @@ class DriverConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def accept_booking(self, booking_id):
-        driver = getattr(self.user, "driver_profile", None)
-        if driver is None:
-            return {
-                "success": False,
-                "message": "No driver profile found."
-            }
+        driver = self.driver
 
         if DriverQueue.objects.filter(driver=driver).exists():
             return {
@@ -180,14 +176,7 @@ class DriverConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def decline_booking(self, booking_id, location):
-        """
-        Driver declined the booking.
-        Re-add the driver to the queue, then assign the booking
-        to the next available driver.
-        """
-        driver = getattr(self.user, "driver_profile", None)
-        if driver is None:
-            return False
+        driver = self.driver
 
         with transaction.atomic():
             DriverQueue.objects.get_or_create(
