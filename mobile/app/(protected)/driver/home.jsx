@@ -31,7 +31,7 @@ export default function home() {
 
     const driverReady = async () => {
         setErrorMsg(null)
-        const loc = await getLocation()
+        const loc = await getLocation({setLocation, setErrorMsg})
         if (!loc) return
 
         try {

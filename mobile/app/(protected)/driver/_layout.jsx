@@ -3,12 +3,14 @@ import { useEffect, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Text } from "react-native";
 import { DriverProvider } from "../../../contexts/DriverContext";
+import NewBookingModal from "../../../components/NewBookingModal";
 
 export default function DriverLayout() {
 
     
     return <>
         <DriverProvider>
+            <NewBookingModal/>
             <Stack screenOptions={{ headerShown: false }} />
         </DriverProvider>
     </>;
