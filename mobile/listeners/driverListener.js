@@ -1,15 +1,51 @@
 import useWebSocket from "../hooks/useWebsocket";
 
-export default function driverListener(userId, onRefresh){
-    return useWebSocket(
+function handleDriverMessage(data, { setPendingBooking }) {
+    switch (data.type) {
+        case "new_booking":
+            setPendingBooking(data.data);
+            break;
+
+        case "accept_booking":
+        case "decline_booking":
+            if (data.success) {
+                setPendingBooking(null);
+            }
+            break;
+
+        default:
+            console.log("Unhandled driver message:", data);
+    }
+}
+
+export default function driverListener(userId, onRefresh, { setPendingBooking }) {
+    const { sendMessage, connected, connectionStatus } = useWebSocket(
         `ws/driver/${userId}`,
         {
             onOpen: () => console.log("Connected"),
             onRefresh,
             onClose: () => console.log("Disconnected"),
-            onMessage: (data) => {
-                console.log(data)
-            }
+            onMessage: (data) => handleDriverMessage(data, { setPendingBooking }),
         }
-    )
+    );
+
+    const acceptBooking = (bookingId) => {
+        sendMessage({
+            action: "accept_booking",
+            booking_id: bookingId,
+        });
+    };
+
+    const declineBooking = (bookingId, location) => {
+        sendMessage({
+            action: "decline_booking",
+            booking_id: bookingId,
+            location: {
+                latitude: location.latitude,
+                longitude: location.longitude,
+            },
+        });
+    };
+
+    return { acceptBooking, declineBooking, connected, connectionStatus };
 }
