@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useRef, useState } from "react";
 import { Modal, View, Text, TouchableOpacity } from "react-native";
-import DriverContext from "../context/DriverContext";
+import DriverContext from "../contexts/DriverContext";
 import { getLocation } from "../utils/location";
 
 const OFFER_SECONDS = 30;
@@ -11,6 +11,7 @@ export default function NewBookingModal() {
     const [location, setLocation] = useState(null);
     const [errorMsg, setErrorMsg] = useState(null);
     const intervalRef = useRef(null);
+
 
     const visible = !!pendingBooking;
 
@@ -35,19 +36,28 @@ export default function NewBookingModal() {
     }, [visible, pendingBooking?.id]);
 
     const handleDecline = async () => {
+        const bookingId = pendingBooking?.id;
+        if (!bookingId) return; 
+
         const loc = await getLocation({ setLocation, setErrorMsg });
         if (!loc) {
             console.error(errorMsg || "No location available, cannot decline booking");
             return;
         }
-        declineBooking(pendingBooking.id, {
+
+        
+        if (!pendingBooking?.id) return;
+
+        declineBooking(bookingId, {
             latitude: loc.coords.latitude,
             longitude: loc.coords.longitude,
         });
     };
 
     const handleAccept = () => {
-        acceptBooking(pendingBooking.id);
+        const bookingId = pendingBooking?.id;
+        if (!bookingId) return;
+        acceptBooking(bookingId);
     };
 
     useEffect(() => {
@@ -71,13 +81,13 @@ export default function NewBookingModal() {
 
                     <View className="mb-5 gap-1">
                         <Text className="text-gray-700">
-                            Pickup: {pendingBooking?.pickup_address ?? "N/A"}
+                            Pickup: {pendingBooking?.start_address ?? "N/A"}
                         </Text>
                         <Text className="text-gray-700">
-                            Dropoff: {pendingBooking?.dropoff_address ?? "N/A"}
+                            Dropoff: {pendingBooking?.destination_address ?? "N/A"}
                         </Text>
                         <Text className="text-gray-700">
-                            Fare: {pendingBooking?.fare ?? "N/A"}
+                            Fare: {pendingBooking?.price ?? "N/A"}
                         </Text>
                     </View>
 

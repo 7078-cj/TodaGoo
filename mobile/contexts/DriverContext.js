@@ -1,6 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { createContext, useEffect, useState } from "react";
-import driverListener from "../listeners/driverListener";
+import useDriverListener from "../listeners/driverListener";
 
 const DriverContext = createContext(null);
 
@@ -11,23 +11,32 @@ export function DriverProvider({ children }) {
     const [pendingBooking, setPendingBooking] = useState(null);
 
     useEffect(() => {
-        (async () => {
+        const loadUser = async () => {
             try {
                 const stored = await AsyncStorage.getItem("user");
-                if (stored) {
-                    const user = JSON.parse(stored);
-                    setUserId(user.user_id);
-                }
+
+                if (!stored) return;
+
+                const user = JSON.parse(stored);
+                setUserId(user.user_id);
             } catch (err) {
                 console.error("Failed to load user:", err);
             }
-        })();
+        };
+
+        loadUser();
     }, []);
 
-    const { acceptBooking, declineBooking, connected, connectionStatus } = driverListener(
+
+    const {
+        acceptBooking,
+        declineBooking,
+        connected,
+        connectionStatus,
+    } = useDriverListener(
         userId,
         () => console.log("refresh"),
-        { setPendingBooking }
+        setPendingBooking
     );
 
     return (
