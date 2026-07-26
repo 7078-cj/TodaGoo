@@ -23,8 +23,10 @@ def booking_updated(sender, instance, created, **kwargs):
         return
 
     if instance.status == Booking.Status.ACCEPTED:
-        broadcast(
-            f"user_{instance.passenger.user.id}",
-            "booking_accepted",
-            BookingSerializer(instance).data,
+        transaction.on_commit(
+            lambda: broadcast(
+                f"user_{instance.passenger.user.id}",
+                "booking_accepted",
+                BookingSerializer(instance).data,
+            )
         )

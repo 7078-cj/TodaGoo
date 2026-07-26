@@ -9,7 +9,8 @@ export default PassengerContext;
 
 export function PassengerProvider({ children }) {
     const [userId, setUserId] = useState(null);
-
+    const [pendingBooking, setPendingBooking] = useState(null);
+    
     useEffect(() => {
         (async () => {
             const stored = await AsyncStorage.getItem("user");
@@ -21,7 +22,7 @@ export function PassengerProvider({ children }) {
     }, []);
     
     
-    const ws = passengerListener(userId, () => console.log("refresh"));
+    const ws = passengerListener(userId, () => console.log("refresh"), setPendingBooking);
 
     return (
         <PassengerContext.Provider value={{  }}>

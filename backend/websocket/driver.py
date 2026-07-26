@@ -63,6 +63,7 @@ class DriverConsumer(AsyncWebsocketConsumer):
                 "success": success
             }))
 
+
     async def resume_pending_booking(self):
         data = await self.get_cached_booking(self.driver.id)
         if data is None:
