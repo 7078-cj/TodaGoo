@@ -1,7 +1,6 @@
 import useWebSocket from "../hooks/useWebsocket";
 
 function handlePassengerMessage(data, setPendingBooking) {
-    console.log(data)
     switch (data.type) {
         case "booking_accepted":
             setPendingBooking(data.data);

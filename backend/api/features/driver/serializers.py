@@ -105,3 +105,26 @@ class DriverSerializer(serializers.ModelSerializer):
             driver_serializer.save()
 
         return user
+
+class DriverReadSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField(source='user.id', read_only=True)
+    username = serializers.CharField(source='user.username', read_only=True)
+    email = serializers.EmailField(source='user.email', read_only=True)
+    first_name = serializers.CharField(source='user.first_name', read_only=True)
+    last_name = serializers.CharField(source='user.last_name', read_only=True)
+
+    class Meta:
+        model = Driver
+        fields = (
+            'id',
+            'username',
+            'email',
+            'first_name',
+            'last_name',
+            'contact_number',
+            'toda_number',
+            'vehicle_plate',
+            'profile_picture',
+            'vehicle_front_picture',
+            'vehicle_back_picture',
+        )

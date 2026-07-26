@@ -58,11 +58,11 @@ class DriverConsumer(AsyncWebsocketConsumer):
             }))
 
         elif action == "accept_booking":
-            success = await self.accept_booking(booking_id)
+            data = await self.accept_booking(booking_id)
 
             await self.send(text_data=json.dumps({
                 "type": "accept_booking",
-                "success": success
+                "data": data
             }))
 
     async def active_bookings(self):
@@ -79,7 +79,7 @@ class DriverConsumer(AsyncWebsocketConsumer):
     def get_active_booking(self):
         try:
             driver = self.user.driver_profile
-            booking = Booking.objects.select_related('driver').get(
+            booking = Booking.objects.select_related('driver','passenger').get(
                 driver=driver,
                 status='accepted'
             )
@@ -195,8 +195,9 @@ class DriverConsumer(AsyncWebsocketConsumer):
 
             cache.delete(f"driver_{driver.id}_booking")
             cache.delete(f"driver_{driver.id}_location")
+            data = BookingSerializer(booking).data
 
-        return {"success": True}
+        return data
 
     @database_sync_to_async
     def decline_booking(self, booking_id, location):

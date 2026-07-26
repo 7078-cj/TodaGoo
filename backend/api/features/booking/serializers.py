@@ -1,6 +1,8 @@
 from django.contrib.gis.geos import Point
 from rest_framework import serializers
 from .models import Booking, Stop, DriverQueue
+from ..driver.serializers import DriverReadSerializer
+from ..passenger.serializers import PassengerReadSerializer
 
 
 class PointField(serializers.Field):
@@ -69,6 +71,8 @@ class BookingSerializer(serializers.ModelSerializer):
     start = PointField()
     end = PointField()
     stops = StopSerializer(many=True)
+    driver = DriverReadSerializer(read_only=True)
+    passenger = PassengerReadSerializer(read_only=True)
 
     class Meta:
         model = Booking

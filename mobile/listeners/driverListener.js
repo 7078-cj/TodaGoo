@@ -1,7 +1,6 @@
 import useWebSocket from "../hooks/useWebsocket";
 
 function handleDriverMessage(data, setPendingBooking, setAcceptedBooking) {
-    console.log(data)
     switch (data.type) {
         case "new_booking":
             setPendingBooking(data.data);

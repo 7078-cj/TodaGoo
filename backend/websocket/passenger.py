@@ -22,10 +22,9 @@ class PassengerConsumer(AsyncWebsocketConsumer):
 
         booking = await self.get_accepted_booking()
         if booking:
-            data = BookingSerializer(booking).data
             await self.send(text_data=json.dumps({
                 "type": "booking_accepted",
-                "data": data
+                "data": booking
             }))
 
     async def disconnect(self, close_code):
@@ -47,7 +46,7 @@ class PassengerConsumer(AsyncWebsocketConsumer):
     def get_accepted_booking(self):
         try:
             passenger = self.user.passenger_profile
-            booking = Booking.objects.select_related('driver').get(
+            booking = Booking.objects.select_related('passenger','driver').get(
                 passenger=passenger,
                 status='accepted'
             )
