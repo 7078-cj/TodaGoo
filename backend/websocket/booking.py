@@ -42,11 +42,6 @@ class BookingConsumer(AsyncWebsocketConsumer):
 
         self.booking = booking
 
-        await self.send(text_data=json.dumps({
-            "type": "booking_update",
-            "data": data
-        }))
-
 
         cached_location = cache.get(f"booking_{self.booking_id}_driver_location")
         if cached_location is not None:
