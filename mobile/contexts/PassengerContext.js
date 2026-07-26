@@ -32,7 +32,9 @@ export function PassengerProvider({ children }) {
     const ws = passengerListener(userId, () => console.log("refresh"), setPendingBooking);
 
     return (
-        <PassengerContext.Provider value={{  }}>
+        <PassengerContext.Provider value={{ 
+            pendingBooking
+        }}>
             {children}
         </PassengerContext.Provider>
     );

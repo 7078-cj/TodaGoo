@@ -61,6 +61,7 @@ export function DriverProvider({ children }) {
                 declineBooking,
                 connected,
                 connectionStatus,
+                acceptedBooking,
             }}
         >
             {children}
