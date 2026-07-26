@@ -2,6 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { createContext, useEffect, useState } from "react";
 import passengerListener from "../listeners/passengerListener";
 import { store } from "expo-router/build/global-state/router-store";
+import {router } from "expo-router";
 
 const PassengerContext = createContext(null);
 
@@ -20,6 +21,12 @@ export function PassengerProvider({ children }) {
             }
         })();
     }, []);
+
+    useEffect(()=>{
+            if (pendingBooking){
+                router.push("/(protected)/passenger/en_route")
+            }
+        },[pendingBooking])
     
     
     const ws = passengerListener(userId, () => console.log("refresh"), setPendingBooking);

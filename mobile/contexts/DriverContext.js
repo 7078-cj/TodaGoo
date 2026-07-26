@@ -9,6 +9,8 @@ export default DriverContext;
 export function DriverProvider({ children }) {
     const [userId, setUserId] = useState(null);
     const [pendingBooking, setPendingBooking] = useState(null);
+    const [acceptedBooking, setAcceptedBooking] = useState(null);
+    
 
     useEffect(() => {
         const loadUser = async () => {
@@ -27,6 +29,16 @@ export function DriverProvider({ children }) {
         loadUser();
     }, []);
 
+    useEffect(()=>{
+        if (acceptedBooking){
+            router.push("/(protected)/driver/en_route")
+        }else{
+            return
+        }
+    },[acceptedBooking])
+    
+        
+
 
     const {
         acceptBooking,
@@ -36,7 +48,8 @@ export function DriverProvider({ children }) {
     } = useDriverListener(
         userId,
         () => console.log("refresh"),
-        setPendingBooking
+        setPendingBooking,
+        setAcceptedBooking
     );
 
     return (

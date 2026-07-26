@@ -1,6 +1,6 @@
 import useWebSocket from "../hooks/useWebsocket";
 
-function handleDriverMessage(data, setPendingBooking) {
+function handleDriverMessage(data, setPendingBooking, setAcceptedBooking) {
     console.log(data)
     switch (data.type) {
         case "new_booking":
@@ -8,6 +8,10 @@ function handleDriverMessage(data, setPendingBooking) {
             break;
 
         case "accept_booking":
+            setPendingBooking(null)
+            setAcceptedBooking(data.data)
+            break
+
         case "decline_booking":
             if (data.success) {
                 setPendingBooking(null);
@@ -19,7 +23,7 @@ function handleDriverMessage(data, setPendingBooking) {
     }
 }
 
-export default function driverListener(userId, onRefresh,  setPendingBooking ) {
+export default function driverListener(userId, onRefresh,  setPendingBooking, setAcceptedBooking ) {
     const { sendMessage, connected, connectionStatus } = useWebSocket(
         `ws/driver/${userId}`,
         {
