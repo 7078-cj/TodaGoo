@@ -12,6 +12,7 @@ from api.features.booking.utils import assign_driver_sync
 from api.features.booking.models import DriverQueue
 from django.contrib.gis.geos import Point
 import asyncio
+from api.features.booking.serializers import BookingSerializer
 
 
 class DriverConsumer(AsyncWebsocketConsumer):
@@ -36,6 +37,7 @@ class DriverConsumer(AsyncWebsocketConsumer):
         await self.accept()
 
         await self.resume_pending_booking()
+        await self.active_bookings()
 
     async def disconnect(self, close_code):
         await self.channel_layer.group_discard(self.group_name, self.channel_name)
@@ -63,7 +65,28 @@ class DriverConsumer(AsyncWebsocketConsumer):
                 "success": success
             }))
 
+    async def active_bookings(self):
+        booking = await self.get_active_booking()
+        
+        if booking:
+            await self.send(text_data=json.dumps({
+                    "type": "accept_booking",
+                    "data": booking,
+                }))
 
+
+    @database_sync_to_async
+    def get_active_booking(self):
+        try:
+            driver = self.user.driver_profile
+            booking = Booking.objects.select_related('driver').get(
+                driver=driver,
+                status='accepted'
+            )
+            return BookingSerializer(booking).data  
+        except ObjectDoesNotExist:
+            return None
+    
     async def resume_pending_booking(self):
         data = await self.get_cached_booking(self.driver.id)
         if data is None:
@@ -158,13 +181,13 @@ class DriverConsumer(AsyncWebsocketConsumer):
             try:
                 booking = Booking.objects.select_for_update().get(id=booking_id)
             except Booking.DoesNotExist:
-                return False
+                return {"success": False, "message": "Booking not found."}
 
             if booking.driver_id is not None:
-                return False
+                return {"success": False, "message": "Booking already taken."}
 
             if booking.status != Booking.Status.PENDING:
-                return False
+                return {"success": False, "message": "Booking is no longer pending."}
 
             booking.driver = driver
             booking.status = Booking.Status.ACCEPTED
@@ -173,7 +196,7 @@ class DriverConsumer(AsyncWebsocketConsumer):
             cache.delete(f"driver_{driver.id}_booking")
             cache.delete(f"driver_{driver.id}_location")
 
-            return True
+        return {"success": True}
 
     @database_sync_to_async
     def decline_booking(self, booking_id, location):

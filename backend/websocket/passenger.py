@@ -2,8 +2,8 @@ import json
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
 from django.core.exceptions import ObjectDoesNotExist
-from ..api.features.booking.models import Booking
-from ..api.features.booking.serializers import BookingSerializer
+from api.features.booking.models import Booking
+from api.features.booking.serializers import BookingSerializer
 
 
 class PassengerConsumer(AsyncWebsocketConsumer):

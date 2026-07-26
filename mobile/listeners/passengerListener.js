@@ -20,7 +20,7 @@ export default function passengerListener(userId, onRefresh, setPendingBooking){
             onRefresh,
             onClose: () => console.log("Disconnected"),
             onMessage: (data) => {
-                handleDriverMessage(data, setPendingBooking)
+                handlePassengerMessage(data, setPendingBooking)
             }
         }
     )

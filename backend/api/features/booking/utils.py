@@ -7,6 +7,8 @@ from ..admin.models import Toda
 from ...broadcast import broadcast
 from .serializers import BookingSerializer
 
+import time
+
 
 def get_nearest_toda(booking):
     end = booking.end
@@ -66,32 +68,32 @@ def assign_driver_sync(booking_id, exclude_driver_ids=None):
         data = BookingSerializer(booking).data
 
         if nearest:
-            broadcast(f'driver_{nearest.driver.user.id}', 'new_booking', data)
+            driver_id = nearest.driver.id
+            driver_user_id = nearest.driver.user.id
+            location = {"lat": nearest.location.y, "lng": nearest.location.x}
 
-            cache.set(
-                f'driver_{nearest.driver.id}_location',
-                {"lat": nearest.location.y, "lng": nearest.location.x},
-                timeout=40,
-            )
-            cache.set(
-                f'driver_{nearest.driver.id}_booking',
-                data,
-                timeout=30,
-            )
+            nearest.delete()  
 
-            nearest.delete()
+            def _on_commit():
+                expires_at = time.time() + 30
+                data_with_expiry = {**data, "expires_at": expires_at}
+
+                cache.set(f'driver_{driver_id}_location', location, timeout=40)
+                cache.set(f'driver_{driver_id}_booking', data_with_expiry, timeout=30)
+                broadcast(f'driver_{driver_user_id}', 'new_booking', data_with_expiry)
+
+
+            transaction.on_commit(_on_commit)
 
         else:
             user_id = booking.passenger.user.id
-            booking_id = booking.id
-
+            b_id = booking.id
             booking.delete()
 
-            broadcast(
-                f"user_{user_id}",
-                "booking_unavailable",
-                {
-                    "booking_id": booking_id,
-                    "message": "No drivers are currently available.",
-                },
+            transaction.on_commit(
+                lambda: broadcast(
+                    f"user_{user_id}",
+                    "booking_unavailable",
+                    {"booking_id": b_id, "message": "No drivers are currently available."},
+                )
             )

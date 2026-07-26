@@ -12,8 +12,15 @@ export default function NewBookingModal() {
     const [errorMsg, setErrorMsg] = useState(null);
     const intervalRef = useRef(null);
 
-
     const visible = !!pendingBooking;
+
+    const computeRemaining = () => {
+        if (pendingBooking?.expires_at) {
+            const remaining = Math.round(pendingBooking.expires_at - Date.now() / 1000);
+            return Math.max(0, remaining);
+        }
+        return OFFER_SECONDS;
+    };
 
     useEffect(() => {
         if (!visible) {
@@ -21,15 +28,14 @@ export default function NewBookingModal() {
             return;
         }
 
-        setSecondsLeft(OFFER_SECONDS);
+        setSecondsLeft(computeRemaining());
+
         intervalRef.current = setInterval(() => {
-            setSecondsLeft((prev) => {
-                if (prev <= 1) {
-                    clearInterval(intervalRef.current);
-                    return 0;
-                }
-                return prev - 1;
-            });
+            const remaining = computeRemaining();
+            setSecondsLeft(remaining);
+            if (remaining <= 0) {
+                clearInterval(intervalRef.current);
+            }
         }, 1000);
 
         return () => clearInterval(intervalRef.current);
@@ -37,7 +43,7 @@ export default function NewBookingModal() {
 
     const handleDecline = async () => {
         const bookingId = pendingBooking?.id;
-        if (!bookingId) return; 
+        if (!bookingId) return;
 
         const loc = await getLocation({ setLocation, setErrorMsg });
         if (!loc) {
@@ -45,7 +51,6 @@ export default function NewBookingModal() {
             return;
         }
 
-        
         if (!pendingBooking?.id) return;
 
         declineBooking(bookingId, {

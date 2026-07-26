@@ -30,7 +30,7 @@ export default function driverListener(userId, onRefresh,  setPendingBooking, se
             onOpen: () => console.log("Connected"),
             onRefresh,
             onClose: () => console.log("Disconnected"),
-            onMessage: (data) => handleDriverMessage(data, setPendingBooking ),
+            onMessage: (data) => handleDriverMessage(data, setPendingBooking, setAcceptedBooking ),
         }
     );
 
