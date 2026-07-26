@@ -4,6 +4,7 @@ from channels.db import database_sync_to_async
 from django.core.exceptions import ObjectDoesNotExist
 from api.features.booking.models import Booking
 from api.features.booking.serializers import BookingSerializer
+from django.core.cache import cache
 
 
 class BookingConsumer(AsyncWebsocketConsumer):
@@ -46,8 +47,52 @@ class BookingConsumer(AsyncWebsocketConsumer):
             "data": data
         }))
 
+
+        cached_location = cache.get(f"booking_{self.booking_id}_driver_location")
+        if cached_location is not None:
+            await self.send(text_data=json.dumps({
+                "type": "driver_location",
+                "data": cached_location
+            }))
+
+    async def receive(self, text_data):
+        message = json.loads(text_data)
+
+        action = message.get("action")
+
+        if action == "driver_location":
+
+            if not self.check_driver():
+                return
+
+            location = message.get("location")
+
+            cache.set(f"booking_{self.booking_id}_driver_location", location, 20)
+
+            await self.channel_layer.group_send(
+                self.group_name,
+                {
+                    "type": "driver_location",
+                    "location": location,
+                }
+            )
+
+    async def driver_location(self, event):
+        await self.send(text_data=json.dumps({
+            "type": "driver_location",
+            "data": event["location"]
+        }))
+
     async def disconnect(self, close_code):
         await self.channel_layer.group_discard(self.group_name, self.channel_name)
+
+    @database_sync_to_async
+    def check_driver(self):
+        driver_profile = getattr(self.user, 'driver_profile', None)
+        if driver_profile is None:
+            return False
+
+        return getattr(self.booking.driver, 'user_id', None) == self.user.id
 
     @database_sync_to_async
     def get_booking(self):

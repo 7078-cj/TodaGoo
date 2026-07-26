@@ -28,5 +28,5 @@ export default function passengerListener(userId, onRefresh, setPendingBooking){
         }
     )
 
-    return {}
+    return { connected, connectionStatus };
 }

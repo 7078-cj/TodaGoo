@@ -1,15 +1,32 @@
 import useWebSocket from "../hooks/useWebsocket";
 
-export default function bookingListener(bookingId, onRefresh){
-    return useWebSocket(
+function handleBookingMessage(data, setDriverLocation) {
+    switch (data.type) {
+        case "booking_update":
+            console.log("Booking update:", data.data);
+            break;
+
+        case "driver_location":
+            setDriverLocation(data.data.coords);
+            break;
+
+        default:
+            console.log("Unhandled booking message:", data);
+    }
+}
+
+export default function bookingListener(bookingId, onRefresh, setDriverLocation) {
+    const { sendMessage, connected, connectionStatus } = useWebSocket(
         `ws/booking/${bookingId}`,
         {
             onOpen: () => console.log("Connected"),
             onRefresh,
             onClose: () => console.log("Disconnected"),
             onMessage: (data) => {
-                console.log(data)
+                handleBookingMessage(data, setDriverLocation)
             }
         }
     )
+
+    return { sendMessage, connected, connectionStatus };
 }
