@@ -17,6 +17,13 @@ def get_passenger(user):
     except AttributeError:
         return None
 
+def get_driver(user):
+    try:
+        return user.driver_profile
+        
+    except AttributeError:
+        return None
+
 class BookingView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -78,21 +85,18 @@ class BookingDetailView(APIView):
 
     def put(self, request, booking_id):
         try:
-            passenger = get_passenger(request.user)
-            if not passenger:
-                return Response({"error": "User is not a passenger"}, status=400)
-            booking = Booking.objects.get(id=booking_id, passenger=passenger)
+            driver = get_driver(request.user)
+            if not driver:
+                return Response({"error": "User is not a driver"}, status=400)
+            booking = Booking.objects.get(id=booking_id, driver=driver)
         except Booking.DoesNotExist:
             return Response({"error": "Booking not found"}, status=404)
 
-        status = request.data.get("status")
-        if status is not None:
-            booking.status = status
-            booking.save()
-        else:
-            return Response({"error": "Status is required"}, status=400)
+        serializer = BookingSerializer(booking, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
 
-        return Response(BookingSerializer(booking).data)
+        return Response(serializer.data)
 
     def delete(self, request, booking_id):
         try:

@@ -14,3 +14,8 @@ export const updateBooking = async (bookingId, body) =>{
     const res = await putRequest(`booking/${bookingId}/`, body, true)
     return res.data;
 }
+
+export const completeBooking = async (bookingId) =>{
+    const res = await putRequest(`booking/${bookingId}/`, {status: "completed"}, true)
+    return res.data;
+}

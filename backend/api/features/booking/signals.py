@@ -30,3 +30,11 @@ def booking_updated(sender, instance, created, **kwargs):
                 BookingSerializer(instance).data,
             )
         )
+    elif instance.status == Booking.Status.COMPLETED:
+            transaction.on_commit(
+                lambda: broadcast(
+                    f"user_{instance.passenger.user.id}",
+                    "booking_completed",
+                    {"status": "completed"},
+                )
+            )
