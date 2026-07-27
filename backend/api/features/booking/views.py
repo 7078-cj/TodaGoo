@@ -175,6 +175,9 @@ def driver_queue(request):
     driver = getattr(request.user, "driver_profile", None)
     if driver is None:
         return Response({"error": "no driver profile for this user"}, status=403)
+    
+    if driver.status == "BLACKLISTED":
+        return Response({"error": "driver is blacklisted"}, status=403)
 
     lat = request.data.get("lat")
     lng = request.data.get("lng")
