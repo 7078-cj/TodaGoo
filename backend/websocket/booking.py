@@ -97,7 +97,7 @@ class BookingConsumer(AsyncWebsocketConsumer):
                 'passenger', 'passenger__user',
             ).get(
                 id=self.booking_id,
-                status='accepted'
+                status__in=['accepted', 'in_progress'],
             )
             data = BookingSerializer(booking).data
             return booking, data

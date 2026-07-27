@@ -19,3 +19,8 @@ export const completeBooking = async (bookingId) =>{
     const res = await putRequest(`booking/${bookingId}/`, {status: "completed"}, true)
     return res.data;
 }
+
+export const inProgressBooking = async (bookingId) =>{
+    const res = await putRequest(`booking/${bookingId}/`, {status: "in_progress"}, true)
+    return res.data;
+}

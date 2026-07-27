@@ -22,7 +22,7 @@ def booking_updated(sender, instance, created, **kwargs):
     if created:
         return
 
-    if instance.status == Booking.Status.ACCEPTED:
+    if instance.status == Booking.Status.ACCEPTED or instance.status == Booking.Status.IN_PROGRESS:
         transaction.on_commit(
             lambda: broadcast(
                 f"user_{instance.passenger.user.id}",

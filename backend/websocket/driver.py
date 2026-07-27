@@ -81,7 +81,7 @@ class DriverConsumer(AsyncWebsocketConsumer):
             driver = self.user.driver_profile
             booking = Booking.objects.select_related('driver','passenger').get(
                 driver=driver,
-                status='accepted'
+                status__in=['accepted', 'in_progress'],
             )
             return BookingSerializer(booking).data  
         except ObjectDoesNotExist:

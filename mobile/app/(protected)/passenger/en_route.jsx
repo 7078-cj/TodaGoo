@@ -1,5 +1,5 @@
 import { View, Text } from 'react-native'
-import React, { useContext, useState } from 'react'
+import React, { useContext, useEffect, useState } from 'react'
 import PassengerContext from '../../../contexts/PassengerContext'
 import bookingListener from '../../../listeners/bookingListener'
 import MapComponent from '../../../components/map/MapComponent'
@@ -7,6 +7,7 @@ import MapComponent from '../../../components/map/MapComponent'
 export default function booking() {
     const { pendingBooking } = useContext(PassengerContext)
     const [driverLocation, setDriverLocation] = useState(null)
+    const [status, setStatus] = useState()
 
     if (!pendingBooking) {
         return (
@@ -47,6 +48,10 @@ export default function booking() {
                 }]
             : []),
     ];
+
+    useEffect(()=>{
+        setStatus(pendingBooking.status)
+    },[pendingBooking])
 
     return (
         <View style={{ flex: 1 }}>

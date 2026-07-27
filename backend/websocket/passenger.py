@@ -54,7 +54,7 @@ class PassengerConsumer(AsyncWebsocketConsumer):
             passenger = self.user.passenger_profile
             booking = Booking.objects.select_related('passenger','driver').get(
                 passenger=passenger,
-                status='accepted'
+                status__in=['accepted', 'in_progress'],
             )
             return BookingSerializer(booking).data  
         except ObjectDoesNotExist:

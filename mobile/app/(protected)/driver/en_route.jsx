@@ -8,6 +8,7 @@ import MapComponent from '../../../components/map/MapComponent'
 export default function booking() {
     const { acceptedBooking } = useContext(DriverContext)
     const [driverLocation, setDriverLocation] = useState()
+    const [status, setStatus] = useState()
 
     if (!acceptedBooking) {
             return (
@@ -72,6 +73,10 @@ export default function booking() {
                 }]
             : []),
     ];
+
+    useEffect(()=>{
+        setStatus(acceptedBooking.status)
+    },[acceptedBooking])
 
 
     return (
