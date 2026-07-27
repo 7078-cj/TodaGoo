@@ -8,7 +8,7 @@ function handlePassengerMessage(data, setPendingBooking) {
 
         case "booking_updated":
             setPendingBooking(data.data);
-            break;s
+            break;
 
         default:
             console.log("Unhandled passenger message:", data);

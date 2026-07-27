@@ -3,11 +3,11 @@ import React, { useContext, useEffect, useState } from 'react'
 import PassengerContext from '../../../contexts/PassengerContext'
 import bookingListener from '../../../listeners/bookingListener'
 import MapComponent from '../../../components/map/MapComponent'
+import BottomDetails from '../../../components/BottomDetails'
 
 export default function booking() {
     const { pendingBooking } = useContext(PassengerContext)
     const [driverLocation, setDriverLocation] = useState(null)
-    const [status, setStatus] = useState()
 
     if (!pendingBooking) {
         return (
@@ -49,18 +49,15 @@ export default function booking() {
             : []),
     ];
 
-    useEffect(()=>{
-        setStatus(pendingBooking.status)
-    },[pendingBooking])
-
     return (
-        <View style={{ flex: 1 }}>
+        <View className="flex-1">
             <Text>en_route</Text>
             <MapComponent
                 markers={markers}
                 editMode={false}
-                userLocation={true}
+                userLocation={false}
             />
+            <BottomDetails booking={pendingBooking} isDriver={false}/>
         </View>
     )
 }

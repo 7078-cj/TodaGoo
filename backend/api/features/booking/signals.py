@@ -22,7 +22,7 @@ def booking_updated(sender, instance, created, **kwargs):
     if created:
         return
 
-    if instance.status == Booking.Status.ACCEPTED or instance.status == Booking.Status.IN_PROGRESS:
+    if instance.status == Booking.Status.ACCEPTED or instance.status == Booking.Status.IN_PROGRESS or instance.status == Booking.Status.COMPLETED:
         transaction.on_commit(
             lambda: broadcast(
                 f"user_{instance.passenger.user.id}",
@@ -30,11 +30,10 @@ def booking_updated(sender, instance, created, **kwargs):
                 BookingSerializer(instance).data,
             )
         )
-    elif instance.status == Booking.Status.COMPLETED:
-            transaction.on_commit(
-                lambda: broadcast(
-                    f"user_{instance.passenger.user.id}",
-                    "booking_completed",
-                    {"status": "completed"},
-                )
+        transaction.on_commit(
+            lambda: broadcast(
+                f"driver_{instance.driver.user.id}",
+                "booking_update",
+                BookingSerializer(instance).data,
             )
+        )

@@ -16,6 +16,10 @@ function handleDriverMessage(data, setPendingBooking, setAcceptedBooking) {
                 setPendingBooking(null);
             }
             break;
+        
+        case "booking_update":
+            setAcceptedBooking(data.data)
+            break
 
         default:
             console.log("Unhandled driver message:", data);

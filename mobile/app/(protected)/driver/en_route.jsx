@@ -4,11 +4,11 @@ import DriverContext from "../../../contexts/DriverContext";
 import bookingListener from "../../../listeners/bookingListener"
 import {getLocation} from "../../../utils/location"
 import MapComponent from '../../../components/map/MapComponent'
+import BottomDetails from '../../../components/BottomDetails';
 
 export default function booking() {
     const { acceptedBooking } = useContext(DriverContext)
     const [driverLocation, setDriverLocation] = useState()
-    const [status, setStatus] = useState()
 
     if (!acceptedBooking) {
             return (
@@ -74,13 +74,12 @@ export default function booking() {
             : []),
     ];
 
-    useEffect(()=>{
-        setStatus(acceptedBooking.status)
-    },[acceptedBooking])
+    
+
 
 
     return (
-        <View>
+        <View className="flex-1">
             <Text>en_route</Text>
             {
                 driverLocation && <>
@@ -91,8 +90,9 @@ export default function booking() {
             <MapComponent
                 markers={markers}
                 editMode={false}
-                userLocation={true}
+                userLocation={false}
             />
+            <BottomDetails booking={acceptedBooking}/>
             
         </View>
     )

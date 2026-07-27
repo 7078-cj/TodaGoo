@@ -9,19 +9,18 @@ from .models import Booking, Stop, DriverQueue
 from rest_framework.views import APIView
 from ..utils.distance import calculate_price
 from django.contrib.gis.geos import Point
+from django.core.exceptions import ObjectDoesNotExist
 
 def get_passenger(user):
     try:
         return user.passenger_profile
-        
-    except AttributeError:
+    except ObjectDoesNotExist:
         return None
 
 def get_driver(user):
     try:
         return user.driver_profile
-        
-    except AttributeError:
+    except ObjectDoesNotExist:
         return None
 
 class BookingView(APIView):
@@ -37,12 +36,10 @@ class BookingView(APIView):
 
     def post(self, request):
         passenger = get_passenger(request.user)
-        print("Passenger:", passenger)
         if not passenger:
             return Response({"error": "User is not a passenger"}, status=400)
         
         user_booking = Booking.objects.filter(passenger=passenger, status__in=['pending', 'in_progress']).first()
-        print("User booking:", user_booking)
         if user_booking:
             return Response({"error": "You already have an ongoing or pending booking."}, status=400)
 
@@ -83,6 +80,11 @@ class BookingDetailView(APIView):
         serializer = BookingSerializer(booking)
         return Response(serializer.data)
 
+    ALLOWED_TRANSITIONS = {
+        "accepted": "in_progress",
+        "in_progress": "completed",
+    }
+
     def put(self, request, booking_id):
         try:
             driver = get_driver(request.user)
@@ -92,11 +94,21 @@ class BookingDetailView(APIView):
         except Booking.DoesNotExist:
             return Response({"error": "Booking not found"}, status=404)
 
-        serializer = BookingSerializer(booking, data=request.data, partial=True)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
+        new_status = request.data.get("status")
+        if new_status is None:
+            return Response({"error": "Status is required"}, status=400)
 
-        return Response(serializer.data)
+        expected_next = self.ALLOWED_TRANSITIONS.get(booking.status)
+        if new_status != expected_next:
+            return Response(
+                {"error": f"Cannot transition booking from '{booking.status}' to '{new_status}'"},
+                status=400,
+            )
+
+        booking.status = new_status
+        booking.save()
+
+        return Response(BookingSerializer(booking).data)
 
     def delete(self, request, booking_id):
         try:

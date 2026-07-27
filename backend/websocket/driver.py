@@ -226,3 +226,9 @@ class DriverConsumer(AsyncWebsocketConsumer):
             )
 
         return True
+
+    async def booking_update(self, event):
+            await self.send(text_data=json.dumps({
+                "type": "booking_update",
+                "data": event["data"]
+            }))
