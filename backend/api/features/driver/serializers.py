@@ -127,4 +127,5 @@ class DriverReadSerializer(serializers.ModelSerializer):
             'profile_picture',
             'vehicle_front_picture',
             'vehicle_back_picture',
+            'rating'
         )

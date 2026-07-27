@@ -90,4 +90,5 @@ class PassengerReadSerializer(serializers.ModelSerializer):
             'address',
             'profile_picture',
             'contact_number',
+            'rating'
         )

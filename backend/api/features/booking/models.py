@@ -2,12 +2,18 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.contrib.gis.db import models as geomodels
 from ..user.models import Passenger, Driver
+from django.core.validators import MinValueValidator, MaxValueValidator
 
 class DriverQueue(models.Model):
     driver = models.ForeignKey(Driver, on_delete=models.CASCADE, related_name="queue")
     location = geomodels.PointField()
     created_at = models.DateTimeField(auto_now_add=True)
 
+class Rate(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="ratings")
+    score = models.PositiveSmallIntegerField(
+        validators=[MinValueValidator(1), MaxValueValidator(5)]
+    )
 
 class Booking(models.Model):
     class Status(models.TextChoices):

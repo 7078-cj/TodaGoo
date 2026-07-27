@@ -5,6 +5,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { useContext, useEffect } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { updateToken } from "@/api/auth";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 
 function RootNavigator() {
   const { setToken, setUser, logoutUser } = useContext(AuthContext);
@@ -42,8 +43,10 @@ function RootNavigator() {
 
 export default function RootLayout() {
   return (
-    <AuthProvider>
-      <RootNavigator />
-    </AuthProvider>
+    <SafeAreaProvider>
+      <AuthProvider>
+        <RootNavigator />
+      </AuthProvider>
+    </SafeAreaProvider>
   );
 }

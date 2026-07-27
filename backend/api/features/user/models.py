@@ -37,6 +37,7 @@ class Driver(models.Model):
     vehicle_plate = models.CharField(max_length=20)
     vehicle_front_picture = models.ImageField(upload_to='vehicle_fronts/', null=True, blank=True)
     vehicle_back_picture = models.ImageField(upload_to='vehicle_backs/', null=True, blank=True)
+    rating = models.DecimalField(max_digits=3, decimal_places=2, default=0)
 
     def __str__(self):
         return self.user.username
@@ -48,6 +49,7 @@ class Passenger(models.Model):
     contact_number = models.CharField(max_length=11)
     emergency_contact_name = models.CharField(max_length=100)
     emergency_contact_number = models.CharField(max_length=11)
+    rating = models.DecimalField(max_digits=3, decimal_places=2, default=0)
 
     def __str__(self):
         return self.user.username

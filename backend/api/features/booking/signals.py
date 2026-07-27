@@ -3,10 +3,32 @@ import threading
 from django.db import transaction
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from .models import Booking
+from .models import Booking, Rate
+from django.db.models import Avg
 from .utils import assign_driver_sync
 from ...broadcast import broadcast
 from .serializers import BookingSerializer
+from api.features.user.models import Driver, Passenger
+
+@receiver(post_save, sender=Rate)
+def update_rating_on_rate_created(sender, instance, created, **kwargs):
+    if not created:
+        return
+
+    rated_user = instance.user
+
+    driver = getattr(rated_user, 'driver_profile', None)
+    if driver is not None:
+        avg = Rate.objects.filter(rated_user=rated_user).aggregate(avg=Avg('score'))['avg']
+        driver.rating = round(avg, 2) if avg is not None else 0
+        driver.save(update_fields=['rating'])
+        return
+
+    passenger = getattr(rated_user, 'passenger_profile', None)
+    if passenger is not None:
+        avg = Rate.objects.filter(rated_user=rated_user).aggregate(avg=Avg('score'))['avg']
+        passenger.rating = round(avg, 2) if avg is not None else 0
+        passenger.save(update_fields=['rating'])
 
 
 
