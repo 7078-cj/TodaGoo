@@ -4,7 +4,7 @@ from rest_framework import status
 from rest_framework.decorators import api_view, throttle_classes, permission_classes
 from rest_framework import viewsets, permissions
 from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
-from .serializers import BookingSerializer, StopSerializer, DriverQueueSerializer
+from .serializers import BookingSerializer, StopSerializer, DriverQueueSerializer, RateCreateSerializer, RateSerializer
 from .models import Booking, Stop, DriverQueue,Rate, User
 from django.shortcuts import get_object_or_404
 from rest_framework.views import APIView
@@ -233,77 +233,30 @@ class RateView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
-        booking_id = request.data.get("booking_id")
-        user_id = request.data.get("user_id")
-        score = request.data.get("score")
-
-        if not booking_id or not user_id or score is None:
-            return Response(
-                {"error": "booking_id, user_id, and score are required"},
-                status=400,
-            )
-
-        booking = Booking.objects.select_related(
-            "driver", "driver__user", "passenger", "passenger__user"
-        ).filter(id=booking_id).first()
-
-        if booking is None:
-            return Response({"error": "Booking not found"}, status=404)
-
-        try:
-            score = int(score)
-        except (TypeError, ValueError):
-            return Response({"error": "score must be a number"}, status=400)
-
-        if not (1 <= score <= 5):
-            return Response({"error": "score must be between 1 and 5"}, status=400)
-
-        driver_user_id = getattr(booking.driver, "user_id", None)
-        passenger_user_id = getattr(booking.passenger, "user_id", None)
-
-        rated_user_id = int(user_id)
-
-        if rated_user_id == driver_user_id:
-            rated_role = "driver"
-        elif rated_user_id == passenger_user_id:
-            rated_role = "passenger"
-        else:
-            return Response(
-                {"error": "user_id is not a participant in this booking"},
-                status=400,
-            )
-
-        if request.user.id == rated_user_id:
-            return Response({"error": "You cannot rate yourself"}, status=400)
-
-        if request.user.id not in (driver_user_id, passenger_user_id):
-            return Response(
-                {"error": "You are not a participant in this booking"},
-                status=403,
-            )
-
-        if Rate.objects.filter(user=request.user, booking=booking).exists():
-            return Response(
-                {"error": "You have already rated this booking"},
-                status=400,
-            )
-
-        rated_user = get_object_or_404(User, id=rated_user_id)
-
-        rate = Rate.objects.create(
-            user=request.user,
-            booking=booking,
-            rated_user=rated_user,
-            score=score,
+        serializer = RateCreateSerializer(
+            data=request.data, context={"request": request}
         )
+        serializer.is_valid(raise_exception=True)
+        rate = serializer.save()
 
         return Response(
             {
                 "id": rate.id,
-                "booking_id": booking.id,
-                "rated_user_id": rated_user.id,
-                "rated_role": rated_role,
+                "booking_id": rate.booking_id,
+                "rated_user_id": rate.user_id,
+                "rated_role": rate.rated_role,
                 "score": rate.score,
+                "feedback": rate.feedback,
             },
             status=201,
         )
+
+    def get(self, request):
+        """Return feedback/ratings received by the currently logged-in user."""
+        rates = (
+            Rate.objects.select_related("booking", "booking__driver", "user", "rater")
+            .filter(user_id=request.user.id)
+            .order_by("-created_at")
+        )
+        serializer = RateSerializer(rates, many=True)
+        return Response(serializer.data, status=200)

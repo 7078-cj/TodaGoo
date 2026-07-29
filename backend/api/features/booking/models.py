@@ -9,11 +9,6 @@ class DriverQueue(models.Model):
     location = geomodels.PointField()
     created_at = models.DateTimeField(auto_now_add=True)
 
-class Rate(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="ratings")
-    score = models.PositiveSmallIntegerField(
-        validators=[MinValueValidator(1), MaxValueValidator(5)]
-    )
 
 class Booking(models.Model):
     class Status(models.TextChoices):
@@ -33,6 +28,24 @@ class Booking(models.Model):
     price = models.IntegerField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+
+class Rate(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="ratings")
+    score = models.PositiveSmallIntegerField(
+        validators=[MinValueValidator(1), MaxValueValidator(5)]
+    )
+    rater = models.ForeignKey(User, on_delete=models.CASCADE, related_name="ratings_given")
+    booking = models.ForeignKey(Booking, on_delete=models.CASCADE, related_name="ratings")
+    feedback = models.CharField(max_length=500, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "booking"], name="one_rating_per_user_per_booking"
+            )
+        ]
 
 class Stop(models.Model):
     booking = models.ForeignKey(Booking, on_delete=models.CASCADE, related_name="stops")
