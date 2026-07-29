@@ -31,10 +31,10 @@ export function AuthProvider({ children }) {
         loadAuthData();
     }, []);
 
-    const loginUser = async (email, password) => {
+    const loginUser = async (username, password) => {
         let data;
         try {
-            data = await loginRequest(email, password);
+            data = await loginRequest(username, password);
         } catch (err) {
             const message =
                 err?.response?.data?.detail ||
@@ -45,7 +45,7 @@ export function AuthProvider({ children }) {
         }
 
         if (!data?.access) {
-            const message = data?.detail || data?.message || "Invalid email or password.";
+            const message = data?.detail || data?.message || "Invalid username or password.";
             return { success: false, error: message };
         }
 
