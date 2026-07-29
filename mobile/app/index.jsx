@@ -9,7 +9,7 @@ export default function Index() {
 
   return (
     <View
-      className="bg-amber-50"
+      className="bg-amber-50 flex-1 items-center justify-center"
     >
       <Button
         title="Login"

@@ -14,7 +14,7 @@ export default function driver() {
     const submit = async (data) => {
         const res = await driverRegister(data)
         if(res.success){
-            const login = await loginUser(formData.email, formData.password)
+            const login = await loginUser(formData.username, formData.password)
             res.success && router.push('/(protected)/driver/home')
         }
         

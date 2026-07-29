@@ -24,7 +24,6 @@ class PassengerSerializer(serializers.ModelSerializer):
         fields = (
             'id',
             'username',
-            'email',
             'first_name',
             'last_name',
             'password',
@@ -75,7 +74,6 @@ class PassengerSerializer(serializers.ModelSerializer):
 class PassengerReadSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(source='user.id', read_only=True)
     username = serializers.CharField(source='user.username', read_only=True)
-    email = serializers.EmailField(source='user.email', read_only=True)
     first_name = serializers.CharField(source='user.first_name', read_only=True)
     last_name = serializers.CharField(source='user.last_name', read_only=True)
 
@@ -84,7 +82,6 @@ class PassengerReadSerializer(serializers.ModelSerializer):
         fields = (
             'id',
             'username',
-            'email',
             'first_name',
             'last_name',
             'address',

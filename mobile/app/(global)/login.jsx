@@ -6,17 +6,15 @@ import AuthContext from '@/contexts/AuthContext';
 
 export default function login() {
     const {loginUser, user} = useContext(AuthContext)
-    const [email, setEmail] = useState('')
+    const [username, setUsername] = useState('')
     const [password, setPassword] = useState('')
     const [errors, setErrors] = useState({})
     
     const validate = () => {
         let newErrors = {}
 
-        if (!email.trim()) {
-            newErrors.email = "Email is required"
-        } else if (!/\S+@\S+\.\S+/.test(email)) {
-            newErrors.email = "Invalid email format"
+        if (!username.trim()) {
+            newErrors.username = "username is required"
         }
 
         if (!password) {
@@ -37,7 +35,7 @@ export default function login() {
 
     const handleSubmit = async () => {
         if(validate()){
-            const res = await loginUser(email, password)
+            const res = await loginUser(username, password)
             if (!res.success){
                 console.log(res)
             }else{
@@ -62,14 +60,14 @@ export default function login() {
         <View className={container}>
             <Text>login</Text>
 
-            <Text className={label}>Email</Text>
+            <Text className={label}>Username</Text>
                 <TextInput
                     className={input}
-                    value={email}
-                    onChangeText={setEmail}
-                    placeholder="Enter Email"
+                    value={username}
+                    onChangeText={setUsername}
+                    placeholder="Enter username"
                 />
-            {errors.email && <Text className={errorText}>{errors.email}</Text>}
+            {errors.username && <Text className={errorText}>{errors.username}</Text>}
 
             <Text className={label}>Password</Text>
                 <TextInput
@@ -78,7 +76,7 @@ export default function login() {
                     onChangeText={setPassword}
                     placeholder="Enter address"
                 />
-            {errors.email && <Text className={errorText}>{errors.email}</Text>}
+            {errors.password && <Text className={errorText}>{errors.password}</Text>}
 
             <TouchableOpacity
                 onPress={handleSubmit}

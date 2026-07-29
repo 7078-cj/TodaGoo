@@ -7,7 +7,6 @@ export default function UserRegisterForm({setPage,setFormData}) {
     const [username, setUsername] = useState("")
     const [firstName, setFirstName] = useState("")
     const [lastName, setLastName] = useState("")
-    const [email, setEmail] = useState("")
     const [password, setPassword] = useState("")
     const [confirmPassword, setConfirmPassword] = useState("")
     const [errors, setErrors] = useState({})
@@ -25,12 +24,6 @@ export default function UserRegisterForm({setPage,setFormData}) {
 
         if (!firstName.trim()) newErrors.firstName = "First name is required"
         if (!lastName.trim()) newErrors.lastName = "Last name is required"
-
-        if (!email.trim()) {
-            newErrors.email = "Email is required"
-        } else if (!/\S+@\S+\.\S+/.test(email)) {
-            newErrors.email = "Invalid email format"
-        }
 
         if (!password) {
             newErrors.password = "Password is required"
@@ -61,7 +54,6 @@ export default function UserRegisterForm({setPage,setFormData}) {
                 username: normalizeUsername(username),
                 first_name: firstName,
                 last_name: lastName,
-                email: email,
                 password: password
             }))
             setPage('driver')
@@ -128,20 +120,6 @@ export default function UserRegisterForm({setPage,setFormData}) {
             />
             {errors.lastName && (
                 <Text className={errorTextStyle}>{errors.lastName}</Text>
-            )}
-
-            {/* Email */}
-            <Text className={fieldLabelStyle}>Email</Text>
-            <TextInput
-                className={`${inputBaseStyle} ${errors.email ? inputErrorStyle : ""}`}
-                value={email}
-                onChangeText={setEmail}
-                placeholder="Enter email"
-                keyboardType="email-address"
-                autoCapitalize="none"
-            />
-            {errors.email && (
-                <Text className={errorTextStyle}>{errors.email}</Text>
             )}
 
             {/* Password */}

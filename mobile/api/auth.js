@@ -3,8 +3,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { jwtDecode } from "jwt-decode";
 
 
-export async function loginRequest(email, password) {
-    const res = await postRequest('user/token/user', {email, password}, false)
+export async function loginRequest(username, password) {
+    const res = await postRequest('user/token/user', {username, password}, false)
     return res.data;
 }
 

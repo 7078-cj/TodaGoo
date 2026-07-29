@@ -31,52 +31,6 @@ class AdminMyTokenObtainPairView(TokenObtainPairView):
 
 
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
-    username_field = 'email'
-
-    default_error_messages = {
-        'no_account': 'No active account found with the given credentials',
-        'inactive_account': 'User account is disabled',
-    }
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields[self.username_field] = serializers.EmailField()
-
-    def validate(self, attrs):
-        email = attrs.get('email')
-        password = attrs.get('password')
-
-        user_obj = User.objects.filter(email__iexact=email).first()
-
-        if user_obj is None:
-            raise serializers.ValidationError(
-                self.error_messages['no_account'],
-                code='no_active_account',
-            )
-
-        user = authenticate(
-            request=self.context.get('request'),
-            username=user_obj.username,
-            password=password,
-        )
-
-        if user is None:
-            raise serializers.ValidationError(
-                self.error_messages['no_account'],
-                code='no_active_account',
-            )
-
-        if not user.is_active:
-            raise serializers.ValidationError(
-                self.error_messages['inactive_account'],
-                code='inactive_account',
-            )
-
-        data = {}
-        refresh = self.get_token(user)
-        data['refresh'] = str(refresh)
-        data['access'] = str(refresh.access_token)
-        return data
 
     @classmethod
     def get_token(cls, user):

@@ -30,7 +30,6 @@ class DriverSerializer(serializers.ModelSerializer):
         fields = (
             'id',
             'username',
-            'email',
             'password',
             'driver_profile',
             'first_name',
@@ -109,7 +108,6 @@ class DriverSerializer(serializers.ModelSerializer):
 class DriverReadSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(source='user.id', read_only=True)
     username = serializers.CharField(source='user.username', read_only=True)
-    email = serializers.EmailField(source='user.email', read_only=True)
     first_name = serializers.CharField(source='user.first_name', read_only=True)
     last_name = serializers.CharField(source='user.last_name', read_only=True)
 
@@ -118,7 +116,6 @@ class DriverReadSerializer(serializers.ModelSerializer):
         fields = (
             'id',
             'username',
-            'email',
             'first_name',
             'last_name',
             'contact_number',
