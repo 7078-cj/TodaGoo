@@ -27,13 +27,18 @@ def get_nearest_toda(booking):
 def get_nearest_toda_station(booking):
     start = booking.start
 
-    toda = TodaStation.objects.filter(area__contains=start).first()
+    toda = (
+        TodaStation.objects
+        .annotate(distance=Distance("location", start))
+        .order_by("distance")
+        .first()
+    )
     if toda:
         return toda
 
     return (
         TodaStation.objects
-        .annotate(distance=Distance("area", start))
+        .annotate(distance=Distance("location", booking.end))
         .order_by("distance")
         .first()
     )
@@ -71,16 +76,18 @@ def assign_driver_sync(booking_id, exclude_driver_ids=None):
         nearest = (
             base_qs
             .filter(driver__toda_boundary=toda, driver__toda_station=toda_station)
-            .annotate(distance=Distance("location", booking.start))
+            .annotate(distance=Distance("location", booking.start, geography=True))
             .order_by("distance")
             .first()
         )
 
+
         if nearest is None:
             nearest = (
                 base_qs
-                .annotate(distance=Distance("location", booking.end))
-                .order_by("distance", "created_at")
+                .filter(driver__toda_boundary=toda)
+                .annotate(distance=Distance("location", booking.start, geography=True))
+                .order_by("distance")
                 .first()
             )
 
