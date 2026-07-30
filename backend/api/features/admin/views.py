@@ -7,8 +7,8 @@ from rest_framework.permissions import IsAuthenticated
 
 from  ...pagination import StandardPagination
 from ...permissions import TodaAdminPermission
-from .models import RegisteredToda, Toda
-from .serializers import  TodaReadSerializer, TodaWriteSerializer, RegisterWriteTodaSerializer, RegisteredReadTodaSerializer
+from .models import RegisteredToda, Toda, TodaStation
+from .serializers import  TodaReadSerializer, TodaWriteSerializer, RegisterWriteTodaSerializer, RegisteredReadTodaSerializer, TodaStationSerializer
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 import pandas as pd
 from django.db import transaction
@@ -188,4 +188,24 @@ class TODARetrieveUpdateDestroyAPIView(RetrieveUpdateDestroyAPIView):
         serializer.save(toda=toda)
 
         return Response(serializer.data)
+
+
+
+class TodaStationListCreateView(ListCreateAPIView):
+    queryset = TodaStation.objects.select_related('toda').all()
+    serializer_class = TodaStationSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        toda_id = self.request.query_params.get('toda_id')
+        if toda_id:
+            queryset = queryset.filter(toda_id=toda_id)
+        return queryset
+
+
+class TodaStationRetrieveUpdateDestroyView(RetrieveUpdateDestroyAPIView):
+    queryset = TodaStation.objects.select_related('toda').all()
+    serializer_class = TodaStationSerializer
+    permission_classes = [permissions.IsAuthenticated]
         
