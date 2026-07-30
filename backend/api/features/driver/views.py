@@ -13,6 +13,7 @@ from rest_framework import status
 from .utils import verify_license_details
 
 
+
 class DriverListCreateView(ListCreateAPIView):
     queryset = User.objects.filter(driver_profile__isnull=False)
     serializer_class = DriverSerializer

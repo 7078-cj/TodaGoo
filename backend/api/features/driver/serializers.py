@@ -1,9 +1,11 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
 from ..user.models import Driver
-from ..admin.models import RegisteredToda
+from ..admin.models import RegisteredToda, TodaStation
 from ..user.serializers import UserSerializer
+
 from ..utils.validation import DriverValidationMixin
+from django.db import transaction, IntegrityError
 
 
 class DriverProfileSerializer(DriverValidationMixin, serializers.ModelSerializer):
@@ -24,6 +26,7 @@ class DriverProfileSerializer(DriverValidationMixin, serializers.ModelSerializer
 
 class DriverSerializer(serializers.ModelSerializer):
     driver_profile = DriverProfileSerializer()
+    toda_station_id = serializers.IntegerField(write_only=True, required=False)
 
     class Meta:
         model = User
@@ -33,7 +36,8 @@ class DriverSerializer(serializers.ModelSerializer):
             'password',
             'driver_profile',
             'first_name',
-            'last_name'
+            'last_name',
+            'toda_station_id',
         )
         extra_kwargs = {
             'password': {'write_only': True}
@@ -43,8 +47,10 @@ class DriverSerializer(serializers.ModelSerializer):
         driver_data = attrs.get('driver_profile')
 
         if not driver_data:
-            raise serializers.ValidationError("driver_profile is required")
-
+            if self.instance is None:
+                raise serializers.ValidationError("driver_profile is required")
+            return attrs
+        
         toda_number = driver_data.get('toda_number')
         vehicle_plate = driver_data.get('vehicle_plate')
 
@@ -58,50 +64,78 @@ class DriverSerializer(serializers.ModelSerializer):
                 "TODA number and vehicle plate are not registered."
             )
 
-        if Driver.objects.filter(vehicle_plate=vehicle_plate).exists():
+        toda_station_id = attrs.get('toda_station_id')
+        toda_station = None
+
+        if toda_station_id:
+            toda_station = TodaStation.objects.filter(id=toda_station_id).first()
+            if toda_station is None:
+                raise serializers.ValidationError(
+                    {"toda_station_id": "Toda Station not found."}
+                )
+
+        plate_qs = Driver.objects.filter(vehicle_plate=vehicle_plate)
+        if self.instance is not None:
+            plate_qs = plate_qs.exclude(pk=self.instance.driver_profile.pk)
+
+        if plate_qs.exists():
             raise serializers.ValidationError(
                 "This vehicle is already registered to a driver."
             )
 
         self._registered_toda = registered_toda
+        self._toda_station = toda_station
 
         return attrs
 
     def create(self, validated_data):
-        driver_data = validated_data.pop('driver_profile')
+        try:
+            with transaction.atomic():
+                driver_data = validated_data.pop('driver_profile')
+                validated_data.pop('toda_station_id', None)
+                user_serializer = UserSerializer(data=validated_data)
+                user_serializer.is_valid(raise_exception=True)
+                user = user_serializer.save()
 
-        user_serializer = UserSerializer(data=validated_data)
-        user_serializer.is_valid(raise_exception=True)
-        user = user_serializer.save()
+                toda_boundary = self._registered_toda.toda
 
-        toda_boundary = self._registered_toda.toda
-
-        driver_serializer = DriverProfileSerializer(data=driver_data)
-        driver_serializer.is_valid(raise_exception=True)
-        driver_serializer.save(
-            user=user,
-            status='ACTIVE',
-            toda_boundary=toda_boundary
-        )
+                driver_serializer = DriverProfileSerializer(data=driver_data)
+                driver_serializer.is_valid(raise_exception=True)
+                driver_serializer.save(
+                    user=user,
+                    status='ACTIVE',
+                    toda_boundary=toda_boundary,
+                    toda_station=self._toda_station
+                )
+        except IntegrityError:
+            raise serializers.ValidationError(
+                {"driver_profile": {"vehicle_plate": "This vehicle is already registered to a driver."}}
+            )
 
         return user
 
 
     def update(self, instance, validated_data):
-        driver_data = validated_data.pop('driver_profile', None)
+        with transaction.atomic():
+            driver_data = validated_data.pop('driver_profile', None)
+            validated_data.pop('toda_station_id', None)
 
-        user_serializer = UserSerializer(instance, data=validated_data, partial=True)
-        user_serializer.is_valid(raise_exception=True)
-        user = user_serializer.save()
+            user_serializer = UserSerializer(instance, data=validated_data, partial=True)
+            user_serializer.is_valid(raise_exception=True)
+            user = user_serializer.save()
 
-        
-        if driver_data:
-            driver = instance.driver_profile
-            driver_serializer = DriverProfileSerializer(
-                driver, data=driver_data, partial=True
-            )
-            driver_serializer.is_valid(raise_exception=True)
-            driver_serializer.save()
+            if driver_data:
+                driver = instance.driver_profile
+                driver_serializer = DriverProfileSerializer(
+                    driver, data=driver_data, partial=True
+                )
+                driver_serializer.is_valid(raise_exception=True)
+                driver_serializer.save()
+
+            if self._toda_station is not None:
+                driver = instance.driver_profile
+                driver.toda_station = self._toda_station
+                driver.save(update_fields=['toda_station'])
 
         return user
 
