@@ -1,7 +1,7 @@
 from rest_framework import serializers
-from .models import RegisteredToda, Toda
+from .models import RegisteredToda, Toda, TodaStation
 from django.contrib.gis.geos import Polygon
-
+from ..booking.serializers import PointField
 
         
 class TodaReadSerializer(serializers.ModelSerializer):
@@ -68,3 +68,10 @@ class RegisterWriteTodaSerializer(serializers.ModelSerializer):
         model = RegisteredToda
         fields = '__all__'
         read_only_fields = ['toda', 'toda_name']
+
+class TodaStationSerializer(serializers.ModelSerializer):
+    location = PointField()
+    
+    class Meta:
+        model = TodaStation
+        fields = '__all__'

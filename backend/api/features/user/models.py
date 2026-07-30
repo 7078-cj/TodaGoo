@@ -2,7 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
 from datetime import timedelta
-from ..admin.models import Toda
+from ..admin.models import Toda,TodaStation
 
 class Admin(models.Model):
     department_choices = [
@@ -29,7 +29,8 @@ class Driver(models.Model):
     status = models.CharField(max_length=50, choices=STATUS_CHOICES, default='ACTIVE')
     address= models.CharField(max_length=255)
     contact_number = models.CharField(max_length=11)
-    toda_station = models.ForeignKey(Toda, on_delete=models.CASCADE, related_name='toda_drivers', null=True, blank=True)
+    toda_boundary = models.ForeignKey(Toda, on_delete=models.CASCADE, related_name='toda_drivers', null=True, blank=True)
+    toda_station = models.ForeignKey(TodaStation, on_delete=models.CASCADE, related_name='toda_station_drivers', null=True, blank=True)
     profile_picture = models.ImageField(upload_to='driver_profiles/', null=True, blank=True)
     toda_number = models.CharField(max_length=20)
     franchise_permit_number = models.CharField(max_length=20)

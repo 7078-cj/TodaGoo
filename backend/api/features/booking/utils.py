@@ -3,7 +3,7 @@ from django.contrib.gis.db.models.functions import Distance
 from django.core.cache import cache
 
 from .models import Booking, DriverQueue
-from ..admin.models import Toda
+from ..admin.models import Toda, TodaStation
 from ...broadcast import broadcast
 from .serializers import BookingSerializer
 
@@ -11,15 +11,29 @@ import time
 
 
 def get_nearest_toda(booking):
-    end = booking.end
+    start = booking.start
 
-    toda = Toda.objects.filter(area__contains=end).first()
+    toda = Toda.objects.filter(area__contains=start).first()
     if toda:
         return toda
 
     return (
         Toda.objects
-        .annotate(distance=Distance("area", end))
+        .annotate(distance=Distance("area", start))
+        .order_by("distance")
+        .first()
+    )
+
+def get_nearest_toda_station(booking):
+    start = booking.start
+
+    toda = TodaStation.objects.filter(area__contains=start).first()
+    if toda:
+        return toda
+
+    return (
+        TodaStation.objects
+        .annotate(distance=Distance("area", start))
         .order_by("distance")
         .first()
     )
@@ -42,6 +56,10 @@ def assign_driver_sync(booking_id, exclude_driver_ids=None):
         if toda is None:
             return
 
+        toda_station = get_nearest_toda_station(booking)
+        if toda_station is None:
+            return
+
         base_qs = (
             DriverQueue.objects
             .select_for_update(of=("self",), skip_locked=True)
@@ -49,10 +67,11 @@ def assign_driver_sync(booking_id, exclude_driver_ids=None):
             .exclude(driver_id__in=exclude_driver_ids)
         )
 
+
         nearest = (
             base_qs
-            .filter(driver__toda_station=toda)
-            .annotate(distance=Distance("location", booking.end))
+            .filter(driver__toda_boundary=toda, driver__toda_station=toda_station)
+            .annotate(distance=Distance("location", booking.start))
             .order_by("distance")
             .first()
         )
@@ -60,7 +79,7 @@ def assign_driver_sync(booking_id, exclude_driver_ids=None):
         if nearest is None:
             nearest = (
                 base_qs
-                .annotate(distance=Distance("location", booking.start))
+                .annotate(distance=Distance("location", booking.end))
                 .order_by("distance", "created_at")
                 .first()
             )

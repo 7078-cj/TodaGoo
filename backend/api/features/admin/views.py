@@ -51,7 +51,7 @@ class TODAListCreateAPIView(ListCreateAPIView):
             "toda_number__icontains": self.request.query_params.get("toda_number"),
             "driver_name__icontains": self.request.query_params.get("driver_name"),
             "vehicle_plate__icontains": self.request.query_params.get("vehicle_plate"),
-            "toda__name__icontains": self.request.query_params.get("toda_station"),
+            "toda__name__icontains": self.request.query_params.get("toda_boundary"),
         }
 
         for k, v in filters.items():

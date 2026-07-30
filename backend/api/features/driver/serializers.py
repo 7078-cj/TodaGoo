@@ -74,14 +74,14 @@ class DriverSerializer(serializers.ModelSerializer):
         user_serializer.is_valid(raise_exception=True)
         user = user_serializer.save()
 
-        toda_station = self._registered_toda.toda
+        toda_boundary = self._registered_toda.toda
 
         driver_serializer = DriverProfileSerializer(data=driver_data)
         driver_serializer.is_valid(raise_exception=True)
         driver_serializer.save(
             user=user,
             status='ACTIVE',
-            toda_station=toda_station
+            toda_boundary=toda_boundary
         )
 
         return user
