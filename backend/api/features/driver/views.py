@@ -32,8 +32,6 @@ class DriverListCreateView(ListCreateAPIView):
         last_name = data.get("last_name")
         license_number = data.get("driver_profile", {}).get("license_number")
 
-
-
         if license_image:
 
             ocr_result = verify_license_details(
