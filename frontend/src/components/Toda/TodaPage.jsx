@@ -49,7 +49,7 @@ function TodaPage() {
 
 
     return (
-        <>
+        <div className='flex flex-col gap-4 w-full'>
             <AddBoundariesModal open={open} setOpen={setOpen} fetchTodas={fetchTodas}/>
             <div>
                 <TodaList todas={todas} fetchTodas={fetchTodas}/>
@@ -59,7 +59,7 @@ function TodaPage() {
                     areas={polygons}
                 />
             </div>
-        </>
+        </div>
     )
 }
 
