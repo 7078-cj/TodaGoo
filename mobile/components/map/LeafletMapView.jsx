@@ -139,7 +139,8 @@ body,
 
 /* Tooltips / labels */
 
-.leaflet-tooltip.marker-label {
+.leaflet-tooltip.marker-label,
+.leaflet-tooltip.area-label {
     border: none;
     border-radius: 8px;
     padding: 4px 10px;
@@ -151,7 +152,8 @@ body,
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
 }
 
-.leaflet-tooltip.marker-label::before {
+.leaflet-tooltip.marker-label::before,
+.leaflet-tooltip.area-label::before {
     border-top-color: #fff;
 }
 
@@ -213,6 +215,111 @@ function createIcon(marker) {
 }
 
 /* ============================
+   Area / Polygon normalisation
+   Accepted shapes per area entry:
+     • Raw ring:        [[lng,lat], [lng,lat], ...]
+     • Array of rings:  [[[lng,lat],...], [[lng,lat],...]]  (holes)
+     • GeoJSON Feature: { type:"Feature", geometry:{...}, properties:{...} }
+     • GeoJSON Geometry:{ type:"Polygon"|"MultiPolygon", coordinates:[...] }
+     • Structured:       { id, label, color, fillOpacity, lineWidth, coordinates }
+============================ */
+
+const AREA_COLORS = [
+    "#4285F4", "#EA4335", "#FBBC05", "#34A853",
+    "#FF6D00", "#7B1FA2", "#0288D1", "#00796B"
+];
+
+function ringToLatLngs(ring) {
+    // GeoJSON rings are [lng, lat]; Leaflet wants [lat, lng]
+    return ring.map(function (pt) { return [pt[1], pt[0]]; });
+}
+
+function coordsToLatLngs(coordinates, geomType) {
+    if (geomType === "MultiPolygon") {
+        // coordinates: Polygon[][] -> [[ring, ring...], [ring, ring...]]
+        return coordinates.map(function (polygon) {
+            return polygon.map(ringToLatLngs);
+        });
+    }
+    // Polygon: coordinates -> [ring, ring...] (first = outer, rest = holes)
+    return coordinates.map(ringToLatLngs);
+}
+
+function normaliseArea(area, index) {
+
+    if (area && area.type === "Feature") {
+        const geom = area.geometry || {};
+        return {
+            id: String(area.id != null ? area.id : "area-" + index),
+            label: (area.properties && (area.properties.name || area.properties.label)) || "Area " + (index + 1),
+            color: (area.properties && area.properties.color) || AREA_COLORS[index % AREA_COLORS.length],
+            fillOpacity: (area.properties && area.properties.fillOpacity != null) ? area.properties.fillOpacity : 0.25,
+            lineOpacity: (area.properties && area.properties.lineOpacity != null) ? area.properties.lineOpacity : 0.85,
+            lineWidth: (area.properties && area.properties.lineWidth) || 2,
+            latlngs: coordsToLatLngs(geom.coordinates, geom.type),
+            multi: geom.type === "MultiPolygon"
+        };
+    }
+
+    if (area && (area.type === "Polygon" || area.type === "MultiPolygon")) {
+        return {
+            id: "area-" + index,
+            label: "Area " + (index + 1),
+            color: AREA_COLORS[index % AREA_COLORS.length],
+            fillOpacity: 0.25,
+            lineOpacity: 0.85,
+            lineWidth: 2,
+            latlngs: coordsToLatLngs(area.coordinates, area.type),
+            multi: area.type === "MultiPolygon"
+        };
+    }
+
+    if (Array.isArray(area)) {
+        const firstItem = area[0];
+        let rings;
+        if (Array.isArray(firstItem) && Array.isArray(firstItem[0])) {
+            rings = area; // already an array of rings
+        } else {
+            rings = [area]; // single ring
+        }
+        // Auto-close each ring if needed
+        rings = rings.map(function (ring) {
+            const first = ring[0];
+            const last = ring[ring.length - 1];
+            if (first[0] !== last[0] || first[1] !== last[1]) {
+                return ring.concat([first]);
+            }
+            return ring;
+        });
+
+        return {
+            id: "area-" + index,
+            label: "Area " + (index + 1),
+            color: AREA_COLORS[index % AREA_COLORS.length],
+            fillOpacity: 0.25,
+            lineOpacity: 0.85,
+            lineWidth: 2,
+            latlngs: coordsToLatLngs(rings, "Polygon"),
+            multi: false
+        };
+    }
+
+    if (area && area.coordinates) {
+        const base = normaliseArea(area.coordinates, index);
+        return Object.assign({}, base, {
+            id: area.id != null ? String(area.id) : base.id,
+            label: area.label || area.name || base.label,
+            color: area.color || base.color,
+            fillOpacity: area.fillOpacity != null ? area.fillOpacity : base.fillOpacity,
+            lineOpacity: area.lineOpacity != null ? area.lineOpacity : base.lineOpacity,
+            lineWidth: area.lineWidth || base.lineWidth
+        });
+    }
+
+    return null;
+}
+
+/* ============================
    Map init
 ============================ */
 
@@ -239,7 +346,9 @@ map.setView([${center.lat}, ${center.lng}], ${zoom});
 
 window.markersLayer = L.layerGroup().addTo(map);
 window.routeLayer = L.layerGroup().addTo(map);
+window.areasLayer = L.layerGroup().addTo(map);
 window.markerRefs = {};
+window.areaRefs = {};
 window.editModeEnabled = false;
 
 /* ============================
@@ -339,6 +448,80 @@ window.setMarkers = function (markers) {
 };
 
 /* ============================
+   Areas / Polygons (diffed)
+============================ */
+
+window.setAreas = function (rawAreas) {
+
+    const list = (rawAreas || [])
+        .map(function (a, i) { return normaliseArea(a, i); })
+        .filter(Boolean);
+
+    const nextIds = new Set(list.map(function (a) { return a.id; }));
+
+    // Remove stale polygons
+    Object.keys(window.areaRefs).forEach(function (id) {
+        if (!nextIds.has(id)) {
+            window.areasLayer.removeLayer(window.areaRefs[id]);
+            delete window.areaRefs[id];
+        }
+    });
+
+    list.forEach(function (a) {
+
+        const existing = window.areaRefs[a.id];
+        const layerType = a.multi ? L.polygon : L.polygon; // both use L.polygon; multi passes nested rings
+
+        if (existing) {
+            existing.setLatLngs(a.latlngs);
+            existing.setStyle({
+                color: a.color,
+                weight: a.lineWidth,
+                opacity: a.lineOpacity,
+                fillColor: a.color,
+                fillOpacity: a.fillOpacity
+            });
+            existing.unbindTooltip();
+            if (a.label) {
+                existing.bindTooltip(a.label, {
+                    sticky: true,
+                    direction: "top",
+                    className: "area-label"
+                });
+            }
+            return;
+        }
+
+        const polygon = L.polygon(a.latlngs, {
+            color: a.color,
+            weight: a.lineWidth,
+            opacity: a.lineOpacity,
+            fillColor: a.color,
+            fillOpacity: a.fillOpacity
+        });
+
+        if (a.label) {
+            polygon.bindTooltip(a.label, {
+                sticky: true,
+                direction: "top",
+                className: "area-label"
+            });
+        }
+
+        polygon.on("click", function () {
+            window.ReactNativeWebView.postMessage(
+                JSON.stringify({ type: "areaPress", id: a.id })
+            );
+        });
+
+        polygon.addTo(window.areasLayer);
+        window.areaRefs[a.id] = polygon;
+
+    });
+
+};
+
+/* ============================
    Route
 ============================ */
 
@@ -399,6 +582,12 @@ window.mapFitContent = function () {
         bounds.push(layer.getLatLng());
     });
 
+    window.areasLayer.eachLayer(function (layer) {
+        if (layer.getBounds) {
+            bounds.push(layer.getBounds());
+        }
+    });
+
     if (window.routePolyline) {
         bounds = bounds.concat(window.routePolyline.getLatLngs());
     }
@@ -406,7 +595,7 @@ window.mapFitContent = function () {
     if (bounds.length > 1) {
         map.fitBounds(bounds, { padding: [40, 40], maxZoom: 16 });
     } else if (bounds.length === 1) {
-        map.setView(bounds[0], 16);
+        map.setView(bounds[0].getCenter ? bounds[0].getCenter() : bounds[0], 16);
     }
 
 };
@@ -449,8 +638,10 @@ export const LeafletMapView = forwardRef(function LeafletMapView(
         zoom = 16,
         markers = [],
         route = [],
+        areas = [],
         editMode = false,
         onMarkerPress,
+        onAreaPress,
         onMapPress
     },
     ref
@@ -497,6 +688,11 @@ export const LeafletMapView = forwardRef(function LeafletMapView(
         if (!readyRef.current) return;
         inject(`window.setRoute(${safeJSONStringify(route)}, ${route.length > 1})`);
     }, [route]);
+
+    useEffect(() => {
+        if (!readyRef.current) return;
+        inject(`window.setAreas(${safeJSONStringify(areas)})`);
+    }, [areas]);
 
     useEffect(() => {
         if (!readyRef.current) return;
@@ -555,6 +751,7 @@ export const LeafletMapView = forwardRef(function LeafletMapView(
                             readyRef.current = true;
                             inject(`window.setMarkers(${safeJSONStringify(markers)})`);
                             inject(`window.setRoute(${safeJSONStringify(route)}, ${route.length > 1})`);
+                            inject(`window.setAreas(${safeJSONStringify(areas)})`);
                             inject(`window.setEditMode(${!!editMode})`);
                             flushPending();
                             return;
@@ -562,6 +759,10 @@ export const LeafletMapView = forwardRef(function LeafletMapView(
 
                         if (data.type === "markerPress") {
                             onMarkerPress?.(data.id);
+                        }
+
+                        if (data.type === "areaPress") {
+                            onAreaPress?.(data.id);
                         }
 
                         if (data.type === "mapPress") {

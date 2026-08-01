@@ -20,9 +20,11 @@ export default function MapComponent({
     location = null,
     setLocation,
     markers = [],
+    areas = [],
     editMode = false,
     userLocation = true,
     user,
+    onAreaPress,
 }) {
     const [searchQuery, setSearchQuery] = useState("");
     const [userLoc, setUserLoc] = useState(null);
@@ -31,6 +33,10 @@ export default function MapComponent({
     const debounceTimer = useRef(null);
     const lastRequestId = useRef(0);
     const hasInitializedLocation = useRef(false); // 🔒 guard
+
+    // Normalise areas so callers can pass a single item or an array,
+    // same convention as `markers`.
+    const normalisedAreas = Array.isArray(areas) ? areas : areas ? [areas] : [];
 
     // Initialize location ONCE, ever — not on every render/remount
     useEffect(() => {
@@ -141,9 +147,11 @@ export default function MapComponent({
             zoom={16}
             markers={mapMarkers}
             route={route}
+            areas={normalisedAreas}
             editMode={editMode}
             onMapPress={handleMapPress}
             onMarkerPress={(id) => console.log("Marker pressed:", id)}
+            onAreaPress={onAreaPress}
         />
         <MapControls
             mapRef={mapHandleRef}
