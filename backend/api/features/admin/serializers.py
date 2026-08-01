@@ -71,6 +71,7 @@ class RegisterWriteTodaSerializer(serializers.ModelSerializer):
 
 class TodaStationSerializer(serializers.ModelSerializer):
     location = PointField()
+    toda = TodaReadSerializer()
     
     class Meta:
         model = TodaStation
