@@ -4,7 +4,7 @@ import numpy as np
 from PIL import Image
 import io
 
-reader = easyocr.Reader(['en'])
+reader = easyocr.Reader(['en'], gpu=False)
 
 
 def verify_license_details(image_file, first_name, last_name, license_number):
