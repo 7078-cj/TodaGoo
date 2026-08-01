@@ -71,8 +71,20 @@ class RegisterWriteTodaSerializer(serializers.ModelSerializer):
 
 class TodaStationSerializer(serializers.ModelSerializer):
     location = PointField()
-    toda = TodaReadSerializer()
-    
+
+    def create(self, validated_data):
+        point = validated_data.pop('location') 
+        toda = Toda.objects.filter(area__contains=point).first()
+
+        if not toda:
+            raise serializers.ValidationError(
+                {"location": "This location is outside all TODA jurisdictions."}
+            )
+
+        toda_station = TodaStation.objects.create(toda=toda, location=point, **validated_data)
+        return toda_station
+
     class Meta:
         model = TodaStation
         fields = '__all__'
+        read_only_fields = ['toda']

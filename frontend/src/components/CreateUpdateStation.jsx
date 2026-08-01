@@ -1,12 +1,19 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
     Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription
 } from '@/components/ui/dialog'
 import MapComponent from './MapComponent';
 
-export default function CreateUpdateStation({ station, open, onClose, onCreate, onUpdate }) {
-    const [name, setName] = useState(station ? station.name : '');
-    const [location, setLocation] = useState(station ? station.location : { lat: null, lng: null });
+export default function CreateUpdateStation({ station, open, onClose, onCreate, onUpdate, areas }) {
+    const [name, setName] = useState('');
+    const [location, setLocation] = useState({ lat: null, lng: null });
+
+    useEffect(() => {
+        if (open) {
+            setName(station ? station.name : '');
+            setLocation(station ? station.location : { lat: null, lng: null });
+        }
+    }, [station, open]);
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -20,9 +27,6 @@ export default function CreateUpdateStation({ station, open, onClose, onCreate, 
         } else {
             onCreate({ name, location });
         }
-
-        setName('');
-        setLocation({ lat: null, lng: null });
 
         onClose();
     };
@@ -47,12 +51,14 @@ export default function CreateUpdateStation({ station, open, onClose, onCreate, 
                         placeholder="Enter station name..."
                         className="w-full outline-none text-sm bg-transparent border border-gray-300 rounded-md px-3 py-2"
                     />
-
-                    <MapComponent
-                        location={location}
-                        setLocation={setLocation}
-                        editable={true}
-                    />
+                    <div className="h-64 w-full border border-gray-300 rounded-md">
+                        <MapComponent
+                            location={location}
+                            setLocation={setLocation}
+                            editMode={true}
+                            areas={areas}
+                        />
+                    </div>
 
                     <button
                         type="submit"

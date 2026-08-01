@@ -17,7 +17,7 @@ import re
 from rest_framework import status
 
 
-class TodaStationListCreateAPIView(ListCreateAPIView):
+class TodaBoundariesListCreateAPIView(ListCreateAPIView):
     permission_classes = [IsAuthenticated, TodaAdminPermission]
     queryset = Toda.objects.all()
     
@@ -27,7 +27,7 @@ class TodaStationListCreateAPIView(ListCreateAPIView):
         return TodaReadSerializer
 
 
-class TodaStationRetrieveUpdateDestroyAPIView(RetrieveUpdateDestroyAPIView):
+class TodaBoundariesRetrieveUpdateDestroyAPIView(RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAuthenticated, TodaAdminPermission]
     queryset = Toda.objects.all()
     

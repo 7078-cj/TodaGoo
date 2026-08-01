@@ -20,6 +20,7 @@ import { LayoutDashboard, MapPin } from "lucide-react";
 import TodaBoundaries from "./pages/TodaBoundaries";
 import Footer from "./components/Footer";
 import RegisteredToda from "./pages/RegisteredToda";
+import TodaStation from "./pages/TodaStation";
 
 const MDRRMO_MENU = [
     { label: "Dashboard", href: "/mdrrmo", icon: LayoutDashboard },
@@ -29,6 +30,7 @@ const TODA_MENU = [
     { label: "Dashboard", href: "/toda", icon: LayoutDashboard },
     { label: "Boundaries", href: "/toda/boundaries", icon: MapPin },
     { label: "RegisteredToda", href: "/toda/registered", icon: MapPin },
+    { label: "Stations", href: "/toda/stations", icon: MapPin },
 ];
 
 function AppContent() {
@@ -98,6 +100,7 @@ function AppContent() {
                                             <Route path="/toda" element={<TodaDashboard />} />
                                             <Route path="/toda/boundaries" element={<TodaBoundaries />} />
                                             <Route path="/toda/registered" element={<RegisteredToda />} />
+                                            <Route path="/toda/stations" element={<TodaStation />} />
                                         </Route>
                                     </Route>
                                 </Routes>
