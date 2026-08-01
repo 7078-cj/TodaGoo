@@ -3,23 +3,29 @@ import re
 import numpy as np
 from PIL import Image
 import io
+import threading
 
-reader = easyocr.Reader(['en'], gpu=False)
+_reader = None
+_reader_lock = threading.Lock()
+
+
+def _get_reader():
+    global _reader
+    if _reader is None:
+        with _reader_lock:
+            if _reader is None:  # double-checked locking
+                _reader = easyocr.Reader(['en'], gpu=False)
+    return _reader
 
 
 def verify_license_details(image_file, first_name, last_name, license_number):
     """
     Runs OCR on a license image and checks whether the given first_name,
     last_name, and license_number appear in the extracted text.
-
-    image_file can be:
-        - a Django UploadedFile (InMemoryUploadedFile / TemporaryUploadedFile)
-        - raw bytes
-        - a file path (str)
-        - a numpy array
     """
     image_input = _normalize_image_input(image_file)
 
+    reader = _get_reader()
     results = reader.readtext(image_input, detail=0)
     raw_text = " ".join(results)
 
@@ -48,12 +54,7 @@ def verify_license_details(image_file, first_name, last_name, license_number):
 
 
 def _normalize_image_input(image_file):
-    """
-    Converts Django UploadedFile / bytes / PIL-readable input into a numpy
-    array that EasyOCR can consume.
-    """
     if hasattr(image_file, "read"):
-        
         image_file.seek(0)
         image_bytes = image_file.read()
         image_file.seek(0)
