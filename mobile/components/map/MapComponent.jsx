@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, { useState, useRef, useEffect, useCallback, forwardRef, useImperativeHandle } from "react";
 import { View } from "react-native";
 import { LeafletMapView } from "./LeafletMapView";
 import SearchInput from "./SearchInput";
@@ -16,16 +16,22 @@ function markerTypeFromId(id) {
     return "default";
 }
 
-export default function MapComponent({
-    location = null,
-    setLocation,
-    markers = [],
-    areas = [],
-    editMode = false,
-    userLocation = true,
-    user,
-    onAreaPress,
-}) {
+const MapComponent = forwardRef(function MapComponent(
+    {
+        location = null,
+        setLocation,
+        markers = [],
+        areas = [],
+        editMode = false,
+        userLocation = true,
+        user,
+        onAreaPress,
+        onMarkerPress,
+        centerOnMarkerPress = true,
+        centerZoom = 17,
+    },
+    ref
+) {
     const [searchQuery, setSearchQuery] = useState("");
     const [userLoc, setUserLoc] = useState(null);
     const [route, setRoute] = useState([]);
@@ -131,6 +137,38 @@ export default function MapComponent({
         [editMode, setLocation]
     );
 
+    // Center + zoom on a marker when it's pressed, then still bubble the
+    // press up to whatever the caller wants to do with it.
+    const handleMarkerPress = useCallback(
+        (id) => {
+        if (centerOnMarkerPress) {
+            mapHandleRef.current?.centerOnMarker(id, centerZoom);
+        }
+        onMarkerPress?.(id);
+        },
+        [centerOnMarkerPress, centerZoom, onMarkerPress]
+    );
+
+    // Expose the underlying map controls to parent components, so a list
+    // item, search result, or button outside the map can drive it.
+    useImperativeHandle(ref, () => ({
+        centerOnMarker(id, zoom) {
+            mapHandleRef.current?.centerOnMarker(id, zoom ?? centerZoom);
+        },
+        recenter(nextCenter, nextZoom) {
+            mapHandleRef.current?.recenter(nextCenter, nextZoom);
+        },
+        fitToContent() {
+            mapHandleRef.current?.fitToContent();
+        },
+        zoomIn() {
+            mapHandleRef.current?.zoomIn();
+        },
+        zoomOut() {
+            mapHandleRef.current?.zoomOut();
+        },
+    }), [centerZoom]);
+
     return (
         <View style={{ flex: 1 }}>
         {location && editMode && (
@@ -150,7 +188,7 @@ export default function MapComponent({
             areas={normalisedAreas}
             editMode={editMode}
             onMapPress={handleMapPress}
-            onMarkerPress={(id) => console.log("Marker pressed:", id)}
+            onMarkerPress={handleMarkerPress}
             onAreaPress={onAreaPress}
         />
         <MapControls
@@ -159,4 +197,6 @@ export default function MapComponent({
         />
         </View>
     );
-}
+});
+
+export default MapComponent;

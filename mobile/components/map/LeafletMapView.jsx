@@ -376,6 +376,24 @@ window.mapRecenter = function (lat, lng, zoom) {
 };
 
 /* ============================
+   Center on a specific marker by id
+============================ */
+
+window.centerOnMarker = function (id, zoom) {
+    const marker = window.markerRefs[String(id)];
+    if (!marker) {
+        console.log("centerOnMarker: no marker found for id", id);
+        return;
+    }
+    const latLng = marker.getLatLng();
+    map.flyTo(
+        [latLng.lat, latLng.lng],
+        zoom || Math.max(map.getZoom(), 16),
+        { duration: 1.2 }
+    );
+};
+
+/* ============================
    Markers (diffed, no full reload)
 ============================ */
 
@@ -470,7 +488,6 @@ window.setAreas = function (rawAreas) {
     list.forEach(function (a) {
 
         const existing = window.areaRefs[a.id];
-        const layerType = a.multi ? L.polygon : L.polygon; // both use L.polygon; multi passes nested rings
 
         if (existing) {
             existing.setLatLngs(a.latlngs);
@@ -713,6 +730,11 @@ export const LeafletMapView = forwardRef(function LeafletMapView(
             const c = nextCenter ?? centerRef.current;
             const z = nextZoom ?? zoomRef.current;
             inject(`window.mapRecenter(${c.lat}, ${c.lng}, ${z})`);
+        },
+
+        centerOnMarker(id, zoom) {
+            const safeId = JSON.stringify(String(id));
+            inject(`window.centerOnMarker(${safeId}, ${zoom ?? "undefined"})`);
         },
 
         fitToContent() {
