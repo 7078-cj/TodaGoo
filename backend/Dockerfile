@@ -10,7 +10,6 @@ RUN apt-get update && apt-get install -y \
     python3-dev \
     gfortran \
     dos2unix \
-    # --- add these ---
     gdal-bin \
     libgdal-dev \
     libgeos-dev \
@@ -21,12 +20,9 @@ RUN apt-get update && apt-get install -y \
 # Install Python dependencies
 COPY requirements.txt .
 RUN pip install --upgrade pip && pip install -r requirements.txt
-RUN pip install honcho
 
 COPY . .
 
-RUN dos2unix ./executables/start_web.sh && chmod +x ./executables/start_web.sh
+EXPOSE 8000
 
-EXPOSE 8000 6379
-
-CMD ["honcho", "start", "-f", "Procfile"]
+CMD python manage.py migrate --noinput && python manage.py runserver 0.0.0:8000
