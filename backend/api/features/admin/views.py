@@ -212,4 +212,18 @@ class TodaStationRetrieveUpdateDestroyView(RetrieveUpdateDestroyAPIView):
     queryset = TodaStation.objects.select_related('toda').all()
     serializer_class = TodaStationSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+@api_view(['GET'])
+def get_toda_stations_with_prefix(request):
+    prefix = request.query_params.get('prefix')
+    if not prefix:
+        return Response({"error": "prefix query parameter is required."}, status=400)
+
+    toda = Toda.objects.filter(prefix=prefix).first()
+    if not toda:
+        return Response({"error": "Invalid TODA prefix."}, status=400)
+
+    stations = TodaStation.objects.filter(toda=toda)
+    serializer = TodaStationSerializer(stations, many=True)
+    return Response(serializer.data)
         

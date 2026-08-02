@@ -1,6 +1,10 @@
-import { View, Text, TextInput, TouchableOpacity, ScrollView } from "react-native";
-import React, { useState } from "react";
+import { View, Text, TextInput, TouchableOpacity, ScrollView, ActivityIndicator } from "react-native";
+import React, { useState, useEffect, useRef } from "react";
 import PickImageComponent from "./PickImageComponent";
+import { getTodaStations } from "../api/toda";
+import PickTodaStation from "./PickTodaStation";
+
+const DEBOUNCE_MS = 400;
 
 export default function DriverProfileForm({ setFormData, onSubmit }) {
     const [address, setAddress] = useState("");
@@ -12,7 +16,73 @@ export default function DriverProfileForm({ setFormData, onSubmit }) {
     const [vehicle_front_picture, setVehicleFrontPicture] = useState(null);
     const [vehicle_back_picture, setVehicleBackPicture] = useState(null);
 
+    const [todaStations, setTodaStations] = useState([]);
+    const [selectedStation, setSelectedStation] = useState(null);
+    const [loadingStations, setLoadingStations] = useState(false);
+    const [stationsError, setStationsError] = useState(null);
+
+    const lastFetchedPrefix = useRef(null);
+    const debounceTimer = useRef(null);
+    const lastRequestId = useRef(0);
+
     const [errors, setErrors] = useState({});
+
+    const prefix = toda_number.slice(0, 2);
+    const prefixIsComplete = /^\d{2}$/.test(prefix);
+
+    useEffect(() => {
+
+        if (debounceTimer.current) {
+            clearTimeout(debounceTimer.current);
+            debounceTimer.current = null;
+        }
+
+        if (!prefixIsComplete) {
+            setTodaStations([]);
+            setSelectedStation(null);
+            setLoadingStations(false);
+            setStationsError(null);
+            lastFetchedPrefix.current = null;
+            return;
+        }
+
+        if (lastFetchedPrefix.current === prefix) return;
+
+        const requestId = ++lastRequestId.current;
+
+        debounceTimer.current = setTimeout(async () => {
+            setLoadingStations(true);
+            setStationsError(null);
+
+            try {
+                const res = await getTodaStations(prefix);
+                const data = res?.data ?? res;
+
+                if (requestId === lastRequestId.current) {
+                    setTodaStations(data ?? []);
+                    setSelectedStation(null);
+                    lastFetchedPrefix.current = prefix;
+                }
+            } catch (err) {
+                console.error("Error fetching TODA stations:", err);
+                if (requestId === lastRequestId.current) {
+                    setStationsError("Failed to load stations for this TODA number.");
+                    setTodaStations([]);
+                }
+            } finally {
+                if (requestId === lastRequestId.current) {
+                    setLoadingStations(false);
+                }
+            }
+        }, DEBOUNCE_MS);
+
+        return () => {
+            if (debounceTimer.current) {
+                clearTimeout(debounceTimer.current);
+                debounceTimer.current = null;
+            }
+        };
+    }, [prefix, prefixIsComplete]);
 
     const validate = () => {
         let newErrors = {};
@@ -39,6 +109,10 @@ export default function DriverProfileForm({ setFormData, onSubmit }) {
                 "Format must be 01-XXX to 11-XXX (e.g., 01-123 or 10-400)";
         }
 
+        // TODA station
+        if (!selectedStation) {
+            newErrors.toda_station = "Please select a TODA station";
+        }
 
         // Vehicle plate
         const platePattern = /^[A-Z]{2,3}[- ]?\d{3,4}$/i;
@@ -74,6 +148,7 @@ export default function DriverProfileForm({ setFormData, onSubmit }) {
                 address,
                 contact_number,
                 toda_number,
+                toda_station: selectedStation.id,
                 vehicle_plate,
                 profile_picture,
                 vehicle_front_picture,
@@ -146,17 +221,8 @@ export default function DriverProfileForm({ setFormData, onSubmit }) {
                 <Text className={errorText}>{errors.toda_number}</Text>
             )}
 
-            <Text className={label}>License Number</Text>
-            <TextInput
-                className={input}
-                value={license_number}
-                onChangeText={setLicenseNumber}
-                placeholder="Enter license number"
-            />
-            {errors.license_number && (
-                <Text className={errorText}>
-                    {errors.license_number}
-                </Text>
+            {prefixIsComplete && (
+                <PickTodaStation stations={todaStations} />
             )}
 
             <Text className={label}>Vehicle Plate</Text>
