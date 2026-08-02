@@ -13,7 +13,7 @@ def _get_reader():
     global _reader
     if _reader is None:
         with _reader_lock:
-            if _reader is None:  # double-checked locking
+            if _reader is None: 
                 _reader = easyocr.Reader(['en'], gpu=False)
     return _reader
 

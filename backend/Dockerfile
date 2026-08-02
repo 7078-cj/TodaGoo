@@ -10,7 +10,6 @@ RUN apt-get update && apt-get install -y \
     python3-dev \
     gfortran \
     dos2unix \
-    redis-server \
     # --- add these ---
     gdal-bin \
     libgdal-dev \
