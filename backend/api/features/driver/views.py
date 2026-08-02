@@ -10,7 +10,6 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from ..utils.reconstruction import reconstruct_nested
 from rest_framework.response import Response
 from rest_framework import status
-from .utils import verify_license_details
 
 
 
@@ -26,45 +25,7 @@ class DriverListCreateView(ListCreateAPIView):
     def create(self, request, *args, **kwargs):
 
         data = reconstruct_nested(request.data, prefix="driver_profile.")
-
-        license_image = request.data.get("driver_profile.license_id")
-        first_name = data.get("first_name")
-        last_name = data.get("last_name")
-        license_number = data.get("driver_profile", {}).get("license_number")
-
-        if license_image:
-
-            ocr_result = verify_license_details(
-                license_image,
-                first_name,
-                last_name,
-                license_number,
-            )
-
-            if not ocr_result["match"]:
-
-                return Response(
-                    {
-                        "detail": "License details could not be verified against the uploaded document.",
-                        "matched_fields": ocr_result["matched_fields"],
-                    },
-                    status=400,
-                )
-
-
-        else:
-            
-
-            return Response(
-                {
-                    "detail": "License details could not be verified against the uploaded document.",
-                },
-                status=400,
-            )
-
         serializer = self.get_serializer(data=data)
-
-        
 
         if not serializer.is_valid():
             return Response(serializer.errors, status=400)
