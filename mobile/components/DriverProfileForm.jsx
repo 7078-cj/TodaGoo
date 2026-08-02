@@ -222,7 +222,15 @@ export default function DriverProfileForm({ setFormData, onSubmit }) {
             )}
 
             {prefixIsComplete && (
-                <PickTodaStation stations={todaStations} />
+                <PickTodaStation
+                    stations={todaStations}
+                    loading={loadingStations}
+                    error={stationsError}
+                    onSelect={setSelectedStation}
+                />
+            )}
+            {errors.toda_station && (
+                <Text className={errorText}>{errors.toda_station}</Text>
             )}
 
             <Text className={label}>Vehicle Plate</Text>

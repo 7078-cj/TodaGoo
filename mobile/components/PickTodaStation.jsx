@@ -12,8 +12,8 @@ export default function PickTodaStation({ stations, loading, error, onSelect }) 
             const newMarkers = stations.map(station => ({
                 id: station.id,
                 name: station.name,
-                latitude: station.location.lat,
-                longitude: station.location.lng,
+                lat: station.location.lat,
+                lng: station.location.lng,
             }));
             setMarkers(newMarkers);
         } else {
@@ -41,6 +41,8 @@ export default function PickTodaStation({ stations, loading, error, onSelect }) 
 
     const label = "text-gray-700 text-sm font-medium mb-1";
     const errorText = "text-red-500 text-sm mt-1";
+    const button = "bg-black p-4 rounded-xl mt-3";
+    const buttonText = "text-white text-center font-semibold";
 
     return (
         <View className="mb-2">
