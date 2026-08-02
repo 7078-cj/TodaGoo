@@ -11,7 +11,6 @@ export default function DriverProfileForm({ setFormData, onSubmit }) {
     const [vehicle_plate, setVehiclePlate] = useState("");
 
     const [profile_picture, setProfilePicture] = useState(null);
-    const [license_id, setLicenseId] = useState(null);
     const [vehicle_front_picture, setVehicleFrontPicture] = useState(null);
     const [vehicle_back_picture, setVehicleBackPicture] = useState(null);
 
@@ -71,10 +70,6 @@ export default function DriverProfileForm({ setFormData, onSubmit }) {
             newErrors.profile_picture = "Profile picture is required";
         }
 
-        if (!license_id) {
-            newErrors.license_id = "License ID image is required";
-        }
-
         if (!vehicle_front_picture) {
             newErrors.vehicle_front_picture =
                 "Vehicle front image is required";
@@ -99,7 +94,6 @@ export default function DriverProfileForm({ setFormData, onSubmit }) {
                 license_number,
                 vehicle_plate,
                 profile_picture,
-                license_id,
                 vehicle_front_picture,
                 vehicle_back_picture,
             };
@@ -193,17 +187,6 @@ export default function DriverProfileForm({ setFormData, onSubmit }) {
             {errors.license_number && (
                 <Text className={errorText}>
                     {errors.license_number}
-                </Text>
-            )}
-
-            <PickImageComponent
-                label="License ID"
-                setImage={setLicenseId}
-                image={license_id}
-            />
-            {errors.license_id && (
-                <Text className={errorText}>
-                    {errors.license_id}
                 </Text>
             )}
 
