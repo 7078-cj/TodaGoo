@@ -16,8 +16,7 @@ import environ
 import os
 import ctypes.util
 import subprocess
-from celery.schedules import crontab
-from .scheduler import SCHEDULE
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -112,8 +111,6 @@ INSTALLED_APPS = [
     'api',
     'websocket',
     'corsheaders',
-    'tasks',
-    'django_celery_beat',
 ]
 
 if USE_CLOUDINARY:
@@ -343,16 +340,6 @@ else:
         }
     }
 
-# =========================
-# CELERY
-# =========================
-
-CELERY_ACCEPT_CONTENT = ["json"]
-CELERY_TASK_SERIALIZER = "json"
-CELERY_RESULT_SERIALIZER = "json"
-CELERY_TIMEZONE = "UTC"
-CELERY_BEAT_SCHEDULE = SCHEDULE
-CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 
 # =========================
 # EMAIL
