@@ -16,8 +16,6 @@ class DriverProfileSerializer(DriverValidationMixin, serializers.ModelSerializer
             'contact_number',
             'profile_picture',
             'toda_number',
-            'franchise_permit_number',
-            'license_number',
             'vehicle_plate',
             'vehicle_front_picture',
             'vehicle_back_picture',

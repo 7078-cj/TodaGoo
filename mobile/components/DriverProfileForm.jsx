@@ -6,8 +6,6 @@ export default function DriverProfileForm({ setFormData, onSubmit }) {
     const [address, setAddress] = useState("");
     const [contact_number, setContactNumber] = useState("");
     const [toda_number, setTodaNumber] = useState("");
-    const [franchise_permit_number, setFranchisePermitNumber] = useState("");
-    const [license_number, setLicenseNumber] = useState("");
     const [vehicle_plate, setVehiclePlate] = useState("");
 
     const [profile_picture, setProfilePicture] = useState(null);
@@ -41,20 +39,6 @@ export default function DriverProfileForm({ setFormData, onSubmit }) {
                 "Format must be 01-XXX to 11-XXX (e.g., 01-123 or 10-400)";
         }
 
-        // Franchise permit
-        if (
-            !franchise_permit_number ||
-            franchise_permit_number.trim().length < 5
-        ) {
-            newErrors.franchise_permit_number =
-                "Franchise permit must be at least 5 characters";
-        }
-
-        // License number
-        if (!license_number || license_number.trim().length < 6) {
-            newErrors.license_number =
-                "License number must be at least 6 characters";
-        }
 
         // Vehicle plate
         const platePattern = /^[A-Z]{2,3}[- ]?\d{3,4}$/i;
@@ -90,8 +74,6 @@ export default function DriverProfileForm({ setFormData, onSubmit }) {
                 address,
                 contact_number,
                 toda_number,
-                franchise_permit_number,
-                license_number,
                 vehicle_plate,
                 profile_picture,
                 vehicle_front_picture,
@@ -162,19 +144,6 @@ export default function DriverProfileForm({ setFormData, onSubmit }) {
             />
             {errors.toda_number && (
                 <Text className={errorText}>{errors.toda_number}</Text>
-            )}
-
-            <Text className={label}>Franchise Permit Number</Text>
-            <TextInput
-                className={input}
-                value={franchise_permit_number}
-                onChangeText={setFranchisePermitNumber}
-                placeholder="Enter permit number"
-            />
-            {errors.franchise_permit_number && (
-                <Text className={errorText}>
-                    {errors.franchise_permit_number}
-                </Text>
             )}
 
             <Text className={label}>License Number</Text>

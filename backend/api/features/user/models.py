@@ -33,8 +33,6 @@ class Driver(models.Model):
     toda_station = models.ForeignKey(TodaStation, on_delete=models.CASCADE, related_name='toda_station_drivers', null=True, blank=True)
     profile_picture = models.ImageField(upload_to='driver_profiles/', null=True, blank=True)
     toda_number = models.CharField(max_length=20)
-    franchise_permit_number = models.CharField(max_length=20)
-    license_number = models.CharField(max_length=20)
     vehicle_plate = models.CharField(max_length=20, unique=True)
     vehicle_front_picture = models.ImageField(upload_to='vehicle_fronts/', null=True, blank=True)
     vehicle_back_picture = models.ImageField(upload_to='vehicle_backs/', null=True, blank=True)

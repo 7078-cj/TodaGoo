@@ -111,16 +111,4 @@ class DriverValidationMixin:
 
         return value.upper()
 
-    def validate_license_number(self, value):
-        if not value or len(value.strip()) < 6:
-            raise serializers.ValidationError(
-                "License number must be at least 6 characters long."
-            )
-        return value
 
-    def validate_franchise_permit_number(self, value):
-        if not value or len(value.strip()) < 5:
-            raise serializers.ValidationError(
-                "Franchise permit number must be at least 5 characters long."
-            )
-        return value

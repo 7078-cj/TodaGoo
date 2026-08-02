@@ -26,8 +26,6 @@ export interface AccountFields {
 export interface ProfileFields {
     address: string;
     toda_number: string;
-    franchise_permit_number: string;
-    license_number: string;
     vehicle_plate: string;
     profile_picture: ImagePickerAsset | null;
     vehicle_front_picture: ImagePickerAsset | null;
