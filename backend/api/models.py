@@ -10,3 +10,4 @@ from .features.driver.models import *
 from .features.booking.models import *
 from .features.reports.models import *
 from .features.admin.models import *
+from .features.chat.models import *

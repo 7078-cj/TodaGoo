@@ -11,3 +11,4 @@ class ApiConfig(AppConfig):
         import api.features.passenger.signals
         import api.features.driver.signals
         import api.features.reports.signals
+        import api.features.chat.signals
