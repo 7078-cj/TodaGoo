@@ -1,16 +1,30 @@
 import { View, Text } from 'react-native'
-import React, { useContext } from 'react'
-import { useLocalSearchParams } from 'expo-router'
+import React, { useContext, useEffect, useRef } from 'react'
 import RateUser from '../../../components/RateUser'
 import PassengerContext from '../../../contexts/PassengerContext'
 
 export default function BookingComplete() {
-    const { booking_id, driver_user_id } = useLocalSearchParams()
-    const { setPendingBooking } = useContext(PassengerContext)
+    const { setPendingBooking, pendingBooking } = useContext(PassengerContext)
+
+    const bookingRef = useRef(pendingBooking)
+
+    const booking = bookingRef.current
+
+    const booking_id = booking?.id
+    const driver_user_id = booking?.driver?.user?.id
+    const ratedUserName = booking?.driver?.user?.username
 
     useEffect(() => {
         setPendingBooking(null)
     }, [])
+
+    if (!booking) {
+        return (
+            <View>
+                <Text>Loading...</Text>
+            </View>
+        )
+    }
 
     return (
         <View>
@@ -19,6 +33,7 @@ export default function BookingComplete() {
                 role="passenger"
                 bookingId={booking_id}
                 ratedUserId={driver_user_id}
+                ratedUserName={ratedUserName}
             />
         </View>
     )

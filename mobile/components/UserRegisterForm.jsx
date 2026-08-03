@@ -1,8 +1,9 @@
-import { View, Text, TextInput, TouchableOpacity } from 'react-native'
+import { View, Text, TouchableOpacity } from 'react-native'
 import React, { useState } from 'react'
-import {normalizeUsername} from '@/utils/validation'
+import { normalizeUsername } from '@/utils/validation'
+import FormTextField from './inputs/FormTextField'
 
-export default function UserRegisterForm({setPage,setFormData}) {
+export default function UserRegisterForm({ setPage, setFormData }) {
 
     const [username, setUsername] = useState("")
     const [firstName, setFirstName] = useState("")
@@ -58,24 +59,11 @@ export default function UserRegisterForm({setPage,setFormData}) {
             }))
             setPage('driver')
         }
-        
     }
 
-
     const containerStyle = "flex-1 bg-white p-5 justify-center"
-
     const titleTextStyle = "text-2xl font-bold mb-5 text-center"
-
-    const fieldLabelStyle = "mb-1 text-gray-700"
-
-    const inputBaseStyle = "border border-gray-300 rounded-lg p-3 mb-1"
-
-    const inputErrorStyle = "border-red-500"
-
-    const errorTextStyle = "text-red-500 mb-2"
-
     const buttonContainerStyle = "bg-black p-4 rounded-xl mt-3"
-
     const buttonTextStyle = "text-white text-center font-semibold"
 
     return (
@@ -85,68 +73,48 @@ export default function UserRegisterForm({setPage,setFormData}) {
                 Register
             </Text>
 
-            {/* Username */}
-            <Text className={fieldLabelStyle}>Username</Text>
-            <TextInput
-                className={`${inputBaseStyle} ${errors.username ? inputErrorStyle : ""}`}
+            <FormTextField
+                label="Username"
                 value={username}
                 onChangeText={setUsername}
                 placeholder="Enter Username"
                 autoCapitalize="none"
+                error={errors.username}
             />
-            {errors.username && (
-                <Text className={errorTextStyle}>{errors.username}</Text>
-            )}
 
-            {/* First Name */}
-            <Text className={fieldLabelStyle}>First Name</Text>
-            <TextInput
-                className={`${inputBaseStyle} ${errors.firstName ? inputErrorStyle : ""}`}
+            <FormTextField
+                label="First Name"
                 value={firstName}
                 onChangeText={setFirstName}
                 placeholder="Enter first name"
+                error={errors.firstName}
             />
-            {errors.firstName && (
-                <Text className={errorTextStyle}>{errors.firstName}</Text>
-            )}
 
-            {/* Last Name */}
-            <Text className={fieldLabelStyle}>Last Name</Text>
-            <TextInput
-                className={`${inputBaseStyle} ${errors.lastName ? inputErrorStyle : ""}`}
+            <FormTextField
+                label="Last Name"
                 value={lastName}
                 onChangeText={setLastName}
                 placeholder="Enter last name"
+                error={errors.lastName}
             />
-            {errors.lastName && (
-                <Text className={errorTextStyle}>{errors.lastName}</Text>
-            )}
 
-            {/* Password */}
-            <Text className={fieldLabelStyle}>Password</Text>
-            <TextInput
-                className={`${inputBaseStyle} ${errors.password ? inputErrorStyle : ""}`}
+            <FormTextField
+                label="Password"
                 value={password}
                 onChangeText={setPassword}
                 placeholder="Enter password"
-                secureTextEntry
+                secure
+                error={errors.password}
             />
-            {errors.password && (
-                <Text className={errorTextStyle}>{errors.password}</Text>
-            )}
 
-            {/* Confirm Password */}
-            <Text className={fieldLabelStyle}>Confirm Password</Text>
-            <TextInput
-                className={`${inputBaseStyle} ${errors.confirmPassword ? inputErrorStyle : ""}`}
+            <FormTextField
+                label="Confirm Password"
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
                 placeholder="Confirm password"
-                secureTextEntry
+                secure
+                error={errors.confirmPassword}
             />
-            {errors.confirmPassword && (
-                <Text className={errorTextStyle}>{errors.confirmPassword}</Text>
-            )}
 
             {/* Button */}
             <TouchableOpacity

@@ -13,12 +13,7 @@ export default function BottomDetails({ booking, isDriver = true, onStatusChange
                 : "/(protected)/passenger/complete"
 
             router.replace({
-                pathname: target,
-                params: {
-                    booking_id: booking.id,
-                    passenger_user_id: booking.passenger?.user.id,
-                    driver_user_id: booking.driver?.user.id,
-                },
+                pathname: target
             })
         }
     }, [booking.status, isDriver])

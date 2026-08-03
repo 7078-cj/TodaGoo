@@ -33,7 +33,8 @@ export function PassengerProvider({ children }) {
 
     return (
         <PassengerContext.Provider value={{ 
-            pendingBooking
+            pendingBooking,
+            setPendingBooking
         }}>
             {children}
         </PassengerContext.Provider>

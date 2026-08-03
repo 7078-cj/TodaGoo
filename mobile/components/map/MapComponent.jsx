@@ -29,12 +29,23 @@ const MapComponent = forwardRef(function MapComponent(
         onMarkerPress,
         centerOnMarkerPress = true,
         centerZoom = 17,
+        // NEW: externally-supplied route. When provided (non-empty array),
+        // this is drawn as-is and the internal OSRM fetch is skipped
+        // entirely — the caller is in full control of what's drawn.
+        route: routeProp = null,
+        // NEW: toggles the internal marker -> OSRM fetch. Only relevant
+        // when routeProp is NOT supplied. Defaults to true so existing
+        // callers keep working unchanged.
+        isRoute = true,
+        // NEW: fires whenever the *effective* route (prop or fetched)
+        // changes, so a parent can mirror it into its own state.
+        onRouteChange,
     },
     ref
 ) {
     const [searchQuery, setSearchQuery] = useState("");
     const [userLoc, setUserLoc] = useState(null);
-    const [route, setRoute] = useState([]);
+    const [fetchedRoute, setFetchedRoute] = useState([]);
     const mapHandleRef = useRef(null);
     const debounceTimer = useRef(null);
     const lastRequestId = useRef(0);
@@ -43,6 +54,14 @@ const MapComponent = forwardRef(function MapComponent(
     // Normalise areas so callers can pass a single item or an array,
     // same convention as `markers`.
     const normalisedAreas = Array.isArray(areas) ? areas : areas ? [areas] : [];
+
+    // Whether the caller has handed us a route directly. An explicit,
+    // non-empty array means "draw exactly this" — we don't fetch.
+    const hasExternalRoute = Array.isArray(routeProp) && routeProp.length > 0;
+
+    // The route actually drawn on the map: external prop wins if given,
+    // otherwise fall back to whatever we fetched internally.
+    const route = hasExternalRoute ? routeProp : fetchedRoute;
 
     // Initialize location ONCE, ever — not on every render/remount
     useEffect(() => {
@@ -62,11 +81,18 @@ const MapComponent = forwardRef(function MapComponent(
 
     // Derive the route straight from markers — no routeSources needed.
     // Only fetch when there's more than one marker to connect.
+    // Skipped entirely if the caller supplied their own route, or if
+    // isRoute is false.
     useEffect(() => {
+        if (hasExternalRoute || !isRoute) {
+        setFetchedRoute([]);
+        return;
+        }
+
         const validMarkers = markers.filter((m) => m.lat != null && m.lng != null);
 
         if (validMarkers.length < 2) {
-        setRoute([]);
+        setFetchedRoute([]);
         return;
         }
 
@@ -76,14 +102,20 @@ const MapComponent = forwardRef(function MapComponent(
         coordinates,
         setRoutes: (routes) => {
             if (!routes.length) {
-            setRoute([]);
+            setFetchedRoute([]);
             return;
             }
             const converted = routes[0].coordinates.map(([lng, lat]) => ({ lat, lng }));
-            setRoute(converted);
+            setFetchedRoute(converted);
         },
         });
-    }, [markers]);
+    }, [markers, isRoute, hasExternalRoute]);
+
+    // Let the parent know whenever the *effective* route changes,
+    // whether it came from props or from our own fetch.
+    useEffect(() => {
+        onRouteChange?.(route);
+    }, [route, onRouteChange]);
 
     const center = location
         ? { lat: location.lat, lng: location.lng }
@@ -149,6 +181,11 @@ const MapComponent = forwardRef(function MapComponent(
         [centerOnMarkerPress, centerZoom, onMarkerPress]
     );
 
+    // Keep a ref mirror of the effective route so getRoute() below never
+    // returns a stale closure value.
+    const routeRef = useRef(route);
+    routeRef.current = route;
+
     // Expose the underlying map controls to parent components, so a list
     // item, search result, or button outside the map can drive it.
     useImperativeHandle(ref, () => ({
@@ -166,6 +203,10 @@ const MapComponent = forwardRef(function MapComponent(
         },
         zoomOut() {
             mapHandleRef.current?.zoomOut();
+        },
+        // Pull-based access to the currently drawn route (prop or fetched).
+        getRoute() {
+            return routeRef.current;
         },
     }), [centerZoom]);
 

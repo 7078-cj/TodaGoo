@@ -1,7 +1,7 @@
 import { View, Text, TextInput } from "react-native";
 import React, { useState } from "react";
 import { TouchableOpacity } from "react-native";
-import { Eye, EyeOff } from "lucide-react-native";
+import { Ionicons } from "@expo/vector-icons";
 
 export default function FormTextField({
     label,
@@ -41,11 +41,11 @@ export default function FormTextField({
                         onPress={() => setHidden((prev) => !prev)}
                         className="absolute right-3"
                     >
-                        {hidden ? (
-                            <EyeOff size={20} color="#6b7280" />
-                        ) : (
-                            <Eye size={20} color="#6b7280" />
-                        )}
+                        <Ionicons
+                            name={hidden ? "eye-off-outline" : "eye-outline"}
+                            size={20}
+                            color="#6b7280"
+                        />
                     </TouchableOpacity>
                 )}
             </View>

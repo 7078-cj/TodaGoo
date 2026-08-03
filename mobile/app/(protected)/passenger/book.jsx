@@ -20,6 +20,7 @@ export default function book() {
     const [selectedLocation, setSelectedLocation] = useState(null);
     const [selectedAddress, setSelectedAddress] = useState(null);
     const [markers, setMarkers] = useState([]);
+    const [routes, setRoutes] = useState([]);
 
     const handleSetStartLocation = (location, address) => {
         setStartLocation(location);
@@ -138,9 +139,15 @@ export default function book() {
     };
 
     
-    const handleLocationSelected = (location, address) => {
+    const handleLocationSelected = (location, address, route) => {
         applyLocation(location, address);
+        if (route) setRoutes(route);
         setModalVisible(false);
+    };
+
+
+    const handleRouteChange = (route) => {
+        setRoutes(route);
     };
 
     const handleBooking = async () => {
@@ -159,6 +166,7 @@ export default function book() {
                 address: stop.address,
                 order: index + 1,
             })),
+            routes: routes,
         };
         
 
@@ -235,7 +243,9 @@ return (
                 setVisible={setModalVisible}
                 onConfirm={handleLocationSelected}
                 onLocationChange={handleLocationChange}
+                onRouteChange={handleRouteChange}
                 markers={markers}
+                
             />
 
             <TouchableOpacity className="bg-black p-4 rounded-xl mt-5" onPress={handleBooking}>

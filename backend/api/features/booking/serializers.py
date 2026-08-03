@@ -101,6 +101,7 @@ class BookingSerializer(serializers.ModelSerializer):
     driver = DriverReadSerializer(read_only=True)
     passenger = PassengerReadSerializer(read_only=True)
     ratings = RateSerializer(many=True, read_only=True)
+    routes = serializers.JSONField(required=False, allow_null=True)
 
     class Meta:
         model = Booking
@@ -118,6 +119,7 @@ class BookingSerializer(serializers.ModelSerializer):
             "updated_at",
             "stops",
             "ratings",
+            "routes"
         ]
 
         read_only_fields = [

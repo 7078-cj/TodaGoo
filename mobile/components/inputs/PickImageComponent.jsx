@@ -1,6 +1,6 @@
 import { View, Text, TouchableOpacity, Image } from 'react-native'
 import React from 'react'
-import {pickImage} from '../utils/imagePicker'
+import {pickImage} from '../../utils/imagePicker'
 
 export default function PickImageComponent({label, setImage, image}) {
     const labelStyle = "text-gray-700 mb-1"

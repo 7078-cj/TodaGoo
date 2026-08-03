@@ -1,11 +1,11 @@
 import { View, Text, TouchableOpacity, ActivityIndicator, Alert } from 'react-native'
 import React, { useState } from 'react'
-import { Star } from 'lucide-react-native'
+import { Ionicons } from '@expo/vector-icons'
 import { createRate } from '../api/rate'
-import FormTextField from './FormTextField'
+import FormTextField from './inputs/FormTextField'
 import { router } from "expo-router";
 
-export default function RateUser({ role, bookingId, ratedUserId}) {
+export default function RateUser({ role, bookingId, ratedUserId, ratedUserName }) {
 
     const [score, setScore] = useState(0)
     const [feedback, setFeedback] = useState('')
@@ -30,7 +30,7 @@ export default function RateUser({ role, bookingId, ratedUserId}) {
         setErrors({})
 
         try {
-            res = await createRate({
+            const res = await createRate({
                 booking_id: bookingId,
                 user_id: ratedUserId,
                 score,
@@ -54,6 +54,8 @@ export default function RateUser({ role, bookingId, ratedUserId}) {
         }
     }
 
+    const ratedRole = role === 'passenger' ? 'driver' : 'passenger'
+
     return (
         <View className="p-5 bg-white flex-1">
             <Text className="text-2xl font-bold mb-2 text-center">
@@ -73,10 +75,10 @@ export default function RateUser({ role, bookingId, ratedUserId}) {
                         onPress={() => setScore(value)}
                         className="mx-1"
                     >
-                        <Star
+                        <Ionicons
+                            name={value <= score ? 'star' : 'star-outline'}
                             size={40}
                             color={value <= score ? '#facc15' : '#d1d5db'}
-                            fill={value <= score ? '#facc15' : 'none'}
                         />
                     </TouchableOpacity>
                 ))}

@@ -9,14 +9,6 @@ export default function booking() {
     const { pendingBooking } = useContext(PassengerContext)
     const [driverLocation, setDriverLocation] = useState(null)
 
-    if (!pendingBooking) {
-        return (
-            <View>
-                <Text>Loading booking...</Text>
-            </View>
-        )
-    }
-
     const ws = bookingListener(pendingBooking.id, () => console.log("refresh"), setDriverLocation)
 
     const markers = [
@@ -49,6 +41,14 @@ export default function booking() {
             : []),
     ];
 
+    if (!pendingBooking) {
+        return (
+            <View>
+                <Text>Loading booking...</Text>
+            </View>
+        )
+    }
+
     return (
         <View className="flex-1">
             <Text>en_route</Text>
@@ -56,6 +56,8 @@ export default function booking() {
                 markers={markers}
                 editMode={false}
                 userLocation={false}
+                route={pendingBooking.routes}
+                isRoute={false}
             />
             <BottomDetails booking={pendingBooking} isDriver={false}/>
         </View>

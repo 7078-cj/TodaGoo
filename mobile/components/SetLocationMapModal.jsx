@@ -12,13 +12,17 @@ export default function SetLocationMapModal({
     setVisible,
     onConfirm,
     onLocationChange,
+    onRouteChange,     
     selectedLocation,
     selectedAddress,
     setSelectedLocation,
     setSelectedAddress,
-    markers
+    markers,
+    isRoute = true,      
+    route: routeProp,    
 }) {
     const [location, setLocation] = useState(null);
+    const [route, setRoute] = useState([]); 
 
     useEffect(() => {
         if (visible) {
@@ -35,6 +39,7 @@ export default function SetLocationMapModal({
             setLocation(null);
             setSelectedLocation(null);
             setSelectedAddress(null);
+            setRoute([]);
         }
     }, [visible, selectedLocation, selectedAddress]);
 
@@ -47,6 +52,12 @@ export default function SetLocationMapModal({
         }
     }, [location, visible]);
 
+
+    const handleRouteChange = (nextRoute) => {
+        setRoute(nextRoute);
+        onRouteChange?.(nextRoute);
+    };
+
     const handleConfirm = () => {
         if (!location) return;
 
@@ -55,7 +66,8 @@ export default function SetLocationMapModal({
                 lat: location.lat,
                 lng: location.lng,
             },
-            location.full
+            location.full,
+            route
         );
 
         setVisible(false);
@@ -92,6 +104,9 @@ export default function SetLocationMapModal({
                         editMode={true}
                         userLocation={true}
                         markers={markers}
+                        isRoute={isRoute}
+                        route={routeProp}
+                        onRouteChange={handleRouteChange}
                     />
                 </View>
             </View>

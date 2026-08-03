@@ -36,6 +36,7 @@ class BookingView(APIView):
         return Response(serializer.data)
 
     def post(self, request):
+    
         passenger = get_passenger(request.user)
         if not passenger:
             return Response({"error": "User is not a passenger"}, status=400)

@@ -55,6 +55,7 @@ export default function PickTodaStation({ stations, loading, error, onSelect }) 
                         markers={markers}
                         userLocation={false}
                         onMarkerPress={handleMarkerPress}
+                        isRoute={false}
                     />
                 </View>
             )}

@@ -2,47 +2,53 @@ import { View, Text } from 'react-native'
 import React, { useContext, useEffect, useState } from 'react'
 import DriverContext from "../../../contexts/DriverContext";
 import bookingListener from "../../../listeners/bookingListener"
-import {getLocation} from "../../../utils/location"
+import { getLocation } from "../../../utils/location"
 import MapComponent from '../../../components/map/MapComponent'
 import BottomDetails from '../../../components/BottomDetails';
+
+const broadcastDriverLocation = async (sendMessage) => {
+    try {
+        const location = await getLocation();
+
+        sendMessage({
+            action: "driver_location",
+            location,
+        });
+    } catch (err) {
+        console.log("Failed to get location:", err);
+    }
+}
 
 export default function booking() {
     const { acceptedBooking } = useContext(DriverContext)
     const [driverLocation, setDriverLocation] = useState()
 
-    if (!acceptedBooking) {
-            return (
-                <View>
-                    <Text>Loading booking...</Text>
-                </View>
-            )
-        }
+    const { sendMessage, connected, connectionStatus } =
+        bookingListener(
+            acceptedBooking?.id,
+            () => console.log("refresh"),
+            setDriverLocation
+        )
 
-    const { sendMessage, 
-            connected,
-            connectionStatus } 
-            = bookingListener(acceptedBooking.id, 
-                            () => console.log("refresh"),
-                            setDriverLocation)
+    broadcastDriverLocation(sendMessage)
 
     useEffect(() => {
         if (!connected) return;
 
         const interval = setInterval(async () => {
-            try {
-                const location = await getLocation();
-
-                sendMessage({
-                    action: "driver_location",
-                    location,
-                });
-            } catch (err) {
-                console.log("Failed to get location:", err);
-            }
+            broadcastDriverLocation(sendMessage);
         }, 10000);
 
         return () => clearInterval(interval);
     }, [connected]);
+
+    if (!acceptedBooking) {
+        return (
+            <View>
+                <Text>Loading booking...</Text>
+            </View>
+        )
+    }
 
     const markers = [
         {
@@ -74,10 +80,6 @@ export default function booking() {
             : []),
     ];
 
-    
-
-
-
     return (
         <View className="flex-1">
             <Text>en_route</Text>
@@ -91,9 +93,11 @@ export default function booking() {
                 markers={markers}
                 editMode={false}
                 userLocation={false}
+                route={acceptedBooking.routes}
+                isRoute={false}
+
             />
-            <BottomDetails booking={acceptedBooking}/>
-            
+            <BottomDetails booking={acceptedBooking} />
         </View>
     )
 }
