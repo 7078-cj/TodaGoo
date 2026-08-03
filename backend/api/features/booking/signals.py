@@ -1,4 +1,5 @@
 # signals.py
+from django.core.cache import cache
 import threading
 from django.db import transaction
 from django.db.models.signals import post_save
@@ -16,6 +17,10 @@ def update_rating_on_rate_created(sender, instance, created, **kwargs):
         return
 
     rated_user = instance.user
+
+    cache.delete(f"user_ratings:{rated_user.id}")
+    cache.delete(f"driver_profile:{rated_user.id}")
+    cache.delete(f"passenger_profile:{rated_user.id}")
 
     driver = getattr(rated_user, 'driver_profile', None)
     if driver is not None:

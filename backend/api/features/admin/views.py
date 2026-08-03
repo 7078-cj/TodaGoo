@@ -16,26 +16,53 @@ from django.template.context_processors import request
 import re
 from rest_framework import status
 
+CACHE_TTL = 60 * 15  # 15 minutes — adjust based on how often boundaries/stations actually change
+
 
 class TodaBoundariesListCreateAPIView(ListCreateAPIView):
     permission_classes = [IsAuthenticated, TodaAdminPermission]
     queryset = Toda.objects.all()
-    
+
     def get_serializer_class(self):
         if self.request.method == "POST":
             return TodaWriteSerializer
         return TodaReadSerializer
 
+    def list(self, request, *args, **kwargs):
+        cache_key = "toda_boundaries_list"
+        cached = cache.get(cache_key)
+        if cached is not None:
+            return Response(cached)
+
+        response = super().list(request, *args, **kwargs)
+        cache.set(cache_key, response.data, CACHE_TTL)
+        return response
+
+    def create(self, request, *args, **kwargs):
+        response = super().create(request, *args, **kwargs)
+        cache.delete("toda_boundaries_list")
+        return response
+
 
 class TodaBoundariesRetrieveUpdateDestroyAPIView(RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAuthenticated, TodaAdminPermission]
     queryset = Toda.objects.all()
-    
+
     def get_serializer_class(self):
         if self.request.method in ["PUT", "PATCH"]:
             return TodaWriteSerializer
         return TodaReadSerializer
-    
+
+    def update(self, request, *args, **kwargs):
+        response = super().update(request, *args, **kwargs)
+        cache.delete("toda_boundaries_list")
+        return response
+
+    def destroy(self, request, *args, **kwargs):
+        response = super().destroy(request, *args, **kwargs)
+        cache.delete("toda_boundaries_list")
+        return response
+
 
 class TODAListCreateAPIView(ListCreateAPIView):
     permission_classes = [IsAuthenticated, TodaAdminPermission]
@@ -71,8 +98,6 @@ class TODAListCreateAPIView(ListCreateAPIView):
             return self._handle_excel_upload(file)
 
         return self._handle_single_create(request)
-
-
 
     def _handle_single_create(self, request):
         data = request.data.copy()
@@ -153,6 +178,7 @@ class TODAListCreateAPIView(ListCreateAPIView):
             status=201
         )
 
+
 class TODARetrieveUpdateDestroyAPIView(RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAuthenticated, TodaAdminPermission]
     queryset = RegisteredToda.objects.all()
@@ -190,7 +216,6 @@ class TODARetrieveUpdateDestroyAPIView(RetrieveUpdateDestroyAPIView):
         return Response(serializer.data)
 
 
-
 class TodaStationListCreateView(ListCreateAPIView):
     queryset = TodaStation.objects.select_related('toda').all()
     serializer_class = TodaStationSerializer
@@ -207,11 +232,24 @@ class TodaStationListCreateView(ListCreateAPIView):
             queryset = queryset.filter(toda_id=toda_id)
         return queryset
 
+    def list(self, request, *args, **kwargs):
+        toda_id = request.query_params.get('toda_id') or "all"
+        cache_key = f"toda_stations_list:{toda_id}"
+
+        cached = cache.get(cache_key)
+        if cached is not None:
+            return Response(cached)
+
+        response = super().list(request, *args, **kwargs)
+        cache.set(cache_key, response.data, CACHE_TTL)
+        return response
+
 
 class TodaStationRetrieveUpdateDestroyView(RetrieveUpdateDestroyAPIView):
     queryset = TodaStation.objects.select_related('toda').all()
     serializer_class = TodaStationSerializer
     permission_classes = [permissions.IsAuthenticated]
+
 
 @api_view(['GET'])
 def get_toda_stations_with_prefix(request):
@@ -219,11 +257,17 @@ def get_toda_stations_with_prefix(request):
     if not prefix:
         return Response({"error": "prefix query parameter is required."}, status=400)
 
+    cache_key = f"toda_stations_prefix:{prefix}"
+    cached = cache.get(cache_key)
+    if cached is not None:
+        return Response(cached)
+
     toda = Toda.objects.filter(prefix=prefix).first()
     if not toda:
         return Response({"error": "Invalid TODA prefix."}, status=400)
 
     stations = TodaStation.objects.filter(toda=toda)
     serializer = TodaStationSerializer(stations, many=True)
+
+    cache.set(cache_key, serializer.data, CACHE_TTL)
     return Response(serializer.data)
-        

@@ -7,3 +7,7 @@ class ApiConfig(AppConfig):
 
     def ready(self):
         import api.features.booking.signals
+        import api.features.admin.signals
+        import api.features.passenger.signals
+        import api.features.driver.signals
+        import api.features.reports.signals
