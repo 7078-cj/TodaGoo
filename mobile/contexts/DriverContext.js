@@ -33,7 +33,11 @@ export function DriverProvider({ children }) {
     useEffect(()=>{
         if (acceptedBooking){
             router.push("/(protected)/driver/en_route")
-        }else{
+        }
+        else if(acceptedBooking.status === "completed"){
+            router.push("/(protected)/driver/complete")
+        }
+        else{
             return
         }
     },[acceptedBooking])

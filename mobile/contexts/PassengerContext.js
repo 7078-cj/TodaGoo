@@ -25,6 +25,8 @@ export function PassengerProvider({ children }) {
     useEffect(()=>{
             if (pendingBooking){
                 router.push("/(protected)/passenger/en_route")
+            }else if(pendingBooking.status === "completed"){
+                router.push("/(protected)/passenger/complete")
             }
         },[pendingBooking])
     
