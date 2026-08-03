@@ -1,6 +1,6 @@
 import { View, Text, TextInput, TouchableOpacity, ScrollView } from 'react-native'
 import React, { useState } from 'react'
-import PickImageComponent from './PickImageComponent'
+import PickImageComponent from './inputs/PickImageComponent'
 
 export default function PassengerProfileForm({ setFormData, onSubmit }) {
 

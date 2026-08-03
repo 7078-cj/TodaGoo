@@ -68,12 +68,39 @@ class StopSerializer(serializers.ModelSerializer):
         ]
 
 
+class RateSerializer(serializers.ModelSerializer):
+    """Read-only serializer, used for listing/returning ratings (e.g. GET feedback)."""
+
+    rater_id = serializers.IntegerField(read_only=True)
+    rated_user_id = serializers.IntegerField(source="user_id", read_only=True)
+    rated_role = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Rate
+        fields = [
+            "id",
+            "booking",
+            "rater_id",
+            "rated_user_id",
+            "rated_role",
+            "score",
+            "feedback",
+            "created_at",
+        ]
+        read_only_fields = fields
+
+    def get_rated_role(self, obj):
+        driver_user_id = getattr(obj.booking.driver, "user_id", None)
+        return "driver" if obj.user_id == driver_user_id else "passenger"
+
+
 class BookingSerializer(serializers.ModelSerializer):
     start = PointField()
     end = PointField()
     stops = StopSerializer(many=True)
     driver = DriverReadSerializer(read_only=True)
     passenger = PassengerReadSerializer(read_only=True)
+    ratings = RateSerializer(many=True, read_only=True)
 
     class Meta:
         model = Booking
@@ -90,6 +117,7 @@ class BookingSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
             "stops",
+            "ratings",
         ]
 
         read_only_fields = [
@@ -145,31 +173,6 @@ class DriverQueueSerializer(serializers.ModelSerializer):
             "location",
         ]
 
-class RateSerializer(serializers.ModelSerializer):
-    """Read-only serializer, used for listing/returning ratings (e.g. GET feedback)."""
-
-    rater_id = serializers.IntegerField(source="rater_id", read_only=True)
-    rated_user_id = serializers.IntegerField(source="user_id", read_only=True)
-    rated_role = serializers.SerializerMethodField()
-
-    class Meta:
-        model = Rate
-        fields = [
-            "id",
-            "booking",
-            "rater_id",
-            "rated_user_id",
-            "rated_role",
-            "score",
-            "feedback",
-            "created_at",
-        ]
-        read_only_fields = fields
-
-    def get_rated_role(self, obj):
-        driver_user_id = getattr(obj.booking.driver, "user_id", None)
-        return "driver" if obj.user_id == driver_user_id else "passenger"
-
 
 class RateCreateSerializer(serializers.Serializer):
     """Write serializer: validates + creates a Rate. Requires `request` in context."""
@@ -210,7 +213,6 @@ class RateCreateSerializer(serializers.Serializer):
         if request.user.id == rated_user_id:
             raise serializers.ValidationError({"user_id": "You cannot rate yourself"})
 
-        
         if request.user.id not in (driver_user_id, passenger_user_id):
             raise PermissionDenied("You are not a participant in this booking")
 
@@ -239,5 +241,5 @@ class RateCreateSerializer(serializers.Serializer):
             score=validated_data["score"],
             feedback=validated_data.get("feedback"),
         )
-        rate.rated_role = validated_data["rated_role"]  
+        rate.rated_role = validated_data["rated_role"]
         return rate

@@ -1,8 +1,9 @@
-import { View, Text, TextInput, TouchableOpacity, ScrollView, ActivityIndicator } from "react-native";
+import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator } from "react-native";
 import React, { useState, useEffect, useRef } from "react";
-import PickImageComponent from "./PickImageComponent";
+import PickImageComponent from "./inputs/PickImageComponent";
 import { getTodaStations } from "../api/toda";
 import PickTodaStation from "./PickTodaStation";
+import FormTextField from "./inputs/FormTextField";
 
 const DEBOUNCE_MS = 400;
 
@@ -31,7 +32,6 @@ export default function DriverProfileForm({ setFormData, onSubmit }) {
     const prefixIsComplete = /^\d{2}$/.test(prefix);
 
     useEffect(() => {
-
         if (debounceTimer.current) {
             clearTimeout(debounceTimer.current);
             debounceTimer.current = null;
@@ -87,21 +87,17 @@ export default function DriverProfileForm({ setFormData, onSubmit }) {
     const validate = () => {
         let newErrors = {};
 
-        // Address
         if (!address || address.trim().length < 5) {
             newErrors.address = "Address must be at least 5 characters";
         }
 
-        // Contact number
         if (!contact_number) {
             newErrors.contact_number = "Contact number is required";
         } else if (!/^\d{11}$/.test(contact_number)) {
             newErrors.contact_number = "Must be exactly 11 digits";
         }
 
-        // TODA number
         const todaPattern = /^(0[1-9]|1[01])-\d{3}$/;
-
         if (!toda_number) {
             newErrors.toda_number = "TODA number is required";
         } else if (!todaPattern.test(toda_number)) {
@@ -109,33 +105,27 @@ export default function DriverProfileForm({ setFormData, onSubmit }) {
                 "Format must be 01-XXX to 11-XXX (e.g., 01-123 or 10-400)";
         }
 
-        // TODA station
         if (!selectedStation) {
             newErrors.toda_station = "Please select a TODA station";
         }
 
-        // Vehicle plate
         const platePattern = /^[A-Z]{2,3}[- ]?\d{3,4}$/i;
         if (!vehicle_plate) {
             newErrors.vehicle_plate = "Vehicle plate is required";
         } else if (!platePattern.test(vehicle_plate)) {
-            newErrors.vehicle_plate =
-                "Invalid plate format (e.g., ABC1234)";
+            newErrors.vehicle_plate = "Invalid plate format (e.g., ABC1234)";
         }
 
-        // Images
         if (!profile_picture) {
             newErrors.profile_picture = "Profile picture is required";
         }
 
         if (!vehicle_front_picture) {
-            newErrors.vehicle_front_picture =
-                "Vehicle front image is required";
+            newErrors.vehicle_front_picture = "Vehicle front image is required";
         }
 
         if (!vehicle_back_picture) {
-            newErrors.vehicle_back_picture =
-                "Vehicle back image is required";
+            newErrors.vehicle_back_picture = "Vehicle back image is required";
         }
 
         setErrors(newErrors);
@@ -168,9 +158,6 @@ export default function DriverProfileForm({ setFormData, onSubmit }) {
     };
 
     const container = "p-5 bg-white";
-    const label = "text-gray-700 mb-1";
-    const input = "border border-gray-300 rounded-lg p-3 mb-2";
-    const errorText = "text-red-500 mb-2";
     const button = "bg-black p-4 rounded-xl mt-3";
     const buttonText = "text-white text-center font-semibold";
 
@@ -180,46 +167,31 @@ export default function DriverProfileForm({ setFormData, onSubmit }) {
                 Driver Profile
             </Text>
 
-            <Text className={label}>Address</Text>
-            <TextInput
-                className={input}
+            <FormTextField
+                label="Address"
                 value={address}
                 onChangeText={setAddress}
                 placeholder="Enter address"
+                error={errors.address}
             />
-            {errors.address && (
-                <Text className={errorText}>{errors.address}</Text>
-            )}
 
-            <Text className={label}>Contact Number</Text>
-            <TextInput
-                className={input}
+            <FormTextField
+                label="Contact Number"
                 value={contact_number}
-                onChangeText={(text) =>
-                    setContactNumber(text.replace(/\D/g, ""))
-                }
+                onChangeText={(text) => setContactNumber(text.replace(/\D/g, ""))}
                 placeholder="Enter contact number"
                 keyboardType="phone-pad"
                 maxLength={11}
+                error={errors.contact_number}
             />
-            {errors.contact_number && (
-                <Text className={errorText}>
-                    {errors.contact_number}
-                </Text>
-            )}
 
-            <Text className={label}>TODA Number</Text>
-            <TextInput
-                className={input}
+            <FormTextField
+                label="TODA Number"
                 value={toda_number}
-                onChangeText={(text) =>
-                    setTodaNumber(text.replace(/\s/g, ""))
-                }
+                onChangeText={(text) => setTodaNumber(text.replace(/\s/g, ""))}
                 placeholder="e.g. 10-400"
+                error={errors.toda_number}
             />
-            {errors.toda_number && (
-                <Text className={errorText}>{errors.toda_number}</Text>
-            )}
 
             {prefixIsComplete && (
                 <PickTodaStation
@@ -230,23 +202,16 @@ export default function DriverProfileForm({ setFormData, onSubmit }) {
                 />
             )}
             {errors.toda_station && (
-                <Text className={errorText}>{errors.toda_station}</Text>
+                <Text className="text-red-500 mb-2">{errors.toda_station}</Text>
             )}
 
-            <Text className={label}>Vehicle Plate</Text>
-            <TextInput
-                className={input}
+            <FormTextField
+                label="Vehicle Plate"
                 value={vehicle_plate}
-                onChangeText={(text) =>
-                    setVehiclePlate(text.toUpperCase())
-                }
+                onChangeText={(text) => setVehiclePlate(text.toUpperCase())}
                 placeholder="e.g. ABC1234"
+                error={errors.vehicle_plate}
             />
-            {errors.vehicle_plate && (
-                <Text className={errorText}>
-                    {errors.vehicle_plate}
-                </Text>
-            )}
 
             <PickImageComponent
                 label="Profile Picture"
@@ -254,9 +219,7 @@ export default function DriverProfileForm({ setFormData, onSubmit }) {
                 image={profile_picture}
             />
             {errors.profile_picture && (
-                <Text className={errorText}>
-                    {errors.profile_picture}
-                </Text>
+                <Text className="text-red-500 mb-2">{errors.profile_picture}</Text>
             )}
 
             <PickImageComponent
@@ -265,9 +228,7 @@ export default function DriverProfileForm({ setFormData, onSubmit }) {
                 image={vehicle_front_picture}
             />
             {errors.vehicle_front_picture && (
-                <Text className={errorText}>
-                    {errors.vehicle_front_picture}
-                </Text>
+                <Text className="text-red-500 mb-2">{errors.vehicle_front_picture}</Text>
             )}
 
             <PickImageComponent
@@ -276,15 +237,10 @@ export default function DriverProfileForm({ setFormData, onSubmit }) {
                 image={vehicle_back_picture}
             />
             {errors.vehicle_back_picture && (
-                <Text className={errorText}>
-                    {errors.vehicle_back_picture}
-                </Text>
+                <Text className="text-red-500 mb-2">{errors.vehicle_back_picture}</Text>
             )}
 
-            <TouchableOpacity
-                onPress={handleSubmit}
-                className={button}
-            >
+            <TouchableOpacity onPress={handleSubmit} className={button}>
                 <Text className={buttonText}>Submit Profile</Text>
             </TouchableOpacity>
         </ScrollView>
