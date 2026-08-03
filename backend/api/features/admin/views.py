@@ -15,6 +15,7 @@ from django.db import transaction
 from django.template.context_processors import request
 import re
 from rest_framework import status
+from django.db.models.deletion import ProtectedError
 
 CACHE_TTL = 60 * 15  # 15 minutes — adjust based on how often boundaries/stations actually change
 
@@ -214,6 +215,36 @@ class TODARetrieveUpdateDestroyAPIView(RetrieveUpdateDestroyAPIView):
         serializer.save(toda=toda)
 
         return Response(serializer.data)
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+
+        try:
+            instance.delete()
+        except ProtectedError as e:
+            related_summary = {}
+            for obj in e.protected_objects:
+                model_name = obj.__class__.__name__
+                related_summary.setdefault(model_name, 0)
+                related_summary[model_name] += 1
+
+            related_list = ", ".join(
+                f"{count} {model}" for model, count in related_summary.items()
+            )
+
+            return Response(
+                {
+                    "error": (
+                        f"Cannot delete this TODA registration because it still has "
+                        f"related records: {related_list}. Please reassign or remove "
+                        f"those first."
+                    ),
+                    "related_objects": related_summary,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class TodaStationListCreateView(ListCreateAPIView):
