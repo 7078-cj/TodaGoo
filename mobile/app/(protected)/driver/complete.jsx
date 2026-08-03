@@ -2,21 +2,16 @@ import { View, Text } from 'react-native'
 import React, { useContext, useEffect, useRef } from 'react'
 import RateUser from '../../../components/RateUser'
 import DriverContext from "../../../contexts/DriverContext";
+import { Stack, router } from "expo-router";
 
 export default function BookingComplete() {
-    const { setAcceptedBooking, acceptedBooking } = useContext(DriverContext)
+    const { acceptedBooking, setAcceptedBooking } = useContext(DriverContext)
 
-    const bookingRef = useRef(acceptedBooking)
-
-    const booking = bookingRef.current
+    const booking = acceptedBooking
 
     const booking_id = booking?.id
-    const passenger_user_id = booking?.passenger?.user?.id
-    const ratedUserName = booking?.passenger?.user?.username
-
-    useEffect(() => {
-        setAcceptedBooking(null)
-    }, [])
+    const passenger_user_id = booking?.passenger?.id
+    const ratedUserName = booking?.passenger?.username
 
     if (!booking) {
         return (
@@ -26,14 +21,20 @@ export default function BookingComplete() {
         )
     }
 
+    const handleRatingSaved = () => {
+        setAcceptedBooking(null);
+        router.replace(`/(protected)/driver/home`);
+    }
+
     return (
-        <View>
+        <View className="flex-1 items-center justify-center">
             <Text>Booking Complete</Text>
             <RateUser
                 role="driver"
                 bookingId={booking_id}
                 ratedUserId={passenger_user_id}
                 ratedUserName={ratedUserName}
+                handleRatingSaved={handleRatingSaved}
             />
         </View>
     )

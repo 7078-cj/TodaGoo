@@ -5,7 +5,7 @@ import { createRate } from '../api/rate'
 import FormTextField from './inputs/FormTextField'
 import { router } from "expo-router";
 
-export default function RateUser({ role, bookingId, ratedUserId, ratedUserName }) {
+export default function RateUser({ role, bookingId, ratedUserId, ratedUserName, handleRatingSaved = null }) {
 
     const [score, setScore] = useState(0)
     const [feedback, setFeedback] = useState('')
@@ -37,7 +37,9 @@ export default function RateUser({ role, bookingId, ratedUserId, ratedUserName }
                 feedback: feedback.trim() || null,
             })
 
-            if (res?.success) {
+
+            if (res?.booking_id) {
+                handleRatingSaved && handleRatingSaved()
                 router.replace(`/(protected)/${role}/home`)
             }
         } catch (err) {

@@ -19,14 +19,14 @@ def update_rating_on_rate_created(sender, instance, created, **kwargs):
 
     driver = getattr(rated_user, 'driver_profile', None)
     if driver is not None:
-        avg = Rate.objects.filter(rated_user=rated_user).aggregate(avg=Avg('score'))['avg']
+        avg = Rate.objects.filter(user=rated_user).aggregate(avg=Avg('score'))['avg']
         driver.rating = round(avg, 2) if avg is not None else 0
         driver.save(update_fields=['rating'])
         return
 
     passenger = getattr(rated_user, 'passenger_profile', None)
     if passenger is not None:
-        avg = Rate.objects.filter(rated_user=rated_user).aggregate(avg=Avg('score'))['avg']
+        avg = Rate.objects.filter(user=rated_user).aggregate(avg=Avg('score'))['avg']
         passenger.rating = round(avg, 2) if avg is not None else 0
         passenger.save(update_fields=['rating'])
 

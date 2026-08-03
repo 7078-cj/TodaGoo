@@ -234,6 +234,7 @@ class RateView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
+
         serializer = RateCreateSerializer(
             data=request.data, context={"request": request}
         )

@@ -208,17 +208,25 @@ class RateCreateSerializer(serializers.Serializer):
         elif rated_user_id == passenger_user_id:
             rated_role = "passenger"
         else:
+            print(f"Booking participants: driver_user_id={driver_user_id}, passenger_user_id={passenger_user_id}, rated_user_id={rated_user_id}")
+
             raise serializers.ValidationError(
                 {"user_id": "user_id is not a participant in this booking"}
             )
 
         if request.user.id == rated_user_id:
+            print(f"User {request.user.id} attempted to rate themselves for booking {booking.id}")
+
             raise serializers.ValidationError({"user_id": "You cannot rate yourself"})
 
         if request.user.id not in (driver_user_id, passenger_user_id):
+            print(f"User {request.user.id} attempted to rate booking {booking.id} but is not a participant")
+
             raise PermissionDenied("You are not a participant in this booking")
 
         if Rate.objects.filter(rater=request.user, booking=booking).exists():
+            print(f"User {request.user.id} has already rated booking {booking.id}")
+
             raise serializers.ValidationError(
                 "You have already rated this booking"
             )
