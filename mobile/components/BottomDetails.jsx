@@ -8,11 +8,18 @@ export default function BottomDetails({ booking, isDriver = true, onStatusChange
 
     useEffect(() => {
         if (booking.status === "completed") {
-            if (isDriver) {
-                router.replace("/(protected)/driver/complete")
-            } else {
-                router.replace("/(protected)/passenger/complete")
-            }
+            const target = isDriver
+                ? "/(protected)/driver/complete"
+                : "/(protected)/passenger/complete"
+
+            router.replace({
+                pathname: target,
+                params: {
+                    booking_id: booking.id,
+                    passenger_user_id: booking.passenger?.user.id,
+                    driver_user_id: booking.driver?.user.id,
+                },
+            })
         }
     }, [booking.status, isDriver])
 

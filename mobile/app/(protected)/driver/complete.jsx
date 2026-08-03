@@ -1,10 +1,25 @@
 import { View, Text } from 'react-native'
-import React from 'react'
+import React, { useContext } from 'react'
+import { useLocalSearchParams } from 'expo-router'
+import RateUser from '../../../components/RateUser'
+import DriverContext from "../../../contexts/DriverContext";
 
-export default function bookingComplete() {
+export default function BookingComplete() {
+    const { booking_id, passenger_user_id } = useLocalSearchParams()
+    const {setAcceptedBooking} = useContext(DriverContext)
+
+    useEffect(()=>{
+        setAcceptedBooking(null)
+    },[])
+
     return (
         <View>
-        <Text>bookingComplete</Text>
+            <Text>Booking Complete</Text>
+            <RateUser
+                role="driver"
+                bookingId={booking_id}
+                ratedUserId={passenger_user_id}
+            />
         </View>
     )
 }
