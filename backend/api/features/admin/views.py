@@ -35,7 +35,7 @@ class TodaBoundariesListCreateAPIView(ListCreateAPIView):
             return Response(cached)
 
         response = super().list(request, *args, **kwargs)
-        cache.set(cache_key, response.data, CACHE_TTL)
+        cache.set(cache_key, list(response.data), CACHE_TTL)
         return response
 
     def create(self, request, *args, **kwargs):
@@ -241,7 +241,7 @@ class TodaStationListCreateView(ListCreateAPIView):
             return Response(cached)
 
         response = super().list(request, *args, **kwargs)
-        cache.set(cache_key, response.data, CACHE_TTL)
+        cache.set(cache_key, list(response.data), CACHE_TTL)
         return response
 
 
