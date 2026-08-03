@@ -51,5 +51,5 @@ def incident_evidence_path(instance, filename):
 
 class IncidentEvidence(models.Model):
     report = models.ForeignKey(IncidentReport, on_delete=models.CASCADE, related_name="evidence")
-    file = models.FileField(upload_to=incident_evidence_path)
+    file = models.ImageField(upload_to=incident_evidence_path)
     uploaded_at = models.DateTimeField(auto_now_add=True)
