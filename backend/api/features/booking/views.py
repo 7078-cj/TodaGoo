@@ -11,6 +11,7 @@ from rest_framework.views import APIView
 from ..utils.distance import calculate_price
 from django.contrib.gis.geos import Point
 from django.core.exceptions import ObjectDoesNotExist
+from ...idempotency import IdempotentAPIView
 
 def get_passenger(user):
     try:
@@ -24,7 +25,7 @@ def get_driver(user):
     except ObjectDoesNotExist:
         return None
 
-class BookingView(APIView):
+class BookingView(IdempotentAPIView, APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
@@ -67,7 +68,7 @@ class BookingView(APIView):
 
         return Response(serializer.errors, status=400)
     
-class BookingDetailView(APIView):
+class BookingDetailView(IdempotentAPIView,APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request, booking_id):

@@ -1,8 +1,9 @@
 import { View, Text, TouchableOpacity } from 'react-native'
-import React, { useState } from 'react'
+import React, { useState, useRef } from 'react'
+import { v4 as uuidv4 } from 'uuid'
 import MapComponent from "@/components/map/MapComponent";
 import SetLocationMapModal from '@/components/SetLocationMapModal';
-import {bookRide} from '../../../api/book'
+import { bookRide } from '../../../api/book'
 
 export default function book() {
     const [modalVisible, setModalVisible] = useState(false);
@@ -13,6 +14,7 @@ export default function book() {
     const [stops, setStops] = useState([]);
     const [price, setPrice] = useState(null);
     const [bookingStatus, setBookingStatus] = useState(null);
+    const [submitting, setSubmitting] = useState(false);
     //aaaaa
     const [selectionType, setSelectionType] = useState(null);
     const [selectedStopIndex, setSelectedStopIndex] = useState(null);
@@ -21,6 +23,8 @@ export default function book() {
     const [selectedAddress, setSelectedAddress] = useState(null);
     const [markers, setMarkers] = useState([]);
     const [routes, setRoutes] = useState([]);
+
+    const idempotencyKeyRef = useRef(uuidv4());
 
     const handleSetStartLocation = (location, address) => {
         setStartLocation(location);
@@ -133,12 +137,12 @@ export default function book() {
         }
     };
 
-    
+
     const handleLocationChange = (location, address) => {
         applyLocation(location, address);
     };
 
-    
+
     const handleLocationSelected = (location, address, route) => {
         applyLocation(location, address);
         if (route) setRoutes(route);
@@ -151,10 +155,14 @@ export default function book() {
     };
 
     const handleBooking = async () => {
+        if (submitting) return;
+
         if (!startLocation || !endLocation) {
             alert("Please select both start and end locations.");
             return;
         }
+
+        setSubmitting(true);
 
         const formData = {
             start: startLocation,
@@ -168,20 +176,21 @@ export default function book() {
             })),
             routes: routes,
         };
-        
 
         try {
-            const response = await bookRide(formData);
+            const response = await bookRide(formData, idempotencyKeyRef.current);
             setBookingStatus("Booking successful!");
         }
         catch (error) {
             console.error("Booking failed:", error);
             setBookingStatus("Booking failed. Please try again.");
         }
-
+        finally {
+            setSubmitting(false);
+        }
     }
 
-return (
+    return (
         <View className="flex-1 p-5 bg-white">
 
             <TouchableOpacity
@@ -245,12 +254,16 @@ return (
                 onLocationChange={handleLocationChange}
                 onRouteChange={handleRouteChange}
                 markers={markers}
-                
+
             />
 
-            <TouchableOpacity className="bg-black p-4 rounded-xl mt-5" onPress={handleBooking}>
+            <TouchableOpacity
+                className="bg-black p-4 rounded-xl mt-5"
+                onPress={handleBooking}
+                disabled={submitting}
+            >
                 <Text className="text-white text-center font-semibold">
-                    {bookingStatus || "Book Ride"}
+                    {submitting ? "Booking..." : (bookingStatus || "Book Ride")}
                 </Text>
 
             </TouchableOpacity>

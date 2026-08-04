@@ -1,28 +1,25 @@
 import { View, Text, TouchableOpacity } from 'react-native'
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
+import { v4 as uuidv4 } from 'uuid'
 import { completeBooking, inProgressBooking } from "../api/book"
 import { router } from 'expo-router'
 
 export default function BottomDetails({ booking, isDriver = true, onStatusChange }) {
     const [loading, setLoading] = useState(false)
 
-    useEffect(() => {
-        if (booking.status === "completed") {
-            const target = isDriver
-                ? "/(protected)/driver/complete"
-                : "/(protected)/passenger/complete"
-
-            router.replace({
-                pathname: target
-            })
-        }
-    }, [booking.status, isDriver])
+    const inProgressKeyRef = useRef(null)
+    const completeKeyRef = useRef(null)
 
     const handleInProgress = async () => {
+        if (!inProgressKeyRef.current) {
+            inProgressKeyRef.current = uuidv4()
+        }
+
         setLoading(true)
         try {
-            const updated = await inProgressBooking(booking.id)
+            const updated = await inProgressBooking(booking.id, inProgressKeyRef.current)
             onStatusChange?.(updated)
+            inProgressKeyRef.current = null
         } catch (err) {
             console.error("Failed to mark booking in progress:", err)
         } finally {
@@ -31,10 +28,15 @@ export default function BottomDetails({ booking, isDriver = true, onStatusChange
     }
 
     const handleComplete = async () => {
+        if (!completeKeyRef.current) {
+            completeKeyRef.current = uuidv4()
+        }
+
         setLoading(true)
         try {
-            const updated = await completeBooking(booking.id)
+            const updated = await completeBooking(booking.id, completeKeyRef.current)
             onStatusChange?.(updated)
+            completeKeyRef.current = null
         } catch (err) {
             console.error("Failed to complete booking:", err)
         } finally {
@@ -46,7 +48,7 @@ export default function BottomDetails({ booking, isDriver = true, onStatusChange
         if (loading) return
         if (booking.status === "accepted") {
             handleInProgress()
-        } else {
+        } else if (booking.status === "in_progress") {
             handleComplete()
         }
     }

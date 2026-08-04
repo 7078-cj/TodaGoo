@@ -111,6 +111,16 @@ const resolveBody = (data) => {
     };
 };
 
+
+const buildHeaders = (token, idempotencyKey) => ({
+    ...(token && {
+        Authorization: `Bearer ${token}`,
+    }),
+    ...(idempotencyKey && {
+        "Idempotency-Key": idempotencyKey,
+    }),
+});
+
 export const getRequest = async (endpoint, isToken = false) => {
     try {
         const token = await getToken(isToken);
@@ -141,18 +151,15 @@ export const getRequest = async (endpoint, isToken = false) => {
 export const postRequest = async (
     endpoint,
     data = {},
-    isToken = false
+    isToken = false,
+    idempotencyKey = null
 ) => {
     try {
         const token = await getToken(isToken);
 
         const { body, isForm } = resolveBody(data);
 
-        const headers = {
-            ...(token && {
-                Authorization: `Bearer ${token}`,
-            }),
-        };
+        const headers = buildHeaders(token, idempotencyKey);
 
         if (!isForm) {
             headers["Content-Type"] = "application/json";
@@ -181,18 +188,15 @@ export const postRequest = async (
 export const putRequest = async (
     endpoint,
     data = {},
-    isToken = false
+    isToken = false,
+    idempotencyKey = null
 ) => {
     try {
         const token = await getToken(isToken);
 
         const { body, isForm } = resolveBody(data);
 
-        const headers = {
-            ...(token && {
-                Authorization: `Bearer ${token}`,
-            }),
-        };
+        const headers = buildHeaders(token, idempotencyKey);
 
         if (!isForm) {
             headers["Content-Type"] = "application/json";
@@ -220,18 +224,15 @@ export const putRequest = async (
 export const patchRequest = async (
     endpoint,
     data = {},
-    isToken = false
+    isToken = false,
+    idempotencyKey = null
 ) => {
     try {
         const token = await getToken(isToken);
 
         const { body, isForm } = resolveBody(data);
 
-        const headers = {
-            ...(token && {
-                Authorization: `Bearer ${token}`,
-            }),
-        };
+        const headers = buildHeaders(token, idempotencyKey);
 
         if (!isForm) {
             headers["Content-Type"] = "application/json";
@@ -258,16 +259,13 @@ export const patchRequest = async (
 
 export const deleteRequest = async (
     endpoint,
-    isToken = false
+    isToken = false,
+    idempotencyKey = null
 ) => {
     try {
         const token = await getToken(isToken);
 
-        const headers = {
-            ...(token && {
-                Authorization: `Bearer ${token}`,
-            }),
-        };
+        const headers = buildHeaders(token, idempotencyKey);
 
         const res = await fetch(`${API}${endpoint}`, {
             method: "DELETE",
