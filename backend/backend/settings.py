@@ -16,6 +16,7 @@ import environ
 import os
 import ctypes.util
 import subprocess
+from corsheaders.defaults import default_headers
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -292,6 +293,9 @@ else:
 
 CORS_ALLOWED_ORIGINS = env.list("CORS_ALLOWED_ORIGINS", default=[])
 CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_HEADERS = list(default_headers) + [
+    "idempotency-key",
+]
 
 # =========================
 # REDIS / CHANNELS / CELERY / CACHE
