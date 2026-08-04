@@ -30,17 +30,15 @@ export function DriverProvider({ children }) {
         loadUser();
     }, []);
 
-    useEffect(()=>{
-        if (acceptedBooking){
-            router.push("/(protected)/driver/en_route")
+    useEffect(() => {
+        if (!acceptedBooking) return;
+
+        if (acceptedBooking.status === "completed") {
+            router.push("/(protected)/driver/complete");
+        } else {
+            router.push("/(protected)/driver/en_route");
         }
-        else if(acceptedBooking.status === "completed"){
-            router.push("/(protected)/driver/complete")
-        }
-        else{
-            return
-        }
-    },[acceptedBooking])
+    }, [acceptedBooking]);
     
         
 

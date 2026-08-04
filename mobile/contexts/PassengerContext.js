@@ -22,13 +22,15 @@ export function PassengerProvider({ children }) {
         })();
     }, []);
 
-    useEffect(()=>{
-            if (pendingBooking){
-                router.push("/(protected)/passenger/en_route")
-            }else if(pendingBooking.status === "completed"){
-                router.push("/(protected)/passenger/complete")
-            }
-        },[pendingBooking])
+    useEffect(() => {
+        if (!pendingBooking) return;
+
+        if (pendingBooking.status === "completed") {
+            router.push("/(protected)/passenger/complete");
+        } else {
+            router.push("/(protected)/passenger/en_route");
+        }
+    }, [pendingBooking]);
     
     
     const ws = passengerListener(userId, () => console.log("refresh"), setPendingBooking);

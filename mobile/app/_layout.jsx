@@ -1,3 +1,4 @@
+import "react-native-get-random-values";
 import { Stack, router } from "expo-router";
 import "../global.css";
 import AuthContext from '@/contexts/AuthContext';
