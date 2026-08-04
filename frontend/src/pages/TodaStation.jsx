@@ -69,7 +69,7 @@ export default function TodaStation() {
         loadAll();
     }, []);
 
-    
+
     useEffect(() => {
         const newMarkers = todaStationList.map((station) => ({
             latitude: station.location.lat,
@@ -91,37 +91,27 @@ export default function TodaStation() {
         setModalOpen(true);
     };
 
-    const handleCreate = async ({ name, location }) => {
-        try {
-            setActionError(null);
-            const created = await createTODAStation({
-                name,
-                lat: location.lat,
-                lng: location.lng,
-            });
-            const newStation = created?.data ?? created;
-            setTodaStationList((prev) => [...prev, newStation]);
-        } catch (error) {
-            setActionError(error.location);
-        }
+    const handleCreate = async ({ name, location }, idempotencyKey) => {
+        setActionError(null);
+        const created = await createTODAStation(
+            { name, lat: location.lat, lng: location.lng },
+            idempotencyKey
+        );
+        const newStation = created?.data ?? created;
+        setTodaStationList((prev) => [...prev, newStation]);
     };
 
-    const handleUpdate = async ({ id, name, location }) => {
-        try {
-            setActionError(null);
-            const updated = await updateTODAStation(id, {
-                name,
-                lat: location.lat,
-                lng: location.lng,
-            });
-            const updatedStation = updated?.data ?? updated;
-            setTodaStationList((prev) =>
-                prev.map((s) => (s.id === id ? updatedStation : s))
-            );
-        } catch (error) {
-            console.error("Error updating TODA station:", error);
-            setActionError("Failed to update station. Please try again.");
-        }
+    const handleUpdate = async ({ id, name, location }, idempotencyKey) => {
+        setActionError(null);
+        const updated = await updateTODAStation(
+            id,
+            { name, lat: location.lat, lng: location.lng },
+            idempotencyKey
+        );
+        const updatedStation = updated?.data ?? updated;
+        setTodaStationList((prev) =>
+            prev.map((s) => (s.id === id ? updatedStation : s))
+        );
     };
 
     const handleDelete = async (station) => {

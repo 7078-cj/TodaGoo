@@ -16,6 +16,7 @@ from django.template.context_processors import request
 import re
 from rest_framework import status
 from django.db.models.deletion import ProtectedError
+from ...idempotency import IdempotentAPIView
 
 CACHE_TTL = 60 * 15  # 15 minutes — adjust based on how often boundaries/stations actually change
 
@@ -247,7 +248,7 @@ class TODARetrieveUpdateDestroyAPIView(RetrieveUpdateDestroyAPIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class TodaStationListCreateView(ListCreateAPIView):
+class TodaStationListCreateView(IdempotentAPIView,ListCreateAPIView):
     queryset = TodaStation.objects.select_related('toda').all()
     serializer_class = TodaStationSerializer
 
@@ -276,7 +277,7 @@ class TodaStationListCreateView(ListCreateAPIView):
         return response
 
 
-class TodaStationRetrieveUpdateDestroyView(RetrieveUpdateDestroyAPIView):
+class TodaStationRetrieveUpdateDestroyView(IdempotentAPIView, RetrieveUpdateDestroyAPIView):
     queryset = TodaStation.objects.select_related('toda').all()
     serializer_class = TodaStationSerializer
     permission_classes = [permissions.IsAuthenticated]
