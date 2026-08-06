@@ -1,4 +1,5 @@
-from rest_framework import generics, permissions
+from rest_framework import permissions
+from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView, RetrieveUpdateAPIView
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.response import Response
 from ..booking.models import Booking
@@ -51,7 +52,7 @@ def get_booking_or_404(booking_id, user):
 
 
 
-class IncidentReportListCreateView(IdempotentAPIView, generics.ListCreateAPIView):
+class IncidentReportListCreateView(IdempotentAPIView, ListCreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser, JSONParser]
     pagination_class = StandardPagination
@@ -91,7 +92,7 @@ class IncidentReportListCreateView(IdempotentAPIView, generics.ListCreateAPIView
 
 
 
-class IncidentReportRetrieveUpdateView(IdempotentAPIView, generics.RetrieveUpdateAPIView):
+class IncidentReportRetrieveUpdateView(IdempotentAPIView, RetrieveUpdateAPIView):
     permission_classes = [permissions.IsAuthenticated]
     queryset = (
         IncidentReport.objects.select_related("booking", "reported_by")
