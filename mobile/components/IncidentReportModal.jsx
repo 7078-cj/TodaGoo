@@ -21,7 +21,7 @@ const INJURED_PARTIES = {
     none: "None",
 };
 
-export default function IncidentReportModal({ visible, onClose, onSubmit, submitting = false, bookingId }) {
+export default function IncidentReportModal({ visible, onClose, onSubmit = null, submitting = false, bookingId }) {
     const [incidentType, setIncidentType] = useState(null);
     const [injuredParty, setInjuredParty] = useState("none");
     const [details, setDetails] = useState("");
@@ -57,7 +57,7 @@ export default function IncidentReportModal({ visible, onClose, onSubmit, submit
         });
 
         if (res.success) {
-            onSubmit(res);
+            onSubmit && onSubmit();
             handleClose();
         }else {
             setError("Failed to submit the report. Please try again.");

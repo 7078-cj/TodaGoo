@@ -3,9 +3,12 @@ import React, { useEffect, useState, useRef } from 'react'
 import { v4 as uuidv4 } from 'uuid'
 import { completeBooking, inProgressBooking } from "../api/book"
 import { router } from 'expo-router'
+import IncidentReportModal from './IncidentReportModal'
 
 export default function BottomDetails({ booking, isDriver = true, onStatusChange }) {
     const [loading, setLoading] = useState(false)
+    const [visible, setVisible] = useState(false)
+    const [reporting, setReporting] = useState(false)
 
     const inProgressKeyRef = useRef(null)
     const completeKeyRef = useRef(null)
@@ -58,6 +61,10 @@ export default function BottomDetails({ booking, isDriver = true, onStatusChange
             <Text>BottomDetails</Text>
             <Text>{booking.status}</Text>
 
+            <TouchableOpacity onPress={()=>setVisible(true)}>
+                <Text>Report</Text>
+            </TouchableOpacity>
+
             {isDriver &&
                 <TouchableOpacity onPress={handlePress} disabled={loading}>
                     <Text>
@@ -67,6 +74,13 @@ export default function BottomDetails({ booking, isDriver = true, onStatusChange
                     </Text>
                 </TouchableOpacity>
             }
+
+            <IncidentReportModal
+            visible={visible}
+            onClose={()=>setVisible(false)}
+            submitting={reporting}
+            bookingId={booking.id}
+            />
         </View>
     )
 }
