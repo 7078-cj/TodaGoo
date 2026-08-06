@@ -1,7 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from ..booking.models import Booking
-
+from django.contrib.gis.db import models as geomodels
 
 class IncidentReport(models.Model):
     INCIDENT_TYPES = [
@@ -20,19 +20,22 @@ class IncidentReport(models.Model):
         ("none", "None"),
     ]
 
+    STATUS_CHOICES = [
+        ("open", "Open"),
+        ("resolved", "Resolved"),
+        ("dismissed", "Dismissed"),
+    ]
+
     booking = models.ForeignKey(Booking, on_delete=models.PROTECT, related_name="incident_reports")
     reported_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
-
-    gps_lat = models.FloatField()
-    gps_lng = models.FloatField()
-
+    location = geomodels.PointField(geography=True)
     incident_types = models.CharField(max_length=20, choices=INCIDENT_TYPES, default="none")
     injured_party = models.CharField(max_length=20, choices=INJURED_CHOICES, default="none")
     details = models.TextField(blank=True)
 
     status = models.CharField(
         max_length=20,
-        choices=[("open", "Open"), ("resolved", "Resolved"), ("dismissed", "Dismissed")],
+        choices=STATUS_CHOICES,
         default="open",
     )
 
