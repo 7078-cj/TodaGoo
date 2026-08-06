@@ -5,6 +5,11 @@ import MapComponent from "@/components/map/MapComponent";
 import SetLocationMapModal from '@/components/SetLocationMapModal';
 import { bookRide } from '../../../api/book'
 
+const BOOKING_TYPES = [
+    { value: "regular", label: "Regular" },
+    { value: "special", label: "Special" },
+];
+
 export default function book() {
     const [modalVisible, setModalVisible] = useState(false);
     const [startLocation, setStartLocation] = useState(null);
@@ -15,7 +20,8 @@ export default function book() {
     const [price, setPrice] = useState(null);
     const [bookingStatus, setBookingStatus] = useState(null);
     const [submitting, setSubmitting] = useState(false);
-    //aaaaa
+    const [bookingType, setBookingType] = useState("regular");
+
     const [selectionType, setSelectionType] = useState(null);
     const [selectedStopIndex, setSelectedStopIndex] = useState(null);
 
@@ -175,6 +181,7 @@ export default function book() {
                 order: index + 1,
             })),
             routes: routes,
+            type: bookingType,
         };
 
         try {
@@ -193,6 +200,29 @@ export default function book() {
     return (
         <View className="flex-1 p-5 bg-white">
 
+            <Text className="text-gray-700 mb-1">Booking Type</Text>
+            <View className="flex-row mb-4">
+                {BOOKING_TYPES.map(({ value, label }) => (
+                    <TouchableOpacity
+                        key={value}
+                        onPress={() => setBookingType(value)}
+                        className={`flex-1 p-3 rounded-xl mr-2 items-center border ${
+                            bookingType === value
+                                ? "bg-black border-black"
+                                : "bg-white border-gray-300"
+                        }`}
+                    >
+                        <Text
+                            className={
+                                bookingType === value ? "text-white font-semibold" : "text-gray-700"
+                            }
+                        >
+                            {label}
+                        </Text>
+                    </TouchableOpacity>
+                ))}
+            </View>
+
             <TouchableOpacity
                 className="bg-blue-500 p-4 rounded-xl"
                 onPress={openStartModal}
@@ -201,6 +231,10 @@ export default function book() {
                     {startAddress || "Pickup Location"}
                 </Text>
             </TouchableOpacity>
+
+            <View>
+
+            </View>
 
             {stops.map((stop, index) => (
                 <View

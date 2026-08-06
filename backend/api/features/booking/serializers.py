@@ -119,7 +119,8 @@ class BookingSerializer(serializers.ModelSerializer):
             "updated_at",
             "stops",
             "ratings",
-            "routes"
+            "routes",
+            "type"
         ]
 
         read_only_fields = [

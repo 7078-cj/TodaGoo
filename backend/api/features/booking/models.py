@@ -18,6 +18,11 @@ class Booking(models.Model):
         COMPLETED = "completed", "Completed"
         CANCELLED = "cancelled", "Cancelled"
 
+    TYPE_CHOICES = [
+        ("regular", "REGULAR"),
+        ("special", "SPECIAL")
+    ]
+
     passenger = models.ForeignKey(Passenger, on_delete=models.CASCADE, related_name="bookings")
     driver = models.ForeignKey(Driver, on_delete=models.CASCADE, related_name="bookings", null=True, blank=True)
     start = geomodels.PointField()
@@ -27,6 +32,7 @@ class Booking(models.Model):
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
     price = models.IntegerField()
     routes = models.JSONField(null=True, blank=True)
+    type = models.CharField(max_length=10, choices=TYPE_CHOICES, default="regular")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
