@@ -1,15 +1,12 @@
 from django.core.cache import cache
-from rest_framework.decorators import api_view, throttle_classes, permission_classes
-from rest_framework import viewsets, permissions
 from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
 from django.contrib.auth.models import User
-from ..user.models import Driver
 from .serializers import DriverSerializer
 from .permissions import IsDriverOwnerOrAdmin
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from ..utils.reconstruction import reconstruct_nested
 from rest_framework.response import Response
-from rest_framework import status
+
 
 
 class DriverListCreateView(ListCreateAPIView):
@@ -39,11 +36,7 @@ class DriverRetrieveUpdateDestroyView(RetrieveUpdateDestroyAPIView):
     queryset = User.objects.filter(driver_profile__isnull=False).select_related('driver_profile')
     serializer_class = DriverSerializer
     lookup_field = 'pk'
-
-    def get_permissions(self):
-        if self.request.method == 'GET':
-            return [AllowAny()]
-        return [IsDriverOwnerOrAdmin(), IsAuthenticated()]
+    permission_classes = [IsDriverOwnerOrAdmin(), IsAuthenticated()]
 
     def retrieve(self, request, *args, **kwargs):
         pk = kwargs.get('pk')

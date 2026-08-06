@@ -3,6 +3,7 @@ from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.response import Response
 from ..booking.models import Booking
 from rest_framework.exceptions import PermissionDenied, NotFound, ValidationError
+from  ...pagination import StandardPagination
 
 from .models import IncidentReport
 from .serializers import (
@@ -49,6 +50,7 @@ def get_booking_or_404(booking_id, user):
 class IncidentReportListCreateView(generics.ListCreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser, JSONParser]
+    pagination_class = StandardPagination
 
     def get_queryset(self):
         qs = (

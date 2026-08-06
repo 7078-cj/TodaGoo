@@ -3,18 +3,19 @@ from rest_framework.decorators import api_view, throttle_classes
 from rest_framework import viewsets, permissions
 from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
 from django.contrib.auth.models import User
-from ..user.models import Passenger
 from .serializers import PassengerSerializer
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from ..utils.reconstruction import reconstruct_nested
 from rest_framework.response import Response
-from rest_framework import status
 from .permissions import IsPassengerOwnerOrAdmin
+from ...pagination import StandardPagination
+
 
 
 class PassengerListCreateView(ListCreateAPIView):
     queryset = User.objects.filter(passenger_profile__isnull=False)
     serializer_class = PassengerSerializer
+    pagination_class = StandardPagination
 
     def get_permissions(self):
         if self.request.method == 'POST':
@@ -40,11 +41,7 @@ class PassengerRetrieveUpdateDestroyView(RetrieveUpdateDestroyAPIView):
     queryset = User.objects.filter(passenger_profile__isnull=False).select_related('passenger_profile')
     serializer_class = PassengerSerializer
     lookup_field = 'pk'
-
-    def get_permissions(self):
-        if self.request.method == 'GET':
-            return [AllowAny()]
-        return [IsPassengerOwnerOrAdmin(), IsAuthenticated()]
+    permission_classes =  [IsPassengerOwnerOrAdmin(), IsAuthenticated()]
 
     def retrieve(self, request, *args, **kwargs):
         pk = kwargs.get('pk')
