@@ -6,6 +6,7 @@ from rest_framework.exceptions import PermissionDenied, NotFound, ValidationErro
 from  ...pagination import StandardPagination
 from ..utils.reconstruction import reconstruct_nested
 from rest_framework import status
+from ...idempotency import IdempotentAPIView
 
 from .models import IncidentReport
 from .serializers import (
@@ -50,7 +51,7 @@ def get_booking_or_404(booking_id, user):
 
 
 
-class IncidentReportListCreateView(generics.ListCreateAPIView):
+class IncidentReportListCreateView(IdempotentAPIView, generics.ListCreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser, JSONParser]
     pagination_class = StandardPagination
@@ -90,7 +91,7 @@ class IncidentReportListCreateView(generics.ListCreateAPIView):
 
 
 
-class IncidentReportRetrieveUpdateView(generics.RetrieveUpdateAPIView):
+class IncidentReportRetrieveUpdateView(IdempotentAPIView, generics.RetrieveUpdateAPIView):
     permission_classes = [permissions.IsAuthenticated]
     queryset = (
         IncidentReport.objects.select_related("booking", "reported_by")
