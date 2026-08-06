@@ -4,6 +4,8 @@ from rest_framework.response import Response
 from ..booking.models import Booking
 from rest_framework.exceptions import PermissionDenied, NotFound, ValidationError
 from  ...pagination import StandardPagination
+from ..utils.reconstruction import reconstruct_nested
+from rest_framework import status
 
 from .models import IncidentReport
 from .serializers import (
@@ -19,9 +21,9 @@ INCIDENT_REPORT_WINDOW = timedelta(days=3)
 
 def get_booking_or_404(booking_id, user):
     try:
-        booking = Booking.objects.select_related("driver__user", "passenger").get(
-            id=booking_id
-        )
+        booking = Booking.objects.select_related(
+            "driver__user", "passenger__user"
+        ).get(id=booking_id)
     except Booking.DoesNotExist:
         raise NotFound({"detail": "Booking not found."})
 
@@ -29,7 +31,8 @@ def get_booking_or_404(booking_id, user):
         getattr(user, "admin", None) and user.admin.department == "TODA"
     )
     is_assigned_driver = bool(booking.driver and booking.driver.user == user)
-    is_passenger = booking.passenger == user
+    is_passenger = bool(booking.passenger and booking.passenger.user == user)
+
 
     if not (is_toda_admin or is_assigned_driver or is_passenger):
         raise PermissionDenied(
@@ -58,14 +61,9 @@ class IncidentReportListCreateView(generics.ListCreateAPIView):
             .prefetch_related("evidence")
         )
         user = self.request.user
-
         admin = getattr(user, "admin", False)
         if not (admin and admin.department == "TODA"):
             qs = qs.filter(reported_by=user)
-
-        if admin and admin.department == "MDRRMO":
-            qs = qs.filter(incident_types__in=["accident", "reckless_driving", "others"])
-
         return qs
 
     def get_serializer_class(self):
@@ -73,10 +71,23 @@ class IncidentReportListCreateView(generics.ListCreateAPIView):
             return IncidentReportCreateSerializer
         return IncidentReportSerializer
 
+    def create(self, request, *args, **kwargs):
+        data = reconstruct_nested(request.data, "location.")
+
+        serializer = self.get_serializer(data=data)
+        if not serializer.is_valid():
+            serializer.is_valid(raise_exception=True)
+
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
     def perform_create(self, serializer):
         booking_id = self.request.data.get("booking_id")
+
         booking = get_booking_or_404(booking_id, self.request.user)
         serializer.save(booking=booking)
+
 
 
 class IncidentReportRetrieveUpdateView(generics.RetrieveUpdateAPIView):

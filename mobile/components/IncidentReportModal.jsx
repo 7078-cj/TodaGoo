@@ -54,6 +54,7 @@ export default function IncidentReportModal({ visible, onClose, onSubmit = null,
             details,
             evidence_files: images,
             location,
+            booking_id: bookingId
         });
 
         if (res.success) {
