@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import FormTextField from "./inputs/FormTextField";
 import PickImageComponent from "./inputs/PickImageComponent";
 import { getLocation } from "../utils/location";
+import { submitIncidentReport } from "../api/report";
 
 const INCIDENT_TYPES = {
     accident: "Accident",
@@ -20,7 +21,7 @@ const INJURED_PARTIES = {
     none: "None",
 };
 
-export default function IncidentReportModal({ visible, onClose, onSubmit, submitting = false }) {
+export default function IncidentReportModal({ visible, onClose, onSubmit, submitting = false, bookingId }) {
     const [incidentType, setIncidentType] = useState(null);
     const [injuredParty, setInjuredParty] = useState("none");
     const [details, setDetails] = useState("");
@@ -41,18 +42,26 @@ export default function IncidentReportModal({ visible, onClose, onSubmit, submit
         onClose();
     };
 
-    const handleSubmit = () => {
+    const handleSubmit = async() => {
         if (!incidentType) {
             setError("Please select an incident type.");
             return;
         }
         setError("");
-        onSubmit({
+        const res = await submitIncidentReport({
             incident_types: incidentType,
             injured_party: injuredParty,
             details,
             evidence_files: images,
+            location,
         });
+
+        if (res.success) {
+            onSubmit(res);
+            handleClose();
+        }else {
+            setError("Failed to submit the report. Please try again.");
+        }
     };
 
     const chipStyle = (active) =>

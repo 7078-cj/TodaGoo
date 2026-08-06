@@ -12,6 +12,7 @@ from ..utils.distance import calculate_price
 from django.contrib.gis.geos import Point
 from django.core.exceptions import ObjectDoesNotExist
 from ...idempotency import IdempotentAPIView
+from  ...pagination import StandardPagination
 
 def get_passenger(user):
     try:
@@ -27,11 +28,18 @@ def get_driver(user):
 
 class BookingView(IdempotentAPIView, APIView):
     permission_classes = [permissions.IsAuthenticated]
+    pagination_class = StandardPagination
+    
+    
 
     def get(self, request):
         passenger = get_passenger(request.user)
+
         if not passenger:
-            return Response({"error": "User is not a passenger"}, status=400)
+            driver = get_driver(request.user)
+            bookings = Booking.objects.filter(driver=driver)
+            return Response(serializer.data)
+        
         bookings = Booking.objects.filter(passenger=passenger)
         serializer = BookingSerializer(bookings, many=True)
         return Response(serializer.data)
@@ -125,16 +133,6 @@ class BookingDetailView(IdempotentAPIView,APIView):
         booking.delete()
         return Response(status=204)
     
-@api_view(['GET'])
-@permission_classes([permissions.IsAuthenticated])
-def user_bookings(request):
-    passenger = get_passenger(request.user)
-    if not passenger:
-        return Response({"error": "User is not a passenger"}, status=400)
-
-    bookings = Booking.objects.filter(passenger=passenger)
-    serializer = BookingSerializer(bookings, many=True)
-    return Response(serializer.data)
 
 @api_view(['GET'])
 @permission_classes([permissions.IsAuthenticated])
