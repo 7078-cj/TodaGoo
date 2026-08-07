@@ -2,9 +2,10 @@ import json
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
 from django.core.exceptions import ObjectDoesNotExist
+from django.core.cache import cache
+
 from api.features.booking.models import Booking
 from api.features.booking.serializers import BookingSerializer
-from django.core.cache import cache
 
 
 class BookingConsumer(AsyncWebsocketConsumer):
@@ -41,7 +42,7 @@ class BookingConsumer(AsyncWebsocketConsumer):
             return
 
         self.booking = booking
-
+        self.is_passenger = getattr(booking.passenger, 'user_id', None) == user.id
 
         cached_location = cache.get(f"booking_{self.booking_id}_driver_location")
         if cached_location is not None:
@@ -52,16 +53,13 @@ class BookingConsumer(AsyncWebsocketConsumer):
 
     async def receive(self, text_data):
         message = json.loads(text_data)
-
         action = message.get("action")
 
         if action == "driver_location":
-
-            if not self.check_driver():
+            if not await self.check_driver():
                 return
 
             location = message.get("location")
-
             cache.set(f"booking_{self.booking_id}_driver_location", location, 20)
 
             await self.channel_layer.group_send(
@@ -72,21 +70,34 @@ class BookingConsumer(AsyncWebsocketConsumer):
                 }
             )
 
+
     async def driver_location(self, event):
         await self.send(text_data=json.dumps({
             "type": "driver_location",
             "data": event["location"]
         }))
 
+    async def chat_message(self, event):
+        await self.send(text_data=json.dumps({
+            "type": "chat_message",
+            "message": event["data"],
+        }))
+
+    async def messages_seen(self, event):
+        await self.send(text_data=json.dumps({
+            "type": "messages_seen",
+            "message_ids": event["data"],
+        }))
+
     async def disconnect(self, close_code):
-        await self.channel_layer.group_discard(self.group_name, self.channel_name)
+        if hasattr(self, "group_name"):
+            await self.channel_layer.group_discard(self.group_name, self.channel_name)
 
     @database_sync_to_async
     def check_driver(self):
         driver_profile = getattr(self.user, 'driver_profile', None)
         if driver_profile is None:
             return False
-
         return getattr(self.booking.driver, 'user_id', None) == self.user.id
 
     @database_sync_to_async

@@ -68,7 +68,7 @@ class BookingView(IdempotentAPIView, APIView):
 
     def apply_filters(self, qs, request, is_admin):
         toda_boundary_id = request.query_params.get("toda_boundary")
-        
+
         if toda_boundary_id:
             if not is_admin:
                 raise ValidationError({"toda_boundary": "Only TODA admins may filter by boundary."})
@@ -90,6 +90,7 @@ class BookingView(IdempotentAPIView, APIView):
             qs = qs.filter(created_at__date__lte=parsed_to)
 
         return qs
+    
     def post(self, request):
     
         passenger = get_passenger(request.user)
