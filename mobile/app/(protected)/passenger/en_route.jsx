@@ -8,8 +8,14 @@ import BottomDetails from '../../../components/BottomDetails'
 export default function booking() {
     const { pendingBooking } = useContext(PassengerContext)
     const [driverLocation, setDriverLocation] = useState(null)
+    const [messages, setMessages] = useState()
 
-    const ws = bookingListener(pendingBooking.id, () => console.log("refresh"), setDriverLocation)
+    const ws = bookingListener(
+        pendingBooking.id, 
+        () => console.log("refresh"), 
+        setDriverLocation,
+        setMessages
+    )
 
     const markers = [
         {

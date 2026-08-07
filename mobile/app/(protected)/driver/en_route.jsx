@@ -22,12 +22,14 @@ const broadcastDriverLocation = async (sendMessage) => {
 export default function booking() {
     const { acceptedBooking } = useContext(DriverContext)
     const [driverLocation, setDriverLocation] = useState()
+    const [messages, setMessages] = useState()
 
     const { sendMessage, connected, connectionStatus } =
         bookingListener(
             acceptedBooking?.id,
             () => console.log("refresh"),
-            setDriverLocation
+            setDriverLocation,
+            setMessages
         )
 
     broadcastDriverLocation(sendMessage)
