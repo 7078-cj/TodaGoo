@@ -13,6 +13,10 @@ from django.contrib.gis.geos import Point
 from django.core.exceptions import ObjectDoesNotExist
 from ...idempotency import IdempotentAPIView
 from  ...pagination import StandardPagination
+from datetime import datetime
+from django.utils import timezone
+from django.utils.dateparse import parse_date
+from rest_framework.exceptions import ValidationError
 
 def get_passenger(user):
     try:
@@ -25,25 +29,67 @@ def get_driver(user):
         return user.driver_profile
     except ObjectDoesNotExist:
         return None
+        
+
+def is_toda_admin(user):
+    return bool(
+        user
+        and user.is_authenticated
+        and hasattr(user, "admin")
+        and user.admin.department == "TODA"
+    )
+
 
 class BookingView(IdempotentAPIView, APIView):
     permission_classes = [permissions.IsAuthenticated]
     pagination_class = StandardPagination
-    
-    
 
     def get(self, request):
-        passenger = get_passenger(request.user)
+        qs = Booking.objects.select_related(
+            "passenger__user", "driver__user"
+        ).prefetch_related("stops", "ratings")
 
-        if not passenger:
-            driver = get_driver(request.user)
-            bookings = Booking.objects.filter(driver=driver)
-            return Response(serializer.data)
+        if is_toda_admin(request.user):
+            bookings = qs.all()
+        else:
+            passenger = get_passenger(request.user)
+            if passenger:
+                bookings = qs.filter(passenger=passenger)
+            else:
+                driver = get_driver(request.user)
+                bookings = qs.filter(driver=driver)
+
+        bookings = self.apply_filters(bookings, request, is_admin=is_toda_admin(request.user))
+
+        paginator = self.pagination_class()
+        page = paginator.paginate_queryset(bookings, request, view=self)
+        serializer = BookingSerializer(page, many=True)
+        return paginator.get_paginated_response(serializer.data)
+
+    def apply_filters(self, qs, request, is_admin):
+        toda_boundary_id = request.query_params.get("toda_boundary")
         
-        bookings = Booking.objects.filter(passenger=passenger)
-        serializer = BookingSerializer(bookings, many=True)
-        return Response(serializer.data)
+        if toda_boundary_id:
+            if not is_admin:
+                raise ValidationError({"toda_boundary": "Only TODA admins may filter by boundary."})
+            qs = qs.filter(driver__toda_boundary_id=toda_boundary_id)
 
+        date_from = request.query_params.get("date_from")
+        date_to = request.query_params.get("date_to")
+
+        if date_from:
+            parsed_from = parse_date(date_from)
+            if parsed_from is None:
+                raise ValidationError({"date_from": "Must be in YYYY-MM-DD format."})
+            qs = qs.filter(created_at__date__gte=parsed_from)
+
+        if date_to:
+            parsed_to = parse_date(date_to)
+            if parsed_to is None:
+                raise ValidationError({"date_to": "Must be in YYYY-MM-DD format."})
+            qs = qs.filter(created_at__date__lte=parsed_to)
+
+        return qs
     def post(self, request):
     
         passenger = get_passenger(request.user)
