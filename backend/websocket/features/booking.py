@@ -80,13 +80,13 @@ class BookingConsumer(AsyncWebsocketConsumer):
     async def chat_message(self, event):
         await self.send(text_data=json.dumps({
             "type": "chat_message",
-            "message": event["data"],
+            "data": event["data"],
         }))
 
     async def messages_seen(self, event):
         await self.send(text_data=json.dumps({
             "type": "messages_seen",
-            "message_ids": event["data"],
+            "data": event["data"],
         }))
 
     async def disconnect(self, close_code):

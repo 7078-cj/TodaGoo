@@ -121,11 +121,17 @@ const buildHeaders = (token, idempotencyKey) => ({
     }),
 });
 
-export const getRequest = async (endpoint, isToken = false) => {
+export const getRequest = async (endpoint, params = {}, isToken = false) => {
     try {
         const token = await getToken(isToken);
 
-        const res = await fetch(`${API}${endpoint}`, {
+        const query = new URLSearchParams(
+            Object.entries(params).filter(([, v]) => v !== undefined && v !== null)
+        ).toString();
+
+        const url = query ? `${API}${endpoint}?${query}` : `${API}${endpoint}`;
+
+        const res = await fetch(url, {
             method: "GET",
             headers: {
                 "Content-Type": "application/json",

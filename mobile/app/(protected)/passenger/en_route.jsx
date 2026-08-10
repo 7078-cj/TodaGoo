@@ -4,11 +4,13 @@ import PassengerContext from '../../../contexts/PassengerContext'
 import bookingListener from '../../../listeners/bookingListener'
 import MapComponent from '../../../components/map/MapComponent'
 import BottomDetails from '../../../components/BottomDetails'
+import ChatModal from '../../../components/chat/ChatModal'
 
 export default function booking() {
     const { pendingBooking } = useContext(PassengerContext)
     const [driverLocation, setDriverLocation] = useState(null)
-    const [messages, setMessages] = useState()
+    const [chatVisible, setChatVisible] = useState(false)
+    const [messages, setMessages] = useState([])
 
     const ws = bookingListener(
         pendingBooking.id, 
@@ -65,7 +67,15 @@ export default function booking() {
                 route={pendingBooking.routes}
                 isRoute={false}
             />
-            <BottomDetails booking={pendingBooking} isDriver={false}/>
+            <BottomDetails booking={pendingBooking} isDriver={false} setChatVisible={setChatVisible}/>
+            <ChatModal
+                visible={chatVisible}
+                onClose={() => setChatVisible(false)}
+                bookingId={pendingBooking?.id}
+                currentUserId={pendingBooking?.passenger?.id}
+                messages={messages}
+                setMessages={setMessages}
+            />
         </View>
     )
 }

@@ -14,7 +14,12 @@ from ...pagination import StandardPagination
 
 
 def get_booking_participant_or_403(booking_id, user):
-    booking = get_object_or_404(Booking.objects.select_related("driver__user", "passenger__user"), id=booking_id)
+    booking = get_object_or_404(
+        Booking.objects.select_related("driver__user", "passenger__user").filter(
+            status__in=["in_progress", "accepted"]
+        ),
+        id=booking_id,
+    )
 
     is_passenger = bool(booking.passenger and booking.passenger.user == user)
     is_driver = bool(booking.driver and booking.driver.user == user)
@@ -28,7 +33,6 @@ def get_booking_participant_or_403(booking_id, user):
 class MessageListCreateView(ListCreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = MessageSerializer
-    pagination_class = StandardPagination
 
     def get_queryset(self):
         booking_id = self.request.query_params.get("booking_id") or self.request.data.get("booking_id")

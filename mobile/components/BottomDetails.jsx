@@ -1,11 +1,12 @@
 import { View, Text, TouchableOpacity } from 'react-native'
 import React, { useEffect, useState, useRef } from 'react'
 import { v4 as uuidv4 } from 'uuid'
+import { Ionicons } from '@expo/vector-icons'
 import { completeBooking, inProgressBooking } from "../api/book"
 import { router } from 'expo-router'
 import IncidentReportModal from './IncidentReportModal'
 
-export default function BottomDetails({ booking, isDriver = true, onStatusChange }) {
+export default function BottomDetails({ booking, isDriver = true, onStatusChange, setChatVisible }) {
     const [loading, setLoading] = useState(false)
     const [visible, setVisible] = useState(false)
     const [reporting, setReporting] = useState(false)
@@ -58,7 +59,16 @@ export default function BottomDetails({ booking, isDriver = true, onStatusChange
 
     return (
         <View className="h-[40%]">
-            <Text>BottomDetails</Text>
+            <View className="flex-row items-center justify-between px-4">
+                <Text>BottomDetails</Text>
+                <TouchableOpacity
+                    onPress={() => setChatVisible?.(true)}
+                    className="h-10 w-10 items-center justify-center rounded-full bg-gray-100"
+                >
+                    <Ionicons name="chatbubble-ellipses-outline" size={22} color="#333" />
+                </TouchableOpacity>
+            </View>
+
             <Text>{booking.status}</Text>
 
             <TouchableOpacity onPress={()=>setVisible(true)}>

@@ -5,10 +5,12 @@ import bookingListener from "../../../listeners/bookingListener"
 import { getLocation } from "../../../utils/location"
 import MapComponent from '../../../components/map/MapComponent'
 import BottomDetails from '../../../components/BottomDetails';
+import ChatModal from '../../../components/chat/ChatModal';
 
 const broadcastDriverLocation = async (sendMessage) => {
     try {
         const location = await getLocation();
+        if (!location) return;
 
         sendMessage({
             action: "driver_location",
@@ -22,7 +24,8 @@ const broadcastDriverLocation = async (sendMessage) => {
 export default function booking() {
     const { acceptedBooking } = useContext(DriverContext)
     const [driverLocation, setDriverLocation] = useState()
-    const [messages, setMessages] = useState()
+    const [chatVisible, setChatVisible] = useState(false)
+    const [messages, setMessages] = useState([])
 
     const { sendMessage, connected, connectionStatus } =
         bookingListener(
@@ -32,7 +35,9 @@ export default function booking() {
             setMessages
         )
 
-    broadcastDriverLocation(sendMessage)
+    useEffect(() => {
+        broadcastDriverLocation(sendMessage);
+    }, []);
 
     useEffect(() => {
         if (!connected) return;
@@ -99,7 +104,15 @@ export default function booking() {
                 isRoute={false}
 
             />
-            <BottomDetails booking={acceptedBooking} />
+            <BottomDetails booking={acceptedBooking} setChatVisible={setChatVisible} />
+            <ChatModal
+                visible={chatVisible}
+                onClose={() => setChatVisible(false)}
+                bookingId={acceptedBooking?.id}
+                currentUserId={acceptedBooking?.driver?.id}
+                messages={messages}
+                setMessages={setMessages}
+            />
         </View>
     )
 }
