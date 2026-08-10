@@ -3,7 +3,6 @@ import useWebSocket from "../hooks/useWebsocket";
 function handleBookingMessage(data, setDriverLocation, setMessages) {
     switch (data.type) {
         case "driver_location":
-            console.log(data)
             setDriverLocation(data.data.coords);
             break;
 
