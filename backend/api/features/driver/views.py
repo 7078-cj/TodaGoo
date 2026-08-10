@@ -7,7 +7,7 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from ..utils.reconstruction import reconstruct_nested
 from rest_framework.response import Response
 from django.db.models import Q
-
+from ...pagination import StandardPagination
 
 
 class DriverListCreateView(ListCreateAPIView):
@@ -15,6 +15,7 @@ class DriverListCreateView(ListCreateAPIView):
         "driver_profile", "driver_profile__toda_boundary", "driver_profile__toda_station"
     )
     serializer_class = DriverSerializer
+    pagination_class = StandardPagination
 
     def get_permissions(self):
         if self.request.method == "POST":
@@ -39,6 +40,10 @@ class DriverListCreateView(ListCreateAPIView):
                 | Q(first_name__icontains=search)
                 | Q(last_name__icontains=search)
             )
+
+        blacklisted = self.request.query_params.get("blacklisted")
+        if blacklisted and blacklisted.lower() == "true":
+            qs = qs.filter(driver_profile__status="BLACKLISTED")
 
         min_rating = self.request.query_params.get("min_rating")
         if min_rating:
@@ -78,7 +83,7 @@ class DriverRetrieveUpdateDestroyView(RetrieveUpdateDestroyAPIView):
         )
     serializer_class = DriverSerializer
     lookup_field = 'pk'
-    permission_classes = [IsDriverOwnerOrAdmin(), IsAuthenticated()]
+    permission_classes = [IsDriverOwnerOrAdmin, IsAuthenticated]
 
     def retrieve(self, request, *args, **kwargs):
         pk = kwargs.get('pk')

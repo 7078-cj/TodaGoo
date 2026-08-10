@@ -21,6 +21,7 @@ import TodaBoundaries from "./pages/TodaBoundaries";
 import Footer from "./components/Footer";
 import RegisteredToda from "./pages/RegisteredToda";
 import TodaStation from "./pages/TodaStation";
+import TodaGooDrivers from "./pages/TodaGooDrivers";
 
 const MDRRMO_MENU = [
     { label: "Dashboard", href: "/mdrrmo", icon: LayoutDashboard },
@@ -31,6 +32,7 @@ const TODA_MENU = [
     { label: "Boundaries", href: "/toda/boundaries", icon: MapPin },
     { label: "RegisteredToda", href: "/toda/registered", icon: MapPin },
     { label: "Stations", href: "/toda/stations", icon: MapPin },
+    { label: "TODAGoo Drivers", href: "/toda/todagoo_drivers", icon: MapPin },
 ];
 
 function AppContent() {
@@ -125,6 +127,10 @@ function AppContent() {
                                         <Route
                                             path="/toda/stations"
                                             element={<TodaStation />}
+                                        />
+                                        <Route
+                                            path="/toda/todagoo_drivers"
+                                            element={<TodaGooDrivers />}
                                         />
                                     </Route>
                                 </Route>

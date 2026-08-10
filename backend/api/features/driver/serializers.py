@@ -19,6 +19,7 @@ class DriverProfileSerializer(DriverValidationMixin, serializers.ModelSerializer
             'vehicle_plate',
             'vehicle_front_picture',
             'vehicle_back_picture',
+            "status"
         )
 
 
@@ -48,41 +49,51 @@ class DriverSerializer(serializers.ModelSerializer):
             if self.instance is None:
                 raise serializers.ValidationError("driver_profile is required")
             return attrs
-        
-        toda_number = driver_data.get('toda_number')
-        vehicle_plate = driver_data.get('vehicle_plate')
 
-        registered_toda = RegisteredToda.objects.filter(
-            toda_number=toda_number,
-            vehicle_plate=vehicle_plate
-        ).select_related('toda').first()
+        is_update = self.instance is not None
+        changing_registration = 'toda_number' in driver_data or 'vehicle_plate' in driver_data
 
-        if not registered_toda:
-            raise serializers.ValidationError(
-                "TODA number and vehicle plate are not registered."
-            )
+        self._toda_station = None
+        self._registered_toda = None
+
+        if not is_update or changing_registration:
+            if is_update:
+                current = self.instance.driver_profile
+                toda_number = driver_data.get('toda_number', current.toda_number)
+                vehicle_plate = driver_data.get('vehicle_plate', current.vehicle_plate)
+            else:
+                toda_number = driver_data.get('toda_number')
+                vehicle_plate = driver_data.get('vehicle_plate')
+
+            registered_toda = RegisteredToda.objects.filter(
+                toda_number=toda_number,
+                vehicle_plate=vehicle_plate
+            ).select_related('toda').first()
+
+            if not registered_toda:
+                raise serializers.ValidationError(
+                    "TODA number and vehicle plate are not registered."
+                )
+
+            plate_qs = Driver.objects.filter(vehicle_plate=vehicle_plate)
+            if self.instance is not None:
+                plate_qs = plate_qs.exclude(pk=self.instance.driver_profile.pk)
+
+            if plate_qs.exists():
+                raise serializers.ValidationError(
+                    "This vehicle is already registered to a driver."
+                )
+
+            self._registered_toda = registered_toda
 
         toda_station_id = attrs.get('toda_station_id')
-        toda_station = None
-
         if toda_station_id:
             toda_station = TodaStation.objects.filter(id=toda_station_id).first()
             if toda_station is None:
                 raise serializers.ValidationError(
                     {"toda_station_id": "Toda Station not found."}
                 )
-
-        plate_qs = Driver.objects.filter(vehicle_plate=vehicle_plate)
-        if self.instance is not None:
-            plate_qs = plate_qs.exclude(pk=self.instance.driver_profile.pk)
-
-        if plate_qs.exists():
-            raise serializers.ValidationError(
-                "This vehicle is already registered to a driver."
-            )
-
-        self._registered_toda = registered_toda
-        self._toda_station = toda_station
+            self._toda_station = toda_station
 
         return attrs
 

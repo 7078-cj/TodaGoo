@@ -20,8 +20,6 @@ class Admin(models.Model):
 class Driver(models.Model):
     STATUS_CHOICES = [
         ('ACTIVE', 'Active'),
-        ('INACTIVE', 'Inactive'),
-        ('SUSPENDED', 'Suspended'),
         ('BLACKLISTED', 'Blacklisted'),
     ]
 
