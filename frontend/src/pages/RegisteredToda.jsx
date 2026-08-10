@@ -1,5 +1,5 @@
 import React from 'react'
-import RegisteredTodaList from '../components/RegisteredTodaList'
+import RegisteredTodaList from '../components/RegisteredToda/RegisteredTodaList'
 
 export default function RegisteredToda() {
     return (

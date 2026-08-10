@@ -1,6 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 import Login from "./pages/Login";
 import DashBoard from "./pages/DashBoard";
@@ -37,14 +37,22 @@ function AppContent() {
     const dispatch = useDispatch();
     const access = useSelector((state) => state.auth.access);
     const location = useLocation();
+    const didInitRef = useRef(false);
 
     useEffect(() => {
-        if (!access) return;
+        if (didInitRef.current) return; 
+        didInitRef.current = true;
+
+        if (access) {
+            updateToken(dispatch);
+        }
+
         const interval = setInterval(() => {
             updateToken(dispatch);
-        }, 600000);
+        }, 10 * 60 * 1000);
+
         return () => clearInterval(interval);
-    }, [access]);
+    }, []);
 
     const hideLayoutRoutes = ["/login", "/register", "/forgot_password"];
     const showLayout = !hideLayoutRoutes.includes(location.pathname);
@@ -66,51 +74,67 @@ function AppContent() {
     }
 
     return (
-        <>
-            <div className="flex flex-col h-screen">
-                
-                {/* HEADER */}
-                <Header />
+        <div className="flex flex-col h-screen">
 
-                {/* BODY */}
-                <div className="flex flex-1 overflow-hidden">
+            {/* HEADER */}
+            <Header />
 
-                    <SidebarProvider>
-                        <SideBarComponent
-                            menuItems={getMenuItems().map((item) => ({
-                                ...item,
-                                active: location.pathname === item.href,
-                            }))}
-                            footer={<Footer />}
-                        />
+            {/* BODY */}
+            <div className="flex flex-1 overflow-hidden">
 
-                        <SidebarInset>
-                            <main className=" h-full overflow-y-auto">
-                                <Routes>
-                                    <Route path="/unauthorized" element={<Unauthorized />} />
+                <SidebarProvider>
+                    <SideBarComponent
+                        menuItems={getMenuItems().map((item) => ({
+                            ...item,
+                            active: location.pathname === item.href,
+                        }))}
+                        footer={<Footer />}
+                    />
 
-                                    <Route element={<PrivateRoutes />}>
-                                        <Route path="/" element={<DashBoard />} />
+                    <SidebarInset>
+                        <main className="h-full overflow-y-auto">
+                            <Routes>
+                                <Route
+                                    path="/unauthorized"
+                                    element={<Unauthorized />}
+                                />
 
-                                        <Route element={<MDRRMORoutes />}>
-                                            <Route path="/mdrrmo" element={<MdrrmoDashboard />} />
-                                        </Route>
+                                <Route element={<PrivateRoutes />}>
+                                    <Route path="/" element={<DashBoard />} />
 
-                                        <Route element={<TODARoutes />}>
-                                            <Route path="/toda" element={<TodaDashboard />} />
-                                            <Route path="/toda/boundaries" element={<TodaBoundaries />} />
-                                            <Route path="/toda/registered" element={<RegisteredToda />} />
-                                            <Route path="/toda/stations" element={<TodaStation />} />
-                                        </Route>
+                                    <Route element={<MDRRMORoutes />}>
+                                        <Route
+                                            path="/mdrrmo"
+                                            element={<MdrrmoDashboard />}
+                                        />
                                     </Route>
-                                </Routes>
-                            </main>
-                        </SidebarInset>
 
-                    </SidebarProvider>
-                </div>
+                                    <Route element={<TODARoutes />}>
+                                        <Route
+                                            path="/toda"
+                                            element={<TodaDashboard />}
+                                        />
+                                        <Route
+                                            path="/toda/boundaries"
+                                            element={<TodaBoundaries />}
+                                        />
+                                        <Route
+                                            path="/toda/registered"
+                                            element={<RegisteredToda />}
+                                        />
+                                        <Route
+                                            path="/toda/stations"
+                                            element={<TodaStation />}
+                                        />
+                                    </Route>
+                                </Route>
+                            </Routes>
+                        </main>
+                    </SidebarInset>
+                </SidebarProvider>
+
             </div>
-        </>
+        </div>
     );
 }
 
