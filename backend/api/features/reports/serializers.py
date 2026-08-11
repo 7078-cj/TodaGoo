@@ -19,7 +19,7 @@ class IncidentReportSerializer(serializers.ModelSerializer):
     location = PointField()
     evidence = IncidentEvidenceSerializer(many=True, read_only=True)
     reported_by = serializers.PrimaryKeyRelatedField(read_only=True)
-    booking = serializers.PrimaryKeyRelatedField(read_only=True)
+    booking = BookingSerializer(read_only=True)
 
     class Meta:
         model = IncidentReport

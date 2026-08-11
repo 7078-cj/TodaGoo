@@ -26,6 +26,22 @@ from django.utils import timezone
 
 INCIDENT_REPORT_WINDOW = timedelta(days=3)
 
+MDRRMO_INCIDENT_TYPES = {"accident", "reckless_driving", "others"}
+
+
+def _admin_department(user):
+    admin = getattr(user, "admin", None)
+    return getattr(admin, "department", None)
+
+
+def is_toda_admin_user(user):
+    return _admin_department(user) == "TODA"
+
+
+def is_mdrrmo_admin_user(user):
+    return _admin_department(user) == "MDRRMO"
+
+
 def get_booking_or_404(booking_id, user):
     try:
         booking = Booking.objects.select_related(
@@ -34,12 +50,9 @@ def get_booking_or_404(booking_id, user):
     except Booking.DoesNotExist:
         raise NotFound({"detail": "Booking not found."})
 
-    is_toda_admin = bool(
-        getattr(user, "admin", None) and user.admin.department == "TODA"
-    )
+    is_toda_admin = is_toda_admin_user(user)
     is_assigned_driver = bool(booking.driver and booking.driver.user == user)
     is_passenger = bool(booking.passenger and booking.passenger.user == user)
-
 
     if not (is_toda_admin or is_assigned_driver or is_passenger):
         raise PermissionDenied(
@@ -72,11 +85,15 @@ class IncidentReportListCreateView(IdempotentAPIView, ListCreateAPIView):
             .prefetch_related("evidence")
         )
         user = self.request.user
-        admin = getattr(user, "admin", False)
-        if not (admin and admin.department == "TODA"):
+
+        if is_toda_admin_user(user):
+            pass
+        elif is_mdrrmo_admin_user(user):
+            qs = qs.filter(incident_types__in=MDRRMO_INCIDENT_TYPES)
+        else:
             qs = qs.filter(reported_by=user)
 
-        qs = self.apply_filters(qs, admin_qualified=bool(admin and admin.department == "TODA"))
+        qs = self.apply_filters(qs, admin_qualified=is_toda_admin_user(user))
         return qs
 
     def apply_filters(self, qs, admin_qualified):
@@ -133,8 +150,7 @@ class IncidentReportListCreateView(IdempotentAPIView, ListCreateAPIView):
         data = reconstruct_nested(request.data, "location.")
 
         serializer = self.get_serializer(data=data)
-        if not serializer.is_valid():
-            serializer.is_valid(raise_exception=True)
+        serializer.is_valid(raise_exception=True)
 
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
@@ -147,13 +163,14 @@ class IncidentReportListCreateView(IdempotentAPIView, ListCreateAPIView):
         serializer.save(booking=booking)
 
 
-
 class IncidentReportRetrieveUpdateView(IdempotentAPIView, RetrieveUpdateAPIView):
     permission_classes = [permissions.IsAuthenticated]
     queryset = (
         IncidentReport.objects.select_related("booking", "reported_by")
         .prefetch_related("evidence")
     )
+
+    ALLOWED_UPDATE_FIELDS = {"status"}
 
     def get_serializer_class(self):
         if self.request.method in ("PUT", "PATCH"):
@@ -163,14 +180,59 @@ class IncidentReportRetrieveUpdateView(IdempotentAPIView, RetrieveUpdateAPIView)
     def get_queryset(self):
         qs = super().get_queryset()
         user = self.request.user
-        admin = getattr(user, "admin", False)
-        if not (admin and admin.department == "TODA"):
+
+        if is_toda_admin_user(user):
+            pass
+        elif is_mdrrmo_admin_user(user):
+            qs = qs.filter(incident_types__in=MDRRMO_INCIDENT_TYPES)
+        else:
             qs = qs.filter(reported_by=user)
+
         return qs
+
+    def _can_update(self, user, instance):
+        """Whether this admin is allowed to change status on this specific report."""
+        if is_toda_admin_user(user):
+            return True
+        if is_mdrrmo_admin_user(user):
+            return instance.incident_types in MDRRMO_INCIDENT_TYPES
+        return False
+
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop("partial", False)
+        instance = self.get_object()
+
+        if not self._can_update(request.user, instance):
+            return Response(
+                {"detail": "You do not have permission to update this report."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        data = request.data
+        unauthorized_fields = set(data.keys()) - self.ALLOWED_UPDATE_FIELDS
+
+        if unauthorized_fields:
+            return Response(
+                {
+                    "detail": "Admins can only update the report's status.",
+                    "unauthorized_fields": list(unauthorized_fields),
+                },
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        serializer = self.get_serializer(
+            instance,
+            data=data,
+            partial=partial,
+        )
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+
+        return Response(serializer.data)
 
     def perform_update(self, serializer):
         user = self.request.user
-        admin = getattr(user, "admin", None)
-        if not (admin and admin.department == "TODA"):
+        instance = serializer.instance
+        if not self._can_update(user, instance):
             raise PermissionDenied({"detail": "You do not have permission to update this report."})
         serializer.save()
