@@ -131,6 +131,9 @@ class BookingDetailView(IdempotentAPIView,APIView):
             passenger = get_passenger(request.user)
             if not passenger:
                 return Response({"error": "User is not a passenger"}, status=400)
+            if passenger.status == "BLACKLISTED":
+                return Response({"error": "User is blaclisted"}, status=400)
+
             booking = Booking.objects.get(id=booking_id, passenger=passenger)
         except Booking.DoesNotExist:
             return Response({"error": "Booking not found"}, status=404)

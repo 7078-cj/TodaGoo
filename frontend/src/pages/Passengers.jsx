@@ -1,15 +1,15 @@
 import React, { useEffect, useState } from 'react'
 import {
-    getTODAGOODriverList,
-    blackListTODAGOODriver,
-    unBlackListTODAGOODriver,
-} from '../api/todagoo_drivers';
+    getPassengerList,
+    blackListPassenger,
+    unBlackListPassenger,
+} from '../api/passenger';
 import Table from '../components/Table';
 import Pagination from '../components/Pagination';
 import SearchFilter from '../components/SearchFilter';
 
-export default function TodaGooDrivers() {
-    const [drivers, setDrivers] = useState([])
+export default function Passengers() {
+    const [passengers, setPassengers] = useState([])
     const [page, setPage] = useState(1)
     const [totalPages, setTotalPages] = useState(1)
     const [loading, setLoading] = useState(false);
@@ -23,7 +23,7 @@ export default function TodaGooDrivers() {
     const [maxRating, setMaxRating] = useState("");
     const [blacklistedOnly, setBlacklistedOnly] = useState(false);
 
-    const fetchDrivers = async (currentPage = page) => {
+    const fetchPassengers = async (currentPage = page) => {
         try {
             setLoading(true);
 
@@ -35,9 +35,9 @@ export default function TodaGooDrivers() {
             if (blacklistedOnly) params.append('blacklisted', 'true');
             params.append('page', currentPage);
 
-            const res = await getTODAGOODriverList(params.toString());
+            const res = await getPassengerList(params.toString());
 
-            setDrivers(res.results || []);
+            setPassengers(res.results || []);
             setTotalPages(Math.ceil((res.count || 0) / 10));
         } catch (err) {
             console.error(err);
@@ -46,25 +46,25 @@ export default function TodaGooDrivers() {
         }
     }
 
-    const handleEdit = async (driver) => {
-        const isBlacklisted = driver.driver_profile.status === "BLACKLISTED";
+    const handleEdit = async (passenger) => {
+        const isBlacklisted = passenger.passenger_profile.status === "BLACKLISTED";
         const confirmMsg = isBlacklisted
-            ? `Remove ${driver.first_name} ${driver.last_name} from the blacklist?`
-            : `Blacklist ${driver.first_name} ${driver.last_name}?`;
+            ? `Remove ${passenger.first_name} ${passenger.last_name} from the blacklist?`
+            : `Blacklist ${passenger.first_name} ${passenger.last_name}?`;
 
         if (!window.confirm(confirmMsg)) return;
 
         try {
-            setActionLoadingId(driver.id);
+            setActionLoadingId(passenger.id);
             if (isBlacklisted) {
-                await unBlackListTODAGOODriver(driver.id);
+                await unBlackListPassenger(passenger.id);
             } else {
-                await blackListTODAGOODriver(driver.id);
+                await blackListPassenger(passenger.id);
             }
-            await fetchDrivers(page);
+            await fetchPassengers(page);
         } catch (err) {
             console.error(err);
-            alert('Failed to update driver status.');
+            alert('Failed to update passenger status.');
         } finally {
             setActionLoadingId(null);
         }
@@ -75,7 +75,7 @@ export default function TodaGooDrivers() {
             if (page !== 1) {
                 setPage(1);
             } else {
-                fetchDrivers(1);
+                fetchPassengers(1);
             }
         }, 500);
 
@@ -84,14 +84,14 @@ export default function TodaGooDrivers() {
 
     useEffect(() => {
         if (page !== 1) {
-            fetchDrivers(page);
+            fetchPassengers(page);
         }
     }, [page]);
 
     return (
         <div className="flex flex-col gap-4">
             <div className="flex items-center gap-2 flex-wrap">
-                <SearchFilter search={search} setSearch={setSearch} placeholder={"Search for Drivers....."}/>
+                <SearchFilter search={search} setSearch={setSearch} placeholder={"Search for Passengers....."} />
 
                 <input
                     type="number"
@@ -126,12 +126,12 @@ export default function TodaGooDrivers() {
 
             <Table
                 row={[ 'First Name', 'Last Name', 'Status', '']}
-                list={drivers}
+                list={passengers}
                 loading={loading}
                 dataRender={[
-                    { accessor: 'first_name', className: 'px-4 py-2 font-medium', profile_picture:'driver_profile.profile_picture' },
+                    { accessor: 'first_name', className: 'px-4 py-2 font-medium', profile_picture:'passenger_profile.profile_picture' },
                     { accessor: 'last_name', className: 'px-4 py-2 font-mono' },
-                    { accessor: 'driver_profile.status', className: 'px-4 py-2 capitalize' },
+                    { accessor: 'passenger_profile.status', className: 'px-4 py-2 capitalize' },
                 ]}
                 handleEdit={handleEdit}
                 setDeleteTarget={setDeleteTarget}

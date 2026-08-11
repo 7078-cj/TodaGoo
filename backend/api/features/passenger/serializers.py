@@ -13,6 +13,7 @@ class PassengerProfileSerializer(PassengerValidationMixin, serializers.ModelSeri
             'contact_number',
             'emergency_contact_name',
             'emergency_contact_number',
+            'status'
         )
 
 

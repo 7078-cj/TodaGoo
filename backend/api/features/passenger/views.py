@@ -72,7 +72,7 @@ class PassengerRetrieveUpdateDestroyView(RetrieveUpdateDestroyAPIView):
     queryset = User.objects.filter(passenger_profile__isnull=False).select_related('passenger_profile')
     serializer_class = PassengerSerializer
     lookup_field = 'pk'
-    permission_classes =  [IsPassengerOwnerOrAdmin(), IsAuthenticated()]
+    permission_classes =  [IsPassengerOwnerOrAdmin, IsAuthenticated]
 
     def retrieve(self, request, *args, **kwargs):
         pk = kwargs.get('pk')

@@ -40,7 +40,13 @@ class Driver(models.Model):
         return self.user.username
 
 class Passenger(models.Model):
+    STATUS_CHOICES = [
+            ('ACTIVE', 'Active'),
+            ('BLACKLISTED', 'Blacklisted'),
+        ]
+    
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="passenger_profile")
+    status = models.CharField(max_length=50, choices=STATUS_CHOICES, default='ACTIVE')
     address = models.CharField(max_length=255)
     profile_picture = models.ImageField(upload_to='passenger_profiles/', null=True, blank=True)
     contact_number = models.CharField(max_length=11)
