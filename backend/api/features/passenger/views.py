@@ -87,10 +87,67 @@ class PassengerRetrieveUpdateDestroyView(RetrieveUpdateDestroyAPIView):
         return response
 
     def update(self, request, *args, **kwargs):
-        partial = kwargs.pop('partial', False)
+        partial = kwargs.pop("partial", False)
         instance = self.get_object()
-        data = reconstruct_nested(request.data, prefix="passenger_profile.")
-        serializer = self.get_serializer(instance, data=data, partial=partial)
+
+        is_owner = request.user.id == instance.id
+
+        is_toda_admin = (
+            getattr(request.user, "admin", None) is not None
+            and request.user.admin.department == "TODA"
+        )
+
+        data = reconstruct_nested(
+            request.data,
+            prefix="passenger_profile."
+        )
+
+        if is_owner:
+            pass
+
+        elif is_toda_admin:
+            passenger_profile_data = data.get("passenger_profile", {})
+
+            unauthorized_top_level = set(data.keys()) - {"passenger_profile"}
+
+            unauthorized_profile_fields = (
+                set(passenger_profile_data.keys()) - {"status"}
+            )
+
+            if unauthorized_top_level or unauthorized_profile_fields:
+                unauthorized_fields = list(unauthorized_top_level)
+
+                unauthorized_fields.extend(
+                    f"passenger_profile.{field}"
+                    for field in unauthorized_profile_fields
+                )
+
+                return Response(
+                    {
+                        "detail": (
+                            "TODA admins can only update the passenger's status."
+                        ),
+                        "unauthorized_fields": unauthorized_fields,
+                    },
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+
+        else:
+            return Response(
+                {
+                    "detail": (
+                        "You do not have permission to update this passenger."
+                    )
+                },
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        serializer = self.get_serializer(
+            instance,
+            data=data,
+            partial=partial
+        )
+
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
 
