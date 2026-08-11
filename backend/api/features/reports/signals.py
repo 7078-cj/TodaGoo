@@ -7,7 +7,7 @@ from django.dispatch import receiver
 from .models import IncidentReport
 from .serializers import IncidentReportSerializer
 
-MDRRMO_INCIDENT_TYPES = {"accident", "reckless_driving", "others"}
+MDRRMO_INCIDENT_TYPES = {"accident", "reckless_driving", "others", "harassment"}
 
 
 @receiver(post_save, sender=IncidentReport)

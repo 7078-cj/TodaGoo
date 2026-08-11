@@ -26,7 +26,7 @@ from django.utils import timezone
 
 INCIDENT_REPORT_WINDOW = timedelta(days=3)
 
-MDRRMO_INCIDENT_TYPES = {"accident", "reckless_driving", "others"}
+MDRRMO_INCIDENT_TYPES = {"accident", "reckless_driving", "others","harassment"}
 
 
 def _admin_department(user):
