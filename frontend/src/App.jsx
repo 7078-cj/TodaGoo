@@ -6,7 +6,7 @@ import Login from "./pages/Login";
 import DashBoard from "./pages/DashBoard";
 
 import PrivateRoutes from "./context/PrivateRoutes";
-import { updateToken } from "./utils/auth";
+import { updateToken, getTokenExpiryMs } from "./utils/auth";
 import ForgotPasswordPage from "./pages/ForgotPassword";
 import MDRRMORoutes from "./context/MDRRMOroutes";
 import TODARoutes from "./context/TODAroutes";
@@ -42,21 +42,44 @@ function AppContent() {
     const access = useSelector((state) => state.auth.access);
     const location = useLocation();
     const didInitRef = useRef(false);
+    const timerRef = useRef(null);
+
+    const REFRESH_BUFFER_MS = 60 * 1000;
+
+    const scheduleRefresh = () => {
+        clearTimeout(timerRef.current);
+
+        const expiryMs = getTokenExpiryMs();
+        const msUntilRefresh = expiryMs
+            ? expiryMs - Date.now() - REFRESH_BUFFER_MS
+            : 0;
+
+        if (msUntilRefresh <= 0) {
+            updateToken(dispatch);
+        } else {
+            timerRef.current = setTimeout(() => {
+                updateToken(dispatch);
+            }, msUntilRefresh);
+        }
+    };
 
     useEffect(() => {
-        if (didInitRef.current) return; 
+        if (didInitRef.current) return;
         didInitRef.current = true;
 
         if (access) {
-            updateToken(dispatch);
+            scheduleRefresh();
         }
 
-        const interval = setInterval(() => {
-            updateToken(dispatch);
-        }, 10 * 60 * 1000);
-
-        return () => clearInterval(interval);
+        return () => clearTimeout(timerRef.current);
     }, []);
+
+    useEffect(() => {
+        if (!didInitRef.current) return;
+        if (access) {
+            scheduleRefresh();
+        }
+    }, [access]);
 
     const hideLayoutRoutes = ["/login", "/register", "/forgot_password"];
     const showLayout = !hideLayoutRoutes.includes(location.pathname);

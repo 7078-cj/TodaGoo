@@ -72,42 +72,65 @@ export const loginUser = async (e, dispatch, navigate,setError, setLoading) => {
     }
 };
 
+let refreshPromise = null;
 
 export const updateToken = async (dispatch) => {
-    const refresh = Cookie.get("refresh");
+    if (refreshPromise) {
+        return refreshPromise;
+    }
 
-    if (!refresh) return;
+    refreshPromise = (async () => {
+        const refresh = Cookie.get("refresh");
 
-    const response = await fetch(API_URL + "user/token/refresh/", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ refresh }),
-    });
+        if (!refresh) return;
 
-    const data = await response.json();
+        const response = await fetch(API_URL + "user/token/refresh/", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ refresh }),
+        });
 
-    if (response.ok) {
-        const newAccess = data.access;
-        const newRefresh = data.refresh;
-        const user = jwtDecode(newAccess);
+        const data = await response.json();
 
-        const newTokens = {
-            access: newAccess,
-            refresh: newRefresh,
-        };
+        if (response.ok) {
+            const newAccess = data.access;
+            const newRefresh = data.refresh;
+            const user = jwtDecode(newAccess);
 
-        dispatch(
-            setAuth({
-                tokens: newTokens,
-                user: user,
-            })
-        );
+            const newTokens = {
+                access: newAccess,
+                refresh: newRefresh,
+            };
 
-        Cookie.set("access", newAccess, 540000);
-        Cookie.set("refresh", newRefresh, 604800);
-    } else {
-        dispatch(logout());
+            dispatch(
+                setAuth({
+                    tokens: newTokens,
+                    user: user,
+                })
+            );
+
+            Cookie.set("access", newAccess, 540000);
+            Cookie.set("refresh", newRefresh, 604800);
+        } else {
+            dispatch(logout());
+        }
+    })();
+
+    try {
+        return await refreshPromise;
+    } finally {
+        refreshPromise = null;
     }
 };
+
+export function getTokenExpiryMs() {
+    try {
+        const raw = Cookie.get("user");
+        const user = typeof raw === "string" ? JSON.parse(raw) : raw;
+        return user?.exp ? user.exp * 1000 : null;
+    } catch {
+        return null;
+    }
+}
