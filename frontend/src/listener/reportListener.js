@@ -19,7 +19,7 @@ function handleReportMessage(data, setReports) {
 
 export default function reportListener(department, onRefresh, setReports) {
     const { sendMessage, connected, connectionStatus } = useWebSocket(
-        `ws/report/${department}`,
+        `ws/reports/${department}`,
         {
             onOpen: () => console.log("Connected"),
             onRefresh,

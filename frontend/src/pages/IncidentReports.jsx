@@ -41,8 +41,8 @@ export default function IncidentReports() {
 
     reportListener(
         user?.department,
-        () => fetchReports(page),
-        () => fetchReports(page)
+        () => console.log('refreshed'),
+        setReports
     )
 
     const handleStatusUpdated = (updatedReport) => {

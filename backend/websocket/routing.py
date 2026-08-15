@@ -10,5 +10,5 @@ websocket_urlpatterns = [
     path('ws/driver/<str:user_id>', DriverConsumer.as_asgi()),
     path('ws/passenger/<str:user_id>', PassengerConsumer.as_asgi()),
     path('ws/booking/<str:booking_id>', BookingConsumer.as_asgi()),
-    path('ws/reports/<str:department>/', ReportsConsumer.as_asgi()),
+    path('ws/reports/<str:department>', ReportsConsumer.as_asgi()),
 ]
