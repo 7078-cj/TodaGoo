@@ -1,6 +1,12 @@
 import json
 import logging
 import time
+import uuid
+
+import colorama
+from colorama import Fore, Style
+
+colorama.init()
 
 
 logger = logging.getLogger(__name__)
@@ -30,6 +36,14 @@ SENSITIVE_KEYS = {
 }
 
 REDACTED = "***REDACTED***"
+
+ID_COLORS = [
+    Fore.CYAN,
+    Fore.MAGENTA,
+    Fore.YELLOW,
+    Fore.BLUE,
+    Fore.GREEN,
+]
 
 
 def _redact(data):
@@ -86,6 +100,26 @@ def _safe_parse_json_response(response):
         return None
 
 
+def _status_color(status_code):
+
+    if status_code >= 500:
+        return Fore.RED
+
+    if status_code >= 400:
+        return Fore.YELLOW
+
+    if status_code >= 300:
+        return Fore.CYAN
+
+    return Fore.GREEN
+
+
+def _id_color(request_id):
+    index = int(request_id, 16) % len(ID_COLORS)
+
+    return ID_COLORS[index]
+
+
 class LoggingMiddleware:
 
     def __init__(self, get_response):
@@ -95,7 +129,15 @@ class LoggingMiddleware:
 
         start_time = time.time()
 
+        request_id = uuid.uuid4().hex[:8]
+
+        id_color = _id_color(request_id)
+
+        tag = f"{id_color}[{request_id}]{Style.RESET_ALL}"
+
         request_body = _safe_parse_json_body(request)
+
+        
 
         request_data = {
             "method": request.method,
@@ -106,15 +148,17 @@ class LoggingMiddleware:
         if request_body is not None:
             request_data["body"] = _redact(request_body)
 
-        logger.info(request_data)
+        logger.info(f"{tag} REQUEST  {request_data}")
 
         response = self.get_response(request)
 
         duration = time.time() - start_time
 
+        status_color = _status_color(response.status_code)
+
         response_dict = {
             "status_code": response.status_code,
-            "duration": duration,
+            "duration": round(duration, 4),
         }
 
         if response.status_code >= 400:
@@ -124,6 +168,6 @@ class LoggingMiddleware:
             if error_body is not None:
                 response_dict["error"] = error_body
 
-        logger.info(response_dict)
+        logger.info(f"{tag} RESPONSE {response_dict}")
 
         return response
