@@ -88,3 +88,8 @@ class PassengerReadSerializer(serializers.ModelSerializer):
             'contact_number',
             'rating'
         )
+
+class PassengerStatusSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Passenger
+        fields = ["status"]

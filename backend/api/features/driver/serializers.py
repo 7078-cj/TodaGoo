@@ -169,3 +169,8 @@ class DriverReadSerializer(serializers.ModelSerializer):
             'vehicle_back_picture',
             'rating'
         )
+
+class DriverStatusSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Driver
+        fields = ["status"]
