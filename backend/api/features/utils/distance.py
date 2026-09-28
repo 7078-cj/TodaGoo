@@ -1,7 +1,7 @@
 from django.contrib.gis.geos import Point
 from math import radians, sin, cos, sqrt, atan2
+from ..admin.models import Toda
 
-BASE_FARE = 30        # pesos
 RATE_PER_KM = 10      # pesos per km
 
 
@@ -39,6 +39,7 @@ def calculate_price(start: Point, end: Point, stops=None):
         stops = []
 
     route = [start]
+    station = Toda.objects.filter(area__contains=start).first()
 
     for stop in stops:
         route.append(
@@ -58,6 +59,6 @@ def calculate_price(start: Point, end: Point, stops=None):
             route[i + 1],
         )
 
-    price = BASE_FARE + (total_distance * RATE_PER_KM)
+    price = station.base_fare + (total_distance * RATE_PER_KM)
 
     return round(price)

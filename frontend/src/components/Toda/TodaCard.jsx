@@ -31,6 +31,8 @@ export default function TodaCard({ toda, fetchTodas }) {
             />
             <span className="text-sm font-medium">{toda.name}</span>
 
+            <span className="text-sm font-medium">{toda.base_fare}</span>
+
             <div>
                 <AddBoundariesModal toda={toda} fetchTodas={fetchTodas} open={editOpen} setOpen={setEditOpen} />
             </div>

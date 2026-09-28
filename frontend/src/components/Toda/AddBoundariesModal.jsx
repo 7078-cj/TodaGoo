@@ -36,7 +36,8 @@ function AddBoundariesModal({ fetchTodas, open, setOpen, toda }) {
     const [color, setColor] = useState("blue");
     const [area, setArea] = useState();
     const [loading, setLoading] = useState(false);
-    const [prefix, setPrefix] = useState(0);
+    const [prefix, setPrefix] = useState("");
+    const [baseFare, setBaseFare] = useState("");
 
     const selectedColor = TODA_COLORS[color]?.hex ?? toda?.color
 
@@ -52,6 +53,7 @@ function AddBoundariesModal({ fetchTodas, open, setOpen, toda }) {
             const isClosed = first[0] === last[0] && first[1] === last[1];
             setArea(isClosed ? data.slice(0, -1) : data);
             setPrefix(toda.prefix)
+            setBaseFare(String(toda.base_fare ?? ""))
         } else {
             setName("");
             setColor("blue");
@@ -65,29 +67,38 @@ function AddBoundariesModal({ fetchTodas, open, setOpen, toda }) {
         if (!name) { alert("Please provide a name."); return; }
         if (area.length < 3) { alert("At least 3 points are needed to define an area."); return; }
 
+        const payload = {
+            name,
+            color: selectedColor,
+            area,
+            prefix,
+            base_fare: Number(baseFare),
+        };
+
         try {
             setLoading(true);
 
-            if(toda){
-                await updateTODA({ name, color: selectedColor, area, prefix }, toda.id);
+            if (toda) {
+                await updateTODA(payload, toda.id);
             } else {
-                await createTODA({ name, color: selectedColor, area, prefix });
+                await createTODA(payload);
             }
 
             setName("");
             setColor("blue");
             setArea([]);
+            setPrefix("");
+            setBaseFare("");
 
-            
             await fetchTodas();
             setOpen(false);
         } catch (err) {
             console.error(err);
-            alert("Failed to create TODA");
+            alert(`Failed to ${toda ? "update" : "create"} TODA`);
         } finally {
             setLoading(false);
         }
-    }
+    };
 
     return (
         <Dialog open={open} onOpenChange={setOpen} className="w-full">
@@ -115,6 +126,8 @@ function AddBoundariesModal({ fetchTodas, open, setOpen, toda }) {
                     loading={loading}   
                     prefix={prefix}
                     setPrefix={setPrefix}
+                    baseFare={baseFare}
+                    setBaseFare={setBaseFare}
                 />
             </DialogContent>
         </Dialog>

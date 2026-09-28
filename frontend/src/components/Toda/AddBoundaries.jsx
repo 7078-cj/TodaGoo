@@ -13,7 +13,9 @@ function AddBoundaries({
     handleSubmit,
     loading,
     prefix,
-    setPrefix
+    setPrefix,
+    baseFare,
+    setBaseFare
 }) {
     const [pendingPoint, setPendingPoint] = useState({ lat: null, lng: null });
     const [editingIndex, setEditingIndex] = useState(null); // index of point being edited, or null
@@ -95,6 +97,8 @@ function AddBoundaries({
             return alert("Prefix must contain numbers only.");
         if (area.length < 4)
             return alert("At least 4 points are needed to define an area.");
+        if (!/^\d+$/.test(baseFare) || Number(baseFare) <= 0)
+            return alert("Base fare must be a whole number greater than 0.");
 
         await handleSubmit();
     };
@@ -103,7 +107,7 @@ function AddBoundaries({
         <div className="flex flex-col gap-4 h-full w-full">
 
             <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
-                <div className="sm:col-span-5 flex flex-col gap-1">
+                <div className="sm:col-span-4 flex flex-col gap-1">
                     <label className="text-xs font-medium text-muted-foreground px-0.5">
                         Boundary name
                     </label>
@@ -116,7 +120,7 @@ function AddBoundaries({
                     />
                 </div>
 
-                <div className="sm:col-span-4 flex flex-col gap-1">
+                <div className="sm:col-span-3 flex flex-col gap-1">
                     <label className="text-xs font-medium text-muted-foreground px-0.5">
                         Color
                     </label>
@@ -143,7 +147,7 @@ function AddBoundaries({
                     </div>
                 </div>
 
-                <div className="sm:col-span-3 flex flex-col gap-1">
+                <div className="sm:col-span-2 flex flex-col gap-1">
                     <label className="text-xs font-medium text-muted-foreground px-0.5">
                         Prefix
                     </label>
@@ -157,6 +161,21 @@ function AddBoundaries({
                         placeholder="Numbers only"
                         disabled={loading}
                         maxLength={2}
+                        className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
+                    />
+                </div>
+
+                <div className="sm:col-span-3 flex flex-col gap-1">
+                    <label className="text-xs font-medium text-muted-foreground px-0.5">
+                        Base fare (₱)
+                    </label>
+                    <input
+                        type="text"
+                        inputMode="numeric"
+                        value={baseFare}
+                        onChange={(e) => setBaseFare(e.target.value.replace(/\D/g, ""))}
+                        placeholder="e.g. 20"
+                        disabled={loading}
                         className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
                     />
                 </div>
@@ -283,6 +302,7 @@ function AddBoundaries({
                     loading ||
                     !name.trim() ||
                     !/^\d+$/.test(prefix) ||
+                    !/^\d+$/.test(baseFare) ||
                     area.length < 4
                 }
                 className="flex items-center justify-center gap-2 w-full py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition disabled:opacity-40 disabled:cursor-not-allowed"
