@@ -76,6 +76,3 @@ class PassengerRetrieveUpdateDestroyView(ProfileUpdateMixin, RetrieveUpdateDestr
     permission_classes =  [IsPassengerOwnerOrAdmin, IsAuthenticated]
     profile_prefix = "passenger_profile."
     cache_prefix = "passenger_profile"
-
-    def get_profile(self, instance):
-        return instance.driver_profile

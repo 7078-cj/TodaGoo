@@ -94,6 +94,3 @@ class DriverRetrieveUpdateDestroyView(ProfileUpdateMixin, RetrieveUpdateDestroyA
     permission_classes = [IsDriverOwnerOrAdmin, IsAuthenticated]
     profile_prefix = "driver_profile."
     cache_prefix = "driver_profile"
-
-    def get_profile(self, instance):
-        return instance.driver_profile
