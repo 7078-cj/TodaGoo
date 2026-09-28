@@ -120,7 +120,7 @@ function AddBoundaries({
                     />
                 </div>
 
-                <div className="sm:col-span-3 flex flex-col gap-1">
+                <div className="sm:col-span-5 flex flex-col gap-1">
                     <label className="text-xs font-medium text-muted-foreground px-0.5">
                         Color
                     </label>
