@@ -11,11 +11,12 @@ from .permissions import IsPassengerOwnerOrAdmin
 from ...pagination import StandardPagination
 from django.db.models import Q
 from ..utils.ProfileUpdateMixIn import ProfileUpdateMixin
+from rest_framework.exceptions import ValidationError
 
 class PassengerListCreateView(ListCreateAPIView):
     queryset = User.objects.filter(passenger_profile__isnull=False).select_related(
         "passenger_profile"
-    )
+    ).order_by("id")
     serializer_class = PassengerSerializer
     pagination_class = StandardPagination
 

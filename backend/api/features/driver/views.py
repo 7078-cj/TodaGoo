@@ -14,7 +14,7 @@ from ..utils.ProfileUpdateMixIn import ProfileUpdateMixin
 class DriverListCreateView(ListCreateAPIView):
     queryset = User.objects.filter(driver_profile__isnull=False).select_related(
         "driver_profile", "driver_profile__toda_boundary", "driver_profile__toda_station"
-    )
+    ).order_by("id")
     serializer_class = DriverSerializer
     pagination_class = StandardPagination
 
