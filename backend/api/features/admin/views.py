@@ -6,7 +6,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 
 from  ...pagination import StandardPagination
-from ...permissions import TodaAdminPermission
+from .permission import TodaAdminPermission
 from .models import RegisteredToda, Toda, TodaStation
 from .serializers import  TodaReadSerializer, TodaWriteSerializer, RegisterWriteTodaSerializer, RegisteredReadTodaSerializer, TodaStationSerializer
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
@@ -17,8 +17,26 @@ import re
 from rest_framework import status
 from django.db.models.deletion import ProtectedError
 from ...idempotency import IdempotentAPIView
+from django.utils import timezone
 
 CACHE_TTL = 60 * 15  # 15 minutes — adjust based on how often boundaries/stations actually change
+
+def protected_error_response(error, what):
+    summary = {}
+    for obj in error.protected_objects:
+        name = obj.__class__.__name__
+        summary[name] = summary.get(name, 0) + 1
+    related = ", ".join(f"{count} {model}" for model, count in summary.items())
+    return Response(
+        {
+            "error": (
+                f"Cannot delete this {what} because it still has related records: "
+                f"{related}. Please reassign or remove those first."
+            ),
+            "related_objects": summary,
+        },
+        status=status.HTTP_400_BAD_REQUEST,
+    )
 
 
 class TodaBoundariesListCreateAPIView(ListCreateAPIView):
@@ -61,9 +79,13 @@ class TodaBoundariesRetrieveUpdateDestroyAPIView(RetrieveUpdateDestroyAPIView):
         return response
 
     def destroy(self, request, *args, **kwargs):
-        response = super().destroy(request, *args, **kwargs)
+        instance = self.get_object()
+        try:
+            instance.delete()
+        except ProtectedError as e:
+            return protected_error_response(e, "TODA boundary")
         cache.delete("toda_boundaries_list")
-        return response
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class TODAListCreateAPIView(ListCreateAPIView):
@@ -103,7 +125,7 @@ class TODAListCreateAPIView(ListCreateAPIView):
 
     def _handle_single_create(self, request):
         data = request.data.copy()
-        toda_number = data.get("toda_number", "").strip()
+        toda_number = str(data.get("toda_number") or "").strip()
 
         if len(toda_number) < 2:
             return Response(
@@ -133,52 +155,60 @@ class TODAListCreateAPIView(ListCreateAPIView):
         return Response(serializer.data, status=201)
 
     def _handle_excel_upload(self, file):
-        df = pd.read_excel(file)
+        try:
+            df = pd.read_excel(file, dtype={"toda_number": str})
+        except Exception:
+            return Response({"error": "Could not read the Excel file."}, status=400)
 
-        required_cols = {
-            "toda_number",
-            "vehicle_plate",
-            "driver_name",
-            "registration_date",
-            "toda_name"
-        }
-
+        required_cols = {"toda_number", "vehicle_plate", "driver_name",
+                            "registration_date", "toda_name"}
         if not required_cols.issubset(df.columns):
-            return Response(
-                {"error": f"Missing columns. Required: {required_cols}"},
-                status=400
-            )
+            return Response({"error": f"Missing columns. Required: {required_cols}"}, status=400)
 
+        df["toda_number"] = df["toda_number"].astype(str).str.strip()
         prefixes = df["toda_number"].str[:2].unique()
+        toda_cache = {t.prefix: t for t in Toda.objects.filter(prefix__in=prefixes)}
 
-        toda_cache = {
-            t.prefix: t
-            for t in Toda.objects.filter(prefix__in=prefixes)
-        }
+        problems = []
+        unknown = sorted(p for p in prefixes if p not in toda_cache)
+        if unknown:
+            problems.append(f"Unknown TODA prefix: {', '.join(unknown)}")
+
+        repeated = df.loc[df["toda_number"].duplicated(), "toda_number"].unique().tolist()
+        if repeated:
+            problems.append(f"Repeated in file: {', '.join(repeated)}")
+
+        existing = set(
+            RegisteredToda.objects.filter(toda_number__in=df["toda_number"])
+            .values_list("toda_number", flat=True)
+        )
+        if existing:
+            problems.append(f"Already registered: {', '.join(sorted(existing))}")
 
         objects = []
+        for _, row in df.iterrows():
+            reg_date = pd.to_datetime(row["registration_date"], errors="coerce")
+            if pd.isna(reg_date):
+                problems.append(f"Invalid registration_date for {row['toda_number']}")
+                continue
+            reg_date = reg_date.to_pydatetime()
+            if timezone.is_naive(reg_date):
+                reg_date = timezone.make_aware(reg_date)
+            objects.append(RegisteredToda(
+                toda_number=row["toda_number"],
+                vehicle_plate=row["vehicle_plate"],
+                driver_name=row["driver_name"],
+                registration_date=reg_date,
+                toda=toda_cache.get(row["toda_number"][:2]),
+            ))
+
+        if problems:
+            return Response({"error": "Upload rejected.", "details": problems}, status=400)
 
         with transaction.atomic():
-            for _, row in df.iterrows():
-                prefix = str(row["toda_number"])[:2]
-                toda = toda_cache.get(prefix)
-
-                objects.append(
-                    RegisteredToda(
-                        toda_number=row["toda_number"],
-                        vehicle_plate=row["vehicle_plate"],
-                        driver_name=row["driver_name"],
-                        registration_date=row["registration_date"],
-                        toda=toda,
-                    )
-                )
-
             RegisteredToda.objects.bulk_create(objects)
 
-        return Response(
-            {"message": f"Successfully uploaded {len(objects)} records"},
-            status=201
-        )
+        return Response({"message": f"Successfully uploaded {len(objects)} records"}, status=201)
 
 
 class TODARetrieveUpdateDestroyAPIView(RetrieveUpdateDestroyAPIView):
@@ -187,34 +217,22 @@ class TODARetrieveUpdateDestroyAPIView(RetrieveUpdateDestroyAPIView):
     serializer_class = RegisterWriteTodaSerializer
 
     def update(self, request, *args, **kwargs):
+        partial = kwargs.get("partial", False)
         instance = self.get_object()
         data = request.data.copy()
+        toda = instance.toda  
 
-        toda_number = data.get("toda_number", "").strip()
+        if "toda_number" in data or not partial:
+            toda_number = str(data.get("toda_number") or "").strip()
+            if len(toda_number) < 2:
+                return Response({"error": "Invalid TODA number."}, status=400)
+            toda = Toda.objects.filter(prefix=toda_number[:2]).first()
+            if not toda:
+                return Response({"error": "Invalid TODA prefix."}, status=400)
 
-        if len(toda_number) < 2:
-            return Response(
-                {"error": "Invalid TODA number."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        prefix = toda_number[:2]
-
-        toda = Toda.objects.filter(prefix=prefix).first()
-        if not toda:
-            return Response(
-                {"error": "Invalid TODA prefix."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        serializer = self.get_serializer(
-            instance,
-            data=data,
-            partial=kwargs.get("partial", False),
-        )
+        serializer = self.get_serializer(instance, data=data, partial=partial)
         serializer.is_valid(raise_exception=True)
         serializer.save(toda=toda)
-
         return Response(serializer.data)
 
     def destroy(self, request, *args, **kwargs):
@@ -246,6 +264,7 @@ class TODARetrieveUpdateDestroyAPIView(RetrieveUpdateDestroyAPIView):
             )
 
         return Response(status=status.HTTP_204_NO_CONTENT)
+    
 
 
 class TodaStationListCreateView(IdempotentAPIView,ListCreateAPIView):
@@ -253,9 +272,9 @@ class TodaStationListCreateView(IdempotentAPIView,ListCreateAPIView):
     serializer_class = TodaStationSerializer
 
     def get_permissions(self):
-        if self.request.method == "GET":
+        if self.request.method in permissions.SAFE_METHODS:
             return [permissions.AllowAny()]
-        return [permissions.IsAuthenticated()]
+        return [permissions.IsAuthenticated(), TodaAdminPermission()]
 
     def get_queryset(self):
         queryset = super().get_queryset()
@@ -280,7 +299,19 @@ class TodaStationListCreateView(IdempotentAPIView,ListCreateAPIView):
 class TodaStationRetrieveUpdateDestroyView(IdempotentAPIView, RetrieveUpdateDestroyAPIView):
     queryset = TodaStation.objects.select_related('toda').all()
     serializer_class = TodaStationSerializer
-    permission_classes = [permissions.IsAuthenticated]
+
+    def get_permissions(self):
+        if self.request.method in permissions.SAFE_METHODS:
+            return [permissions.IsAuthenticated()]
+        return [permissions.IsAuthenticated(), TodaAdminPermission()]
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        try:
+            instance.delete()
+        except ProtectedError as e:
+            return protected_error_response(e, "station")
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 @api_view(['GET'])

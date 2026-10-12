@@ -17,7 +17,7 @@ class TodaReadSerializer(serializers.ModelSerializer):
         return None
     
 class TodaWriteSerializer(serializers.ModelSerializer):
-    area = serializers.JSONField(required=False, allow_null=True)
+    area = serializers.JSONField(required=True, allow_null=False)
 
     class Meta:
         model = Toda
@@ -83,6 +83,17 @@ class TodaStationSerializer(serializers.ModelSerializer):
 
         toda_station = TodaStation.objects.create(toda=toda, location=point, **validated_data)
         return toda_station
+
+    def update(self, instance, validated_data):
+        point = validated_data.get("location")
+        if point is not None:
+            toda = Toda.objects.filter(area__contains=point).first()
+            if not toda:
+                raise serializers.ValidationError(
+                    {"location": "This location is outside all TODA jurisdictions."}
+                )
+            validated_data["toda"] = toda
+        return super().update(instance, validated_data)
 
     class Meta:
         model = TodaStation
