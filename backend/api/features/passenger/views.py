@@ -12,6 +12,7 @@ from ...pagination import StandardPagination
 from django.db.models import Q
 from ..utils.ProfileUpdateMixIn import ProfileUpdateMixin
 from rest_framework.exceptions import ValidationError
+from ...features.admin.permission import IsAdminProfile
 
 class PassengerListCreateView(ListCreateAPIView):
     queryset = User.objects.filter(passenger_profile__isnull=False).select_related(
@@ -23,7 +24,7 @@ class PassengerListCreateView(ListCreateAPIView):
     def get_permissions(self):
         if self.request.method == "POST":
             return [AllowAny()]
-        return [IsPassengerOwnerOrAdmin(), IsAuthenticated()]
+        return [IsAdminProfile(), IsAuthenticated()]
 
     def get_queryset(self):
         qs = super().get_queryset()

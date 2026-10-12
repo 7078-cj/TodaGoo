@@ -11,16 +11,23 @@ from django.core.cache import cache
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 from django.contrib.auth import authenticate
+from rest_framework.exceptions import AuthenticationFailed
 
 User = get_user_model()
 
 class AdminMyTokenObtainPairSerializer(TokenObtainPairSerializer):
+    def validate(self, attrs):
+        data = super().validate(attrs)
+        if not hasattr(self.user, "admin"):
+            raise AuthenticationFailed("This account is not an admin.", code="not_admin")
+        return data
+    
     @classmethod
     def get_token(cls, user):
         token = super().get_token(user)
         
         token['username'] = user.username
-        token['role'] = 'admin' if hasattr(user, 'admin') else 'passenger' if hasattr(user, 'passenger') else 'driver' if hasattr(user, 'driver') else 'unknown'
+        token['role'] = 'admin' if hasattr(user, 'admin') else 'passenger' if hasattr(user, 'passenger_profile') else 'driver' if hasattr(user, 'driver_profile') else 'unknown'
         if token['role'] == 'admin':
             token['department'] = user.admin.department
 

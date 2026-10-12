@@ -1,6 +1,8 @@
 from django.core.cache import cache
 from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
 from django.contrib.auth.models import User
+
+from ...features.admin.permission import IsAdminProfile
 from .serializers import DriverSerializer, DriverStatusSerializer
 from .permissions import IsDriverOwnerOrAdmin
 from rest_framework.permissions import IsAuthenticated, AllowAny
@@ -9,6 +11,7 @@ from rest_framework.response import Response
 from django.db.models import Q
 from ...pagination import StandardPagination
 from ..utils.ProfileUpdateMixIn import ProfileUpdateMixin
+from rest_framework.exceptions import ValidationError
 
 
 class DriverListCreateView(ListCreateAPIView):
@@ -21,7 +24,7 @@ class DriverListCreateView(ListCreateAPIView):
     def get_permissions(self):
         if self.request.method == "POST":
             return [AllowAny()]
-        return [IsDriverOwnerOrAdmin(), IsAuthenticated()]
+        return [IsAdminProfile(), IsAuthenticated()]
 
     def get_queryset(self):
         qs = super().get_queryset()

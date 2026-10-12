@@ -5,20 +5,16 @@ from rest_framework import viewsets, permissions
 
 class IsDriverOwnerOrAdmin(BasePermission):
     """
-    - Driver can edit ONLY his own profile
-    - Admin can edit ANY driver
+    - Admin can read/edit/delete any driver
+    - Driver can read/edit ONLY their own profile (no delete)
     """
 
     def has_object_permission(self, request, view, obj):
-
-        if request.method in permissions.SAFE_METHODS:
-            return obj.user == request.user
-
         if is_admin(request.user):
             return True
-        
-        if request.method == 'DELETE':
-            return is_admin(request.user)
+
+        if request.method == "DELETE":
+            return False
 
         if is_driver(request.user):
             return obj.pk == request.user.pk

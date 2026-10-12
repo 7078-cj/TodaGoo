@@ -4,6 +4,7 @@ from ..user.models import Passenger
 from ..user.serializers import UserSerializer
 from ..utils.validation import PassengerValidationMixin
 
+
 class PassengerProfileSerializer(PassengerValidationMixin, serializers.ModelSerializer):
     class Meta:
         model = Passenger
@@ -15,6 +16,7 @@ class PassengerProfileSerializer(PassengerValidationMixin, serializers.ModelSeri
             'emergency_contact_number',
             'status'
         )
+        read_only_fields = ('status',)
 
 
 class PassengerSerializer(serializers.ModelSerializer):

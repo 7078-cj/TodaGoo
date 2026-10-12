@@ -21,6 +21,8 @@ class DriverProfileSerializer(DriverValidationMixin, serializers.ModelSerializer
             'vehicle_back_picture',
             "status"
         )
+        read_only_fields = ('status',)
+        extra_kwargs = {'vehicle_plate': {'validators': []}}
 
 
 class DriverSerializer(serializers.ModelSerializer):
@@ -43,6 +45,8 @@ class DriverSerializer(serializers.ModelSerializer):
         }
 
     def validate(self, attrs):
+        self._toda_station = None
+        self._registered_toda = None
         driver_data = attrs.get('driver_profile')
 
         if not driver_data:
@@ -53,8 +57,7 @@ class DriverSerializer(serializers.ModelSerializer):
         is_update = self.instance is not None
         changing_registration = 'toda_number' in driver_data or 'vehicle_plate' in driver_data
 
-        self._toda_station = None
-        self._registered_toda = None
+        
 
         if not is_update or changing_registration:
             if is_update:
