@@ -33,6 +33,7 @@ def haversine_distance(p1: Point, p2: Point):
 def calculate_price(start: Point, end: Point, stops=None):
     """
     Calculates the total fare from the complete route.
+    The base fare covers the first kilometer.
     """
 
     if stops is None:
@@ -59,6 +60,11 @@ def calculate_price(start: Point, end: Point, stops=None):
             route[i + 1],
         )
 
-    price = station.base_fare + (total_distance * RATE_PER_KM)
+    if total_distance <= 1:
+        return round(station.base_fare)
+
+    price = station.base_fare + (
+        (total_distance - 1) * RATE_PER_KM
+    )
 
     return round(price)

@@ -305,3 +305,45 @@ class RateView(APIView):
         )
         serializer = RateSerializer(rates, many=True)
         return Response(serializer.data, status=200)
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def get_fare_price(request):
+    start = request.query_params.get("start")
+    end = request.query_params.get("end")
+    stops = request.query_params.getlist("stops")
+
+    if not start or not end:
+        return Response({"error": "Start and end locations are required"}, status=400)
+
+    try:
+        start_coords = [float(coord) for coord in start.split(",")]
+        end_coords = [float(coord) for coord in end.split(",")]
+    except ValueError:
+        return Response({"error": "Invalid coordinates format"}, status=400)
+
+    if len(start_coords) != 2 or len(end_coords) != 2:
+        return Response({"error": "Coordinates must be in 'lat,lng' format"}, status=400)
+
+    start_point = Point(start_coords[1], start_coords[0])  # lng, lat
+    end_point = Point(end_coords[1], end_coords[0])      # lng, lat
+
+    if stops:
+        try:
+            stops = [
+                {
+                    "location": {
+                        "lat": float(stop.split(",")[0]),
+                        "lng": float(stop.split(",")[1]),
+                    }
+                }
+                for stop in stops
+            ]
+        except (ValueError, IndexError):
+            return Response({"error": "Invalid stop coordinates format"}, status=400)
+    else:
+        stops = []
+
+    price = calculate_price(start_point, end_point, stops)
+
+    return Response({"price": price}, status=200)
