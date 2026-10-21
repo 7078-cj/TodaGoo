@@ -4,7 +4,7 @@ TODAListCreateAPIView,
 TodaBoundariesRetrieveUpdateDestroyAPIView, 
 TODARetrieveUpdateDestroyAPIView,
 TodaStationListCreateView,
-TodaStationRetrieveUpdateDestroyView,
+TodaStationRetrieveUpdateDestroyView, booking_settings_view,
 get_toda_stations_with_prefix)
 urlpatterns = [
     # Add your paths here
@@ -15,5 +15,6 @@ urlpatterns = [
     path('toda-stations/', TodaStationListCreateView.as_view(), name='toda-station-list-create'),
     path('toda-stations/<int:pk>/', TodaStationRetrieveUpdateDestroyView.as_view(), name='toda-station-detail'),
     path('toda-station-prefix/', get_toda_stations_with_prefix, name='toda-station-prefix'),
+    path('booking-settings/', booking_settings_view, name='booking-settings'),
 
 ]

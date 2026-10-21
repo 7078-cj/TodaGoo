@@ -1,9 +1,50 @@
 from django.contrib.gis.geos import Point
 from math import radians, sin, cos, sqrt, atan2
 from ..admin.models import Toda
+from datetime import datetime, time
+from zoneinfo import ZoneInfo
+
+from django.utils import timezone
+from api.features.admin.models import BookingSettings  
+
+PH_TZ = ZoneInfo("Asia/Manila")
 
 RATE_PER_KM = 10      # pesos per km
 
+def get_ph_time() -> time:
+    """Returns the current time of day in Philippine time."""
+    return timezone.now().astimezone(PH_TZ).time()
+
+
+def is_within_night_window(current: time, start: time, end: time) -> bool:
+    """
+    Checks whether `current` falls inside the night fare window.
+    Handles windows that cross midnight (e.g. 22:00 -> 05:00).
+    """
+    if start <= end:
+        return start <= current < end
+
+    return current >= start or current < end
+
+
+def get_night_fare_multiplier() -> float:
+    """
+    Returns the night fare multiplier if night fare is enabled and the
+    current PH time is within the night window. Otherwise returns 1.0.
+    """
+    settings_obj = BookingSettings.objects.first()
+
+    if settings_obj is None or not settings_obj.is_night_fare_enabled:
+        return 1.0
+
+    if is_within_night_window(
+        get_ph_time(),
+        settings_obj.night_fare_start_time,
+        settings_obj.night_fare_multiplier_end_time,
+    ):
+        return settings_obj.night_fare_multiplier
+
+    return 1.0
 
 def haversine_distance(p1: Point, p2: Point):
     """
@@ -34,13 +75,18 @@ def calculate_price(start: Point, end: Point, stops=None):
     """
     Calculates the total fare from the complete route.
     The base fare covers the first kilometer.
+    If night fare is enabled and the current PH time is within the
+    night window, the total fare is multiplied by the night fare multiplier.
     """
 
     if stops is None:
         stops = []
 
-    route = [start]
     station = Toda.objects.filter(area__contains=start).first()
+    if station is None:
+        raise ValueError("No TODA station covers the starting location.")
+
+    route = [start]
 
     for stop in stops:
         route.append(
@@ -61,10 +107,12 @@ def calculate_price(start: Point, end: Point, stops=None):
         )
 
     if total_distance <= 1:
-        return round(station.base_fare)
+        price = station.base_fare
+    else:
+        price = station.base_fare + (
+            (total_distance - 1) * RATE_PER_KM
+        )
 
-    price = station.base_fare + (
-        (total_distance - 1) * RATE_PER_KM
-    )
+    price *= get_night_fare_multiplier()
 
     return round(price)

@@ -1,5 +1,5 @@
 from django.core.cache import cache
-from rest_framework.decorators import api_view, throttle_classes
+from rest_framework.decorators import api_view, permission_classes, throttle_classes
 from rest_framework import viewsets, permissions
 from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
 from rest_framework.response import Response
@@ -7,8 +7,8 @@ from rest_framework.permissions import IsAuthenticated
 
 from  ...pagination import StandardPagination
 from .permission import TodaAdminPermission
-from .models import RegisteredToda, Toda, TodaStation
-from .serializers import  TodaReadSerializer, TodaWriteSerializer, RegisterWriteTodaSerializer, RegisteredReadTodaSerializer, TodaStationSerializer
+from .models import RegisteredToda, Toda, TodaStation, BookingSettings
+from .serializers import  TodaReadSerializer, TodaWriteSerializer, RegisterWriteTodaSerializer, RegisteredReadTodaSerializer, TodaStationSerializer, BookingSettingSerializer
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 import pandas as pd
 from django.db import transaction
@@ -20,6 +20,12 @@ from ...idempotency import IdempotentAPIView
 from django.utils import timezone
 
 CACHE_TTL = 60 * 15  # 15 minutes — adjust based on how often boundaries/stations actually change
+
+def get_booking_settings():
+    settings_obj = BookingSettings.objects.first()
+    if settings_obj is None:
+        settings_obj = BookingSettings.objects.create()
+    return settings_obj
 
 def protected_error_response(error, what):
     summary = {}
@@ -334,3 +340,22 @@ def get_toda_stations_with_prefix(request):
 
     cache.set(cache_key, serializer.data, CACHE_TTL)
     return Response(serializer.data)
+
+@api_view(['GET', 'PATCH'])
+@permission_classes([IsAuthenticated, TodaAdminPermission])
+def booking_settings_view(request):
+    settings_obj = get_booking_settings()
+
+    if request.method == 'GET':
+        serializer = BookingSettingSerializer(settings_obj)
+        return Response(serializer.data)
+
+    # PATCH -> partial update
+    serializer = BookingSettingSerializer(
+        settings_obj,
+        data=request.data,
+        partial=True,
+    )
+    serializer.is_valid(raise_exception=True)
+    serializer.save()
+    return Response(serializer.data, status=status.HTTP_200_OK)

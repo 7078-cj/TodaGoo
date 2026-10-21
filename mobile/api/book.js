@@ -35,3 +35,19 @@ export const rateUser = async (bookingId, userId, score, idempotencyKey) => {
     if (!res.success) throw new Error(res.error || "Failed to submit rating")
     return res.data;
 }
+
+/**
+ * Gets the fare estimate for a route.
+ * start / end: { lat, lng }
+ * stops: [{ lat, lng }, ...] (optional)
+ */
+export const getFarePrice = async (start, end, stops = []) => {
+    const params = new URLSearchParams();
+    params.set("start", `${start.lat},${start.lng}`);
+    params.set("end", `${end.lat},${end.lng}`);
+    stops.forEach((stop) => params.append("stops", `${stop.lat},${stop.lng}`));
+
+    const res = await postRequest(`booking/fare/?${params.toString()}`, {}, true)
+    if (!res.success) throw new Error(res.error || "Failed to get fare price")
+    return res.data.price;
+}

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import RegisteredToda, Toda, TodaStation
+from .models import RegisteredToda, Toda, TodaStation, BookingSettings
 from django.contrib.gis.geos import Polygon
 from ..booking.serializers import PointField
 
@@ -99,3 +99,34 @@ class TodaStationSerializer(serializers.ModelSerializer):
         model = TodaStation
         fields = '__all__'
         read_only_fields = ['toda']
+
+from rest_framework import serializers
+from .models import BookingSettings
+
+
+class BookingSettingSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = BookingSettings
+        fields = '__all__'
+
+    def validate_night_fare_multiplier(self, value):
+        if value < 1:
+            raise serializers.ValidationError("Multiplier must be at least 1.0.")
+        return value
+
+    def validate(self, attrs):
+        # On partial updates, fall back to the current instance values
+        start = attrs.get(
+            'night_fare_start_time',
+            getattr(self.instance, 'night_fare_start_time', None),
+        )
+        end = attrs.get(
+            'night_fare_multiplier_end_time',
+            getattr(self.instance, 'night_fare_multiplier_end_time', None),
+        )
+        if start and end and start == end:
+            raise serializers.ValidationError(
+                "Night fare start time and end time cannot be the same."
+            )
+        return attrs
