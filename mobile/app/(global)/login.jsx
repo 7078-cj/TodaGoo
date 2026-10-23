@@ -1,15 +1,31 @@
-import { View, Text, Button, TextInput, TouchableOpacity } from 'react-native'
-import React, { useContext, useState } from 'react'
-import { Href, router } from "expo-router";
+import { View, Text, TouchableOpacity, ScrollView, KeyboardAvoidingView, Keyboard, Platform } from 'react-native'
+import React, { useContext, useEffect, useRef, useState } from 'react'
+import { router } from "expo-router";
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AuthContext from '@/contexts/AuthContext';
-
+import AuthHeader from '@/components/AuthHeader';          // adjust paths
+import ButtonComponent from '@/components/ButtonComponent';
+import FormTextField from '@/components/inputs/FormTextField';
+import LoginIllustration from '@/assets/Login.svg';
 
 export default function login() {
-    const {loginUser, user} = useContext(AuthContext)
+    const { loginUser } = useContext(AuthContext)
+    const insets = useSafeAreaInsets()
     const [username, setUsername] = useState('')
     const [password, setPassword] = useState('')
     const [errors, setErrors] = useState({})
-    
+    const [submitting, setSubmitting] = useState(false)
+    const scrollRef = useRef(null)
+
+    // When the keyboard opens, scroll down so the inputs and Login button stay visible
+    useEffect(() => {
+        const sub = Keyboard.addListener(
+            Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow",
+            () => setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 50)
+        )
+        return () => sub.remove()
+    }, [])
+
     const validate = () => {
         let newErrors = {}
 
@@ -34,68 +50,85 @@ export default function login() {
     }
 
     const handleSubmit = async () => {
-        if(validate()){
+        if (submitting || !validate()) return
+
+        setSubmitting(true)
+        try {
             const res = await loginUser(username, password)
-            if (!res.success){
+            if (!res.success) {
                 console.log(res)
-            }else{
-                res.user.role == 'passenger' ? router.replace('/(protected)/passenger/home') : router.replace('/(protected)/driver/home')
-                
+                setErrors({ general: "Invalid username or password." })
+            } else {
+                res.user.role == 'passenger'
+                    ? router.replace('/(protected)/passenger/home')
+                    : router.replace('/(protected)/driver/home')
             }
+        } finally {
+            setSubmitting(false)
         }
     }
 
-    const handlePress = (destination) => {
-        router.push(destination);
-    };
-
-    const container = "p-5 bg-white"
-    const label = "text-gray-700 mb-1"
-    const input = "border border-gray-300 rounded-lg p-3 mb-2"
-    const errorText = "text-red-500 mb-2"
-    const buttonContainerStyle = "bg-black p-4 rounded-xl mt-3"
-    const buttonTextStyle = "text-white text-center font-semibold"
-
     return (
-        <View className={container}>
-            <Text>login</Text>
-
-            <Text className={label}>Username</Text>
-                <TextInput
-                    className={input}
-                    value={username}
-                    onChangeText={setUsername}
-                    placeholder="Enter username"
-                />
-            {errors.username && <Text className={errorText}>{errors.username}</Text>}
-
-            <Text className={label}>Password</Text>
-                <TextInput
-                    className={input}
-                    value={password}
-                    onChangeText={setPassword}
-                    placeholder="Enter address"
-                />
-            {errors.password && <Text className={errorText}>{errors.password}</Text>}
-
-            <TouchableOpacity
-                onPress={handleSubmit}
-                className={buttonContainerStyle}
+        <KeyboardAvoidingView
+            className="flex-1 bg-background"
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+        >
+            <ScrollView
+                ref={scrollRef}
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={{ flexGrow: 1 }}
             >
-                <Text className={buttonTextStyle}>
-                    Login
-                </Text>
-            </TouchableOpacity>            
+                {/* overflow-hidden keeps the oversized header circle clipped on Android */}
+                <View className="flex-1 overflow-hidden" style={{ paddingBottom: insets.bottom + 24 }}>
+                    <AuthHeader tagline="Sign In and Continue" />
 
-            <Button
-                title="Register as Driver"
-                onPress={() => handlePress("/(global)/register/driver")}
-            />
+                    <View className="items-center mt-6 mb-4 px-8">
+                        <LoginIllustration width="100%" height={350} />
+                    </View>
 
-            <Button
-                title="Register as Passenger"
-                onPress={() => handlePress("/(global)/register/passenger")}
-            />
-        </View>
+                    <View className="px-8">
+                        <FormTextField
+                            label="Username"
+                            value={username}
+                            onChangeText={setUsername}
+                            error={errors.username}
+                            placeholder="Enter username"
+                            autoCapitalize="none"
+                        />
+
+                        <FormTextField
+                            label="Password"
+                            value={password}
+                            onChangeText={setPassword}
+                            error={errors.password}
+                            placeholder="Enter password"
+                            secure
+                            autoCapitalize="none"
+                        />
+
+                        {errors.general ? (
+                            <Text className="text-error text-xs text-center mt-1">
+                                {errors.general}
+                            </Text>
+                        ) : null}
+
+                        <ButtonComponent
+                            label="Login"
+                            onPress={handleSubmit}
+                            loading={submitting}
+                            className="mt-6"
+                        />
+
+                        <View className="flex-row justify-center mt-4">
+                            <Text className="text-primary text-base">Don't have an account? </Text>
+                            <TouchableOpacity onPress={() => router.push("/(global)/choose_a_role")}>
+                                <Text className="text-secondary text-base font-semibold">Sign Up</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </ScrollView>
+        </KeyboardAvoidingView>
     )
 }

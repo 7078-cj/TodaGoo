@@ -1,6 +1,5 @@
-import { View, Text, TextInput } from "react-native";
+import { View, Text, TextInput, TouchableOpacity } from "react-native";
 import React, { useState } from "react";
-import { TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
 export default function FormTextField({
@@ -9,24 +8,23 @@ export default function FormTextField({
     onChangeText,
     error,
     placeholder,
-    secure = false,
+    secure = false, // password field: hides text and shows the eye toggle
     keyboardType = "default",
     maxLength,
     autoCapitalize = "sentences",
 }) {
     const [hidden, setHidden] = useState(secure);
 
-    const labelStyle = "text-gray-700 mb-1";
-    const inputStyle = "border border-gray-300 rounded-lg p-3 mb-2";
-    const errorStyle = "text-red-500 mb-2";
-
     return (
-        <View>
-            <Text className={labelStyle}>{label}</Text>
+        <View className="mb-3">
+            <Text className="text-text text-xs font-medium mb-1">{label}</Text>
 
+            {/* No margin inside this box, so the eye icon stays vertically centered */}
             <View className="relative justify-center">
                 <TextInput
-                    className={inputStyle}
+                    className={`bg-surface border rounded-xl px-4 py-3 text-dark ${
+                        error ? "border-error" : "border-border"
+                    } ${secure ? "pr-12" : ""}`}
                     value={value}
                     onChangeText={onChangeText}
                     placeholder={placeholder}
@@ -39,7 +37,10 @@ export default function FormTextField({
                 {secure && (
                     <TouchableOpacity
                         onPress={() => setHidden((prev) => !prev)}
-                        className="absolute right-3"
+                        hitSlop={10}
+                        accessibilityRole="button"
+                        accessibilityLabel={hidden ? "Show password" : "Hide password"}
+                        className="absolute right-4"
                     >
                         <Ionicons
                             name={hidden ? "eye-off-outline" : "eye-outline"}
@@ -50,7 +51,7 @@ export default function FormTextField({
                 )}
             </View>
 
-            {error && <Text className={errorStyle}>{error}</Text>}
+            {error ? <Text className="text-error text-xs mt-1">{error}</Text> : null}
         </View>
     );
 }
