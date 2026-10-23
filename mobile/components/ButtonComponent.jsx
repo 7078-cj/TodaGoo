@@ -1,4 +1,4 @@
-import { Text, TouchableOpacity, ActivityIndicator } from "react-native";
+import { Text, View, TouchableOpacity, ActivityIndicator } from "react-native";
 import React from "react";
 import colors from "@/constants/colors";
 
@@ -28,6 +28,7 @@ export default function ButtonComponent({
     variant = "primary", // "primary" | "secondary" | "outline"
     disabled = false,
     loading = false,
+    icon = null,         // optional element shown left of the label
     className = "",      // extra classes, e.g. "mt-3"
 }) {
     const styles = VARIANTS[variant] ?? VARIANTS.primary;
@@ -41,16 +42,19 @@ export default function ButtonComponent({
             accessibilityRole="button"
             accessibilityLabel={label}
             accessibilityState={{ disabled: isDisabled, busy: loading }}
-            className={`w-full py-4 rounded-full items-center justify-center ${styles.container} ${
+            className={`w-full py-4 rounded-full flex-row items-center justify-center ${styles.container} ${
                 isDisabled ? "opacity-50" : ""
             } ${className}`}
         >
             {loading ? (
                 <ActivityIndicator color={styles.spinner} />
             ) : (
-                <Text className={`font-bold text-base uppercase ${styles.text}`}>
-                    {label}
-                </Text>
+                <>
+                    {icon ? <View className="mr-3">{icon}</View> : null}
+                    <Text className={`font-bold text-base uppercase ${styles.text}`}>
+                        {label}
+                    </Text>
+                </>
             )}
         </TouchableOpacity>
     );
