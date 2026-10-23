@@ -2,25 +2,10 @@ import { View, Text, TouchableOpacity, Image, ScrollView, Modal } from "react-na
 import React, { useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
+import { Camera } from "expo-camera";
+import CameraCaptureModal from "./CameraCaptureModal"; // adjust path
 
 const MAX_IMAGES = 5;
-
-async function openCamera(onPicked) {
-    const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    if (status !== "granted") {
-        return { error: "Camera permission is required to take a photo." };
-    }
-
-    const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ["images"],
-        quality: 0.7,
-    });
-
-    if (!result.canceled && result.assets?.length) {
-        onPicked(result.assets[0]);
-    }
-    return {};
-}
 
 async function openGallery(onPicked) {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -39,17 +24,17 @@ async function openGallery(onPicked) {
     return {};
 }
 
-function ImageSourceModal({ visible, onClose, onPicked }) {
+function ImageSourceModal({ visible, onClose, onTakePhoto, onPicked }) {
     const [permissionError, setPermissionError] = useState("");
 
     const handleCamera = async () => {
-        const { error } = await openCamera(onPicked);
-        if (error) {
-            setPermissionError(error);
+        const { status } = await Camera.requestCameraPermissionsAsync();
+        if (status !== "granted") {
+            setPermissionError("Camera permission is required to take a photo.");
             return;
         }
         setPermissionError("");
-        onClose();
+        onTakePhoto(); // parent closes this modal and opens the in-app camera
     };
 
     const handleGallery = async () => {
@@ -122,8 +107,10 @@ export default function PickImageComponent({
     setImages,
     multiple = false,
     maxImages = MAX_IMAGES,
+    facing = "back", // use "front" for selfies
 }) {
     const [sourceModalVisible, setSourceModalVisible] = useState(false);
+    const [cameraVisible, setCameraVisible] = useState(false);
 
     const labelStyle = "text-gray-700 mb-1";
     const imageBox = "w-full h-40 rounded-lg mb-2 bg-gray-100 justify-center items-center";
@@ -149,6 +136,36 @@ export default function PickImageComponent({
         setImages((prev) => prev.filter((_, i) => i !== index));
     };
 
+    // Close the source sheet first, then open the camera. A short delay avoids
+    // iOS refusing to present a modal while another one is still dismissing.
+    const handleTakePhoto = () => {
+        setSourceModalVisible(false);
+        setTimeout(() => setCameraVisible(true), 350);
+    };
+
+    const handleCaptured = (photo) => {
+        handlePicked(photo);
+        setCameraVisible(false);
+    };
+
+    const modals = (
+        <>
+            <ImageSourceModal
+                visible={sourceModalVisible}
+                onClose={() => setSourceModalVisible(false)}
+                onTakePhoto={handleTakePhoto}
+                onPicked={handlePicked}
+            />
+            <CameraCaptureModal
+                visible={cameraVisible}
+                facing={facing}
+                title={label}
+                onCapture={handleCaptured}
+                onCancel={() => setCameraVisible(false)}
+            />
+        </>
+    );
+
     if (!multiple) {
         return (
             <>
@@ -161,11 +178,7 @@ export default function PickImageComponent({
                     )}
                 </TouchableOpacity>
 
-                <ImageSourceModal
-                    visible={sourceModalVisible}
-                    onClose={() => setSourceModalVisible(false)}
-                    onPicked={handlePicked}
-                />
+                {modals}
             </>
         );
     }
@@ -209,11 +222,7 @@ export default function PickImageComponent({
                 </Text>
             )}
 
-            <ImageSourceModal
-                visible={sourceModalVisible}
-                onClose={() => setSourceModalVisible(false)}
-                onPicked={handlePicked}
-            />
+            {modals}
         </>
     );
 }

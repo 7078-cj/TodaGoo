@@ -18,7 +18,7 @@ function RootNavigator() {
       const parsedUser = user ? JSON.parse(user) : null;
 
       if (!user) {
-          router.replace("/(global)/login");
+          router.replace("/");
           return;
       }
 
@@ -32,7 +32,7 @@ function RootNavigator() {
           router.replace("/(protected)/driver/home");
         }
       } else {
-        router.replace("/(global)/login");
+        router.replace("/");
       }
     };
 
