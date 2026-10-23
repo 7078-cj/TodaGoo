@@ -56,7 +56,6 @@ export default function login() {
         try {
             const res = await loginUser(username, password)
             if (!res.success) {
-                console.log(res)
                 setErrors({ general: "Invalid username or password." })
             } else {
                 res.user.role == 'passenger'
