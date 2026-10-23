@@ -1,5 +1,5 @@
-import { View, Text, ScrollView } from 'react-native'
-import React, { useContext, useEffect, useState } from 'react'
+import { KeyboardAvoidingView, Platform } from 'react-native'
+import React, { useContext, useState } from 'react'
 import UserRegisterForm from '@/components/UserRegisterForm'
 import PassengerProfileForm from '@/components/PassengerProfileForm'
 import {passengerRegister} from '@/api/passenger'
@@ -15,18 +15,21 @@ export default function passenger() {
         const res = await passengerRegister(data)
         if(res.success){
             const login = await loginUser(formData.username, formData.password)
-            res.success && router.push('/(protected)/passenger/home')
+            login.success && router.push('/(protected)/passenger/home')
         }
     }
 
+    // No ScrollView here: RegisterLayout scrolls the form inside its own sheet
     return (
-        <ScrollView className='flex-1'>
+        <KeyboardAvoidingView
+            className="flex-1 bg-background"
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+        >
             {
-                page == 'user' ? <UserRegisterForm setFormData={setFormData} setPage={setPage}/> 
-                : <PassengerProfileForm setFormData={setFormData} onSubmit={submit}/>
+                page == 'user'
+                    ? <UserRegisterForm role="Passenger" setFormData={setFormData} setPage={setPage}/>
+                    : <PassengerProfileForm formData={formData} setFormData={setFormData} onSubmit={submit}/>
             }
-            
-            
-        </ScrollView>
+        </KeyboardAvoidingView>
     )
 }

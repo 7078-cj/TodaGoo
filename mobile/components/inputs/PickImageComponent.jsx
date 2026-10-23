@@ -4,6 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { Camera } from "expo-camera";
 import CameraCaptureModal from "./CameraCaptureModal"; // adjust path
+import colors from "@/constants/colors";
 
 const MAX_IMAGES = 5;
 
@@ -112,8 +113,8 @@ export default function PickImageComponent({
     const [sourceModalVisible, setSourceModalVisible] = useState(false);
     const [cameraVisible, setCameraVisible] = useState(false);
 
-    const labelStyle = "text-gray-700 mb-1";
-    const imageBox = "w-full h-40 rounded-lg mb-2 bg-gray-100 justify-center items-center";
+    const labelStyle = "text-text text-xs font-medium mb-1";
+    const imageBox = "w-full h-32 rounded-xl mb-3 bg-primary/20 border border-dashed border-primary justify-center items-center overflow-hidden";
     const thumbBox = "w-24 h-24 rounded-lg mr-2 bg-gray-100 overflow-hidden relative";
 
     const list = images || [];
@@ -172,9 +173,12 @@ export default function PickImageComponent({
                 <Text className={labelStyle}>{label}</Text>
                 <TouchableOpacity onPress={handleOpenPicker} className={imageBox}>
                     {image ? (
-                        <Image source={{ uri: image.uri }} className="w-full h-full rounded-lg" />
+                        <Image source={{ uri: image.uri }} className="w-full h-full" resizeMode="cover" />
                     ) : (
-                        <Text className="text-gray-500">Upload {label}</Text>
+                        <>
+                            <Ionicons name="cloud-upload-outline" size={26} color={colors.primary} />
+                            <Text className="text-primary text-xs mt-1">Click to Upload</Text>
+                        </>
                     )}
                 </TouchableOpacity>
 

@@ -1,4 +1,4 @@
-import { View, Text, ScrollView } from 'react-native'
+import { ScrollView, KeyboardAvoidingView, Platform } from 'react-native'
 import React, { useContext, useEffect, useState } from 'react'
 import UserRegisterForm from '../../../components/UserRegisterForm'
 import DriverProfileForm from '../../../components/DriverProfileForm'
@@ -21,13 +21,16 @@ export default function driver() {
     }
 
     return (
-        <ScrollView className='flex-1'>
+        <KeyboardAvoidingView
+                    className="flex-1 bg-background"
+                    behavior={Platform.OS === "ios" ? "padding" : "height"}
+                >
+                    
             {
-                page == 'user' ? <UserRegisterForm setFormData={setFormData} setPage={setPage}/> 
-                : <DriverProfileForm setFormData={setFormData} onSubmit={submit}/>
+                page == 'user'
+                    ? <UserRegisterForm role="Driver" setFormData={setFormData} setPage={setPage}/>
+                    : <DriverProfileForm setFormData={setFormData} onSubmit={submit}/>
             }
-            
-            
-        </ScrollView>
+        </KeyboardAvoidingView>
     )
 }

@@ -1,10 +1,11 @@
-import { View, Text, TouchableOpacity } from 'react-native'
 import React, { useState } from 'react'
 import { normalizeUsername } from '@/utils/validation'
 import FormTextField from './inputs/FormTextField'
+import ButtonComponent from '@/components/ButtonComponent'
+import RegisterLayout from '@/components/RegisterLayout'
 
-export default function UserRegisterForm({ setPage, setFormData }) {
-
+// role: "Passenger" | "Driver" -> header reads "Sign Up As A <role>"
+export default function UserRegisterForm({ setPage, setFormData, role }) {
     const [username, setUsername] = useState("")
     const [firstName, setFirstName] = useState("")
     const [lastName, setLastName] = useState("")
@@ -61,32 +62,13 @@ export default function UserRegisterForm({ setPage, setFormData }) {
         }
     }
 
-    const containerStyle = "flex-1 bg-white p-5 justify-center"
-    const titleTextStyle = "text-2xl font-bold mb-5 text-center"
-    const buttonContainerStyle = "bg-black p-4 rounded-xl mt-3"
-    const buttonTextStyle = "text-white text-center font-semibold"
-
     return (
-        <View className={containerStyle}>
-
-            <Text className={titleTextStyle}>
-                Register
-            </Text>
-
-            <FormTextField
-                label="Username"
-                value={username}
-                onChangeText={setUsername}
-                placeholder="Enter Username"
-                autoCapitalize="none"
-                error={errors.username}
-            />
-
+        <RegisterLayout tagline={role ? `Sign Up As A ${role}` : "Sign Up"}>
             <FormTextField
                 label="First Name"
                 value={firstName}
                 onChangeText={setFirstName}
-                placeholder="Enter first name"
+                autoCapitalize="words"
                 error={errors.firstName}
             />
 
@@ -94,16 +76,24 @@ export default function UserRegisterForm({ setPage, setFormData }) {
                 label="Last Name"
                 value={lastName}
                 onChangeText={setLastName}
-                placeholder="Enter last name"
+                autoCapitalize="words"
                 error={errors.lastName}
+            />
+
+            <FormTextField
+                label="Username"
+                value={username}
+                onChangeText={setUsername}
+                autoCapitalize="none"
+                error={errors.username}
             />
 
             <FormTextField
                 label="Password"
                 value={password}
                 onChangeText={setPassword}
-                placeholder="Enter password"
                 secure
+                autoCapitalize="none"
                 error={errors.password}
             />
 
@@ -111,21 +101,12 @@ export default function UserRegisterForm({ setPage, setFormData }) {
                 label="Confirm Password"
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
-                placeholder="Confirm password"
                 secure
+                autoCapitalize="none"
                 error={errors.confirmPassword}
             />
 
-            {/* Button */}
-            <TouchableOpacity
-                onPress={handleSubmit}
-                className={buttonContainerStyle}
-            >
-                <Text className={buttonTextStyle}>
-                    Register
-                </Text>
-            </TouchableOpacity>
-
-        </View>
+            <ButtonComponent label="Next" onPress={handleSubmit} className="mt-8" />
+        </RegisterLayout>
     )
 }

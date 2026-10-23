@@ -1,8 +1,11 @@
-import { View, Text, TextInput, TouchableOpacity, ScrollView } from 'react-native'
 import React, { useState } from 'react'
+import FormTextField from './inputs/FormTextField'
 import PickImageComponent from './inputs/PickImageComponent'
+import ButtonComponent from '@/components/ButtonComponent'
+import RegisterLayout from '@/components/RegisterLayout'
 
-export default function PassengerProfileForm({ setFormData, onSubmit }) {
+// formData: the data collected on the previous step (username, password, ...)
+export default function PassengerProfileForm({ formData, setFormData, onSubmit }) {
 
     const [address, setAddress] = useState("")
     const [contact_number, setContactNumber] = useState("")
@@ -11,6 +14,7 @@ export default function PassengerProfileForm({ setFormData, onSubmit }) {
     const [profile_picture, setProfilePicture] = useState(null)
 
     const [errors, setErrors] = useState({})
+    const [submitting, setSubmitting] = useState(false)
 
     const validate = () => {
         let newErrors = {}
@@ -45,75 +49,65 @@ export default function PassengerProfileForm({ setFormData, onSubmit }) {
         return Object.keys(newErrors).length === 0
     }
 
-    const handleSubmit = () => {
-        if (validate()) {
-            const passengerProfile = {
-                address,
-                contact_number,
-                emergency_contact_name,
-                emergency_contact_number,
-                profile_picture
-            }
+    const handleSubmit = async () => {
+        if (submitting || !validate()) return
 
-            setFormData((prev) => {
-                const updated = { ...prev, passenger_profile: passengerProfile }
-                onSubmit(updated)
-                return updated
-            })
+        const passengerProfile = {
+            address,
+            contact_number,
+            emergency_contact_name,
+            emergency_contact_number,
+            profile_picture
+        }
+
+        // Build the payload from the previous step's data instead of calling
+        // onSubmit inside a setState updater (React may run updaters twice).
+        const updated = { ...formData, passenger_profile: passengerProfile }
+        setFormData(updated)
+
+        setSubmitting(true)
+        try {
+            await onSubmit(updated)
+        } finally {
+            setSubmitting(false)
         }
     }
 
-    const container = "p-5 bg-white"
-    const label = "text-gray-700 mb-1"
-    const input = "border border-gray-300 rounded-lg p-3 mb-2"
-    const errorText = "text-red-500 mb-2"
-    const button = "bg-black p-4 rounded-xl mt-3"
-    const buttonText = "text-white text-center font-semibold"
-
     return (
-        <ScrollView className={container}>
-
-            <Text className="text-2xl font-bold mb-5 text-center">
-                Passenger Profile
-            </Text>
-
-            <Text className={label}>Address</Text>
-            <TextInput
-                className={input}
+        <RegisterLayout tagline="Sign Up As A Passenger">
+            <FormTextField
+                label="Address"
                 value={address}
                 onChangeText={setAddress}
-                placeholder="Enter address"
+                autoCapitalize="words"
+                error={errors.address}
             />
-            {errors.address && <Text className={errorText}>{errors.address}</Text>}
 
-            <Text className={label}>Contact Number</Text>
-            <TextInput
-                className={input}
+            <FormTextField
+                label="Contact Number"
                 value={contact_number}
                 onChangeText={(text) => setContactNumber(text.replace(/\D/g, ""))}
-                placeholder="Enter contact number"
                 keyboardType="phone-pad"
+                maxLength={11}
+                error={errors.contact_number}
             />
-            {errors.contact_number && <Text className={errorText}>{errors.contact_number}</Text>}
 
-            <Text className={label}>Emergency Contact Name</Text>
-            <TextInput
-                className={input}
+            <FormTextField
+                label="Emergency Contact Name"
                 value={emergency_contact_name}
                 onChangeText={setEmergencyContactName}
-                placeholder="Enter emergency contact name"
+                autoCapitalize="words"
+                error={errors.emergency_contact_name}
             />
-            {errors.emergency_contact_name && <Text className={errorText}>{errors.emergency_contact_name}</Text>}
 
-            <Text className={label}>Emergency Contact Number</Text>
-            <TextInput
-                className={input}
+            <FormTextField
+                label="Emergency Contact Number"
                 value={emergency_contact_number}
                 onChangeText={(text) => setEmergencyContactNumber(text.replace(/\D/g, ""))}
-                placeholder="Enter emergency contact number"
                 keyboardType="phone-pad"
+                maxLength={11}
+                error={errors.emergency_contact_number}
             />
-            {errors.emergency_contact_number && <Text className={errorText}>{errors.emergency_contact_number}</Text>}
 
             <PickImageComponent
                 label="Profile Picture"
@@ -121,10 +115,12 @@ export default function PassengerProfileForm({ setFormData, onSubmit }) {
                 image={profile_picture}
             />
 
-            <TouchableOpacity onPress={handleSubmit} className={button}>
-                <Text className={buttonText}>Submit Profile</Text>
-            </TouchableOpacity>
-
-        </ScrollView>
+            <ButtonComponent
+                label="Register"
+                onPress={handleSubmit}
+                loading={submitting}
+                className="mt-4"
+            />
+        </RegisterLayout>
     )
 }
