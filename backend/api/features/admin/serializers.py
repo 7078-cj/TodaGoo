@@ -100,8 +100,6 @@ class TodaStationSerializer(serializers.ModelSerializer):
         fields = '__all__'
         read_only_fields = ['toda']
 
-from rest_framework import serializers
-from .models import BookingSettings
 
 
 class BookingSettingSerializer(serializers.ModelSerializer):

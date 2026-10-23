@@ -1,4 +1,8 @@
+from datetime import timedelta
+
 from django.core.cache import cache
+from django.db.models import Count, Q, Sum
+from django.db.models.functions import ExtractHour, TruncDate
 from rest_framework.decorators import api_view, permission_classes, throttle_classes
 from rest_framework import viewsets, permissions
 from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
@@ -18,6 +22,12 @@ from rest_framework import status
 from django.db.models.deletion import ProtectedError
 from ...idempotency import IdempotentAPIView
 from django.utils import timezone
+
+
+from ..booking.models import Booking
+from ..reports.models import IncidentReport
+from ..user.models import Driver
+
 
 CACHE_TTL = 60 * 15  # 15 minutes — adjust based on how often boundaries/stations actually change
 
@@ -359,3 +369,137 @@ def booking_settings_view(request):
     serializer.is_valid(raise_exception=True)
     serializer.save()
     return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+HOUR_BUCKET_LABELS = ['12AM', '3AM', '6AM', '9AM', '12PM', '3PM', '6PM', '9PM']
+UNASSIGNED_COLOR = '#9ca3af'
+
+
+def get_period(range_key):
+    """Return (start, end, kind) as aware datetimes in the current timezone."""
+    now = timezone.localtime()
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    end = today_start + timedelta(days=1)
+
+    if range_key == 'today':
+        return today_start, end, 'hourly'
+    if range_key == 'week':
+        return today_start - timedelta(days=6), end, 'daily'
+    if range_key == 'month':
+        return today_start - timedelta(days=29), end, 'daily'
+    return None, None, None
+
+
+def build_chart(completed, start, end, kind):
+    tz = timezone.get_current_timezone()
+
+    if kind == 'hourly':
+        rows = (
+            completed
+            .annotate(h=ExtractHour('created_at', tzinfo=tz))
+            .values('h')
+            .annotate(trips=Count('id'), earnings=Sum('price'))
+        )
+        trips = [0] * len(HOUR_BUCKET_LABELS)
+        earnings = [0] * len(HOUR_BUCKET_LABELS)
+        for r in rows:
+            i = r['h'] // 3
+            trips[i] += r['trips']
+            earnings[i] += r['earnings'] or 0
+        return {'labels': HOUR_BUCKET_LABELS, 'trips': trips, 'earnings': earnings}
+
+    rows = (
+        completed
+        .annotate(d=TruncDate('created_at', tzinfo=tz))
+        .values('d')
+        .annotate(trips=Count('id'), earnings=Sum('price'))
+    )
+    by_day = {r['d']: r for r in rows}
+
+    label_fmt = '%a' if (end - start).days <= 7 else '%b %d'
+    labels, trips, earnings = [], [], []
+    for n in range((end - start).days):
+        day = (start + timedelta(days=n)).date()
+        row = by_day.get(day)
+        labels.append(day.strftime(label_fmt))
+        trips.append(row['trips'] if row else 0)
+        earnings.append((row['earnings'] or 0) if row else 0)
+    return {'labels': labels, 'trips': trips, 'earnings': earnings}
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated, TodaAdminPermission])
+def dashboard_overview_view(request):
+    range_key = request.query_params.get('range', 'today')
+    start, end, kind = get_period(range_key)
+    if start is None:
+        return Response(
+            {'range': "Must be one of: today, week, month."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    bookings = Booking.objects.filter(created_at__gte=start, created_at__lt=end)
+    completed = bookings.filter(status=Booking.Status.COMPLETED)
+
+    # --- Stat cards ---
+    totals = completed.aggregate(trips=Count('id'), earnings=Sum('price'))
+
+    # "Active" = live right now: waiting in the queue or on an ongoing booking.
+    # This is not affected by the selected range.
+    active_drivers = (
+        Driver.objects
+        .filter(status='ACTIVE')
+        .filter(
+            Q(queue__isnull=False)
+            | Q(bookings__status__in=[Booking.Status.ACCEPTED, Booking.Status.IN_PROGRESS])
+        )
+        .distinct()
+        .count()
+    )
+
+    incidents = IncidentReport.objects.filter(
+        created_at__gte=start, created_at__lt=end
+    ).count()
+
+    # --- Line chart: completed trips and earnings over time ---
+    chart = build_chart(completed, start, end, kind)
+
+    # --- Donut 1: all bookings in the period by status (zeros included) ---
+    counts = {
+        r['status']: r['count']
+        for r in bookings.values('status').annotate(count=Count('id'))
+    }
+    trips_by_status = [
+        {'key': value, 'label': label, 'count': counts.get(value, 0)}
+        for value, label in Booking.Status.choices
+    ]
+
+    # --- Donut 2: completed earnings by TODA (via the driver's TODA) ---
+    toda_rows = (
+        completed
+        .values('driver__toda_boundary__name', 'driver__toda_boundary__color')
+        .annotate(earnings=Sum('price'))
+        .order_by('-earnings')
+    )
+    earnings_by_toda = [
+        {
+            'name': r['driver__toda_boundary__name'] or 'Unassigned',
+            'color': r['driver__toda_boundary__color'] or UNASSIGNED_COLOR,
+            'earnings': r['earnings'] or 0,
+        }
+        for r in toda_rows
+    ]
+
+    return Response({
+        'range': range_key,
+        'start': start,
+        'end': end,
+        'stats': {
+            'trips': totals['trips'],
+            'earnings': totals['earnings'] or 0,
+            'active_drivers': active_drivers,
+            'incidents': incidents,
+        },
+        'chart': chart,
+        'trips_by_status': trips_by_status,
+        'earnings_by_toda': earnings_by_toda,
+    })

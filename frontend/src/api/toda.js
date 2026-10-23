@@ -42,3 +42,9 @@ export async function updateBookingSettings(data, idempotencyKey = null) {
     const response = await patchRequest("admin/booking-settings/", data, access, false, idempotencyKey);
     return response;
 }
+
+export async function getDashboardOverview() {
+    const access = Cookie.get("access");
+    const response = await getRequest("admin/dashboard/", access);
+    return response;
+}

@@ -1,248 +1,280 @@
-import React, { useMemo, useState } from "react";
-import OverviewCard from "../components/OverviewCard";
-import { MapPin, DollarSign, User, AlertTriangle } from "lucide-react";
-
+import React, { useEffect, useState } from 'react';
+import { MapPin, DollarSign, User, AlertTriangle } from 'lucide-react';
+import { Line, Doughnut } from 'react-chartjs-2';
 import {
     Chart as ChartJS,
     CategoryScale,
     LinearScale,
     PointElement,
     LineElement,
-    ArcElement,   
-    Title,
+    ArcElement,
     Tooltip,
-    Legend
-} from "chart.js";
+    Legend,
+} from 'chart.js';
+import { getDashboardOverview } from '../api/toda';
 
-import { Line, Doughnut } from "react-chartjs-2"; 
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, ArcElement, Tooltip, Legend);
 
-ChartJS.register(
-    CategoryScale,
-    LinearScale,
-    PointElement,
-    LineElement,
-    ArcElement,   
-    Title,
-    Tooltip,
-    Legend
-);
+const RANGES = [
+    { key: 'today', label: 'Today' },
+    { key: 'week', label: 'Week' },
+    { key: 'month', label: 'Month' },
+];
 
-function TodaDashboard() {
-    const [filter, setFilter] = useState("today");
-
-    const mockData = useMemo(() => ({
-        today: {
-            overview: [
-                { title: "Trips", value: 12, icon: <MapPin className="w-4 h-4" />, color: "blue" },
-                { title: "Earnings", value: 2400, icon: <DollarSign className="w-4 h-4" />, color: "green" },
-                { title: "Active Drivers", value: 18, icon: <User className="w-4 h-4" />, color: "amber" },
-                { title: "Incidents Today", value: 1, icon: <AlertTriangle className="w-4 h-4" />, color: "red" }
-            ],
-            labels: ["6AM", "9AM", "12PM", "3PM", "6PM", "9PM", "12AM"],
-            trips: [5, 8, 6, 10, 12, 9, 14],
-            earnings: [200, 350, 300, 500, 700, 600, 900]
-        },
-
-        week: {
-            overview: [
-                { title: "Trips", value: 84, icon: <MapPin className="w-4 h-4" />, color: "blue" },
-                { title: "Earnings", value: 16800, icon: <DollarSign className="w-4 h-4" />, color: "green" },
-                { title: "Active Drivers", value: 25, icon: <User className="w-4 h-4" />, color: "amber" },
-                { title: "Incidents Today", value: 5, icon: <AlertTriangle className="w-4 h-4" />, color: "red" }
-            ],
-            labels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
-            trips: [40, 55, 60, 70, 80, 90, 84],
-            earnings: [1200, 1400, 1500, 1600, 1700, 1800, 1680]
-        },
-
-        month: {
-            overview: [
-                { title: "Trips", value: 340, icon: <MapPin className="w-4 h-4" />, color: "blue" },
-                { title: "Earnings", value: 68000, icon: <DollarSign className="w-4 h-4" />, color: "green" },
-                { title: "Active Drivers", value: 42, icon: <User className="w-4 h-4" />, color: "amber" },
-                { title: "Incidents Today", value: 18, icon: <AlertTriangle className="w-4 h-4" />, color: "red" }
-            ],
-            labels: ["W1", "W2", "W3", "W4", "W5", "W6", "W7"],
-            trips: [200, 240, 260, 300, 320, 330, 340],
-            earnings: [8000, 9000, 10000, 12000, 13000, 14000, 16000]
-        }
-    }), []);
-
-    const activeData = useMemo(() => {
-        return mockData[filter];
-    }, [filter, mockData]);
-
-    const chartData = useMemo(() => ({
-        labels: activeData.labels,
-        datasets: [
-            {
-                label: "Trips",
-                data: activeData.trips,
-                borderColor: "#22c55e",
-                backgroundColor: "rgba(34,197,94,0.15)",
-                fill: true,
-                borderWidth: 3,
-                tension: 0.45,
-                pointRadius: 3,
-                pointHoverRadius: 7,
-                pointBackgroundColor: "#22c55e",
-                pointBorderWidth: 2
-            },
-            {
-                label: "Earnings",
-                data: activeData.earnings,
-                borderColor: "#f97316",
-                backgroundColor: "rgba(249, 115, 22, 0.15)",
-                fill: true,
-                borderWidth: 3,
-                tension: 0.45,
-                pointRadius: 3,
-                pointHoverRadius: 7,
-                pointBackgroundColor: "#f97316",
-                pointBorderColor: "#f97316",
-                pointBorderWidth: 2
-            }
-        ]
-    }), [activeData]);
-
-    const donutData = useMemo(() => ({
-    labels: ["Trips", "Earnings"],
-    datasets: [
-        {
-            data: [
-                activeData.trips.reduce((a, b) => a + b, 0),
-                activeData.earnings.reduce((a, b) => a + b, 0)
-            ],
-            backgroundColor: [
-                "rgba(34,197,94,0.8)",
-                "rgba(249,115,22,0.8)"
-            ],
-            borderWidth: 0,
-            hoverOffset: 6
-        }
-    ]
-}), [activeData]);
-
-    const options = useMemo(() => ({
-        responsive: true,
-        maintainAspectRatio: false,
-
-        interaction: {
-            mode: "index",
-            intersect: false
-        },
-
-        plugins: {
-            legend: {
-                position: "top",
-                labels: {
-                    usePointStyle: true,
-                    pointStyle: "circle",
-                    padding: 20,
-                    color: "#374151",
-                    font: {
-                        size: 12,
-                        weight: "500"
-                    }
-                }
-            },
-
-            tooltip: {
-                backgroundColor: "#111827",
-                titleColor: "#fff",
-                bodyColor: "#fff",
-                padding: 12,
-                cornerRadius: 10,
-                displayColors: true
-            }
-        },
-
-        scales: {
-            x: {
-                grid: {
-                    display: false
-                },
-                ticks: {
-                    color: "#6b7280"
-                }
-            },
-
-            y: {
-                grid: {
-                    color: "rgba(0,0,0,0.05)"
-                },
-                ticks: {
-                    color: "#6b7280"
-                }
-            }
-        }
-    }), []);
-
-    const donutOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    cutout: "70%", 
-
-    plugins: {
-        legend: {
-            position: "bottom"
-        }
-    }
+const INCIDENT_LABELS = {
+    today: 'Incidents Today',
+    week: 'Incidents (7 days)',
+    month: 'Incidents (30 days)',
 };
 
+const STATUS_COLORS = {
+    pending: '#f59e0b',
+    accepted: '#3b82f6',
+    in_progress: '#6366f1',
+    completed: '#22c55e',
+    cancelled: '#ef4444',
+};
+
+const peso = new Intl.NumberFormat('en-PH', {
+    style: 'currency',
+    currency: 'PHP',
+    maximumFractionDigits: 0,
+});
+
+// The request helpers throw an Error with the DRF body copied onto it.
+function getErrorMessage(err) {
+    const messages = Object.values(err).map((v) => (Array.isArray(v) ? v.join(' ') : String(v)));
+    return messages.join(' ') || err.message || 'Something went wrong.';
+}
+
+function StatCard({ title, value, icon: Icon, chipClass }) {
     return (
-        <div className="p-4 h-full bg-green-100 overflow-y-auto flex flex-col gap-4">
+        <div className="rounded-xl bg-white p-5 shadow-sm">
+            <div className="flex items-start justify-between">
+                <h3 className="text-base font-medium text-gray-700">{title}</h3>
+                <div className={`flex h-12 w-12 items-center justify-center rounded-xl text-white ${chipClass}`}>
+                    <Icon size={20} />
+                </div>
+            </div>
+            <p className="mt-2 text-3xl font-bold text-green-600">{value}</p>
+        </div>
+    );
+}
 
-            <div className="flex w-full h-[5%] justify-between items-center">
-                <span className="text-2xl font-semibold text-gray-700">
-                    Dashboard Overview
-                </span>
+function DonutCard({ title, labels, values, colors, format = (v) => v }) {
+    const total = values.reduce((sum, v) => sum + v, 0);
 
-                <div className="flex gap-2">
-                    {["today", "week", "month"].map((f) => (
+    const data = {
+        labels,
+        datasets: [{ data: values, backgroundColor: colors, borderWidth: 0 }],
+    };
+
+    const options = {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '65%',
+        plugins: {
+            legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8 } },
+            tooltip: {
+                callbacks: { label: (ctx) => ` ${ctx.label}: ${format(ctx.parsed)}` },
+            },
+        },
+    };
+
+    return (
+        <div className="rounded-xl bg-white p-5 shadow-sm">
+            <h3 className="mb-3 text-base font-medium text-gray-700">{title}</h3>
+            <div className="h-64">
+                {total > 0 ? (
+                    <Doughnut data={data} options={options} />
+                ) : (
+                    <div className="flex h-full items-center justify-center text-sm text-gray-400">
+                        No data for this period
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}
+
+export default function DashboardOverview() {
+    const [range, setRange] = useState('today');
+    const [data, setData] = useState(null);
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+        let cancelled = false; // ignore responses from a range the user already left
+
+        const load = async () => {
+            setIsLoading(true);
+            setError(null);
+            try {
+                const res = await getDashboardOverview(range);
+                if (!cancelled) setData(res);
+            } catch (err) {
+                if (!cancelled) setError(getErrorMessage(err));
+            } finally {
+                if (!cancelled) setIsLoading(false);
+            }
+        };
+
+        load();
+        return () => {
+            cancelled = true;
+        };
+    }, [range]);
+
+    const lineData = data && {
+        labels: data.chart.labels,
+        datasets: [
+            {
+                label: 'Trips',
+                data: data.chart.trips,
+                borderColor: '#22c55e',
+                backgroundColor: '#22c55e',
+                yAxisID: 'y',
+                tension: 0.4,
+                pointRadius: 4,
+            },
+            {
+                label: 'Earnings',
+                data: data.chart.earnings,
+                borderColor: '#f97316',
+                backgroundColor: '#f97316',
+                yAxisID: 'y1',
+                tension: 0.4,
+                pointRadius: 4,
+            },
+        ],
+    };
+
+    // Trips and earnings differ by orders of magnitude, so each gets its own axis.
+    const lineOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+            legend: { labels: { usePointStyle: true } },
+            tooltip: {
+                callbacks: {
+                    label: (ctx) =>
+                        ctx.dataset.label === 'Earnings'
+                            ? ` Earnings: ${peso.format(ctx.parsed.y)}`
+                            : ` Trips: ${ctx.parsed.y}`,
+                },
+            },
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                position: 'left',
+                ticks: { precision: 0 },
+                title: { display: true, text: 'Trips' },
+            },
+            y1: {
+                beginAtZero: true,
+                position: 'right',
+                grid: { drawOnChartArea: false },
+                title: { display: true, text: 'Earnings (₱)' },
+            },
+        },
+    };
+
+    return (
+        <div className="min-h-full bg-green-50 p-4 sm:p-6">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+                <h1 className="text-2xl font-semibold text-gray-800">Dashboard Overview</h1>
+
+                <div className="flex gap-2" role="group" aria-label="Date range">
+                    {RANGES.map((r) => (
                         <button
-                            key={f}
-                            onClick={() => setFilter(f)}
-                            className={`px-3 py-1 rounded ${
-                                filter === f ? "bg-green-600 text-white" : "bg-white"
-                            }`}
+                            key={r.key}
+                            type="button"
+                            aria-pressed={range === r.key}
+                            onClick={() => setRange(r.key)}
+                            className={
+                                'rounded-md px-4 py-2 text-sm font-medium uppercase transition-colors ' +
+                                'focus:outline-none focus:ring-2 focus:ring-green-600 focus:ring-offset-2 ' +
+                                (range === r.key
+                                    ? 'bg-green-600 text-white'
+                                    : 'bg-white text-gray-700 hover:bg-green-100')
+                            }
                         >
-                            {f.toUpperCase()}
+                            {r.label}
                         </button>
                     ))}
                 </div>
             </div>
 
-            <div className="flex flex-row w-full h-[15%] gap-4">
-                {activeData.overview.map((item) => (
-                    <OverviewCard
-                        key={item.title}
-                        title={item.title}
-                        value={item.value}
-                        icon={item.icon}
-                        color={item.color}
-                    />
-                ))}
-            </div>
-            
-            <div className="h-[70%] w-full flex flex-row justify-between items-center">
-                <div className="bg-white p-4 rounded-md h-full w-[55%]">
-                    <Line data={chartData} options={options} />
+            {error && (
+                <div
+                    role="alert"
+                    className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+                >
+                    {error}
                 </div>
+            )}
 
-                <div className="p-4 rounded-md h-full w-[43%] flex flex-col justify-center items-center gap-4">
-                    <div className="w-full bg-white rounded-md p-4 mb-4 h-[50%]">
-                        <Doughnut data={donutData} options={donutOptions} />
+            {!data && isLoading && <p className="mt-6 text-sm text-gray-500">Loading dashboard…</p>}
+
+            {data && (
+                <div className={`mt-6 transition-opacity ${isLoading ? 'opacity-60' : 'opacity-100'}`}>
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                        <StatCard
+                            title="Trips"
+                            value={data.stats.trips}
+                            icon={MapPin}
+                            chipClass="bg-blue-500"
+                        />
+                        <StatCard
+                            title="Earnings"
+                            value={peso.format(data.stats.earnings)}
+                            icon={DollarSign}
+                            chipClass="bg-green-500"
+                        />
+                        <StatCard
+                            title="Active Drivers"
+                            value={data.stats.active_drivers}
+                            icon={User}
+                            chipClass="bg-slate-500"
+                        />
+                        <StatCard
+                            title={INCIDENT_LABELS[range]}
+                            value={data.stats.incidents}
+                            icon={AlertTriangle}
+                            chipClass="bg-red-500"
+                        />
                     </div>
 
-                    <div className="w-full bg-white rounded-md p-4 mb-4 h-[50%]">
-                        <Doughnut data={donutData} options={donutOptions} />
+                    <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
+                        <div className="rounded-xl bg-white p-5 shadow-sm lg:col-span-2">
+                            <h3 className="mb-3 text-base font-medium text-gray-700">
+                                Completed trips and earnings
+                            </h3>
+                            <div className="h-80 lg:h-[34rem]">
+                                <Line data={lineData} options={lineOptions} />
+                            </div>
+                        </div>
+
+                        <div className="flex flex-col gap-4">
+                            <DonutCard
+                                title="Bookings by status"
+                                labels={data.trips_by_status.map((s) => s.label)}
+                                values={data.trips_by_status.map((s) => s.count)}
+                                colors={data.trips_by_status.map((s) => STATUS_COLORS[s.key])}
+                            />
+                            <DonutCard
+                                title="Earnings by TODA"
+                                labels={data.earnings_by_toda.map((t) => t.name)}
+                                values={data.earnings_by_toda.map((t) => t.earnings)}
+                                colors={data.earnings_by_toda.map((t) => t.color)}
+                                format={(v) => peso.format(v)}
+                            />
+                        </div>
                     </div>
                 </div>
-            </div>
-
+            )}
         </div>
     );
 }
-
-export default TodaDashboard;
