@@ -344,6 +344,8 @@ def get_fare_price(request):
     else:
         stops = []
 
-    price = calculate_price(start_point, end_point, stops)
-
+    try:
+        price = calculate_price(start_point, end_point, stops)
+    except ValueError as e:
+        return Response({"error": str(e)}, status=400)
     return Response({"price": price}, status=200)

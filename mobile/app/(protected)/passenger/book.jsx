@@ -1,9 +1,8 @@
 import { View, Text, TouchableOpacity } from 'react-native'
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { v4 as uuidv4 } from 'uuid'
-import MapComponent from "@/components/map/MapComponent";
 import SetLocationMapModal from '@/components/SetLocationMapModal';
-import { bookRide } from '../../../api/book'
+import { bookRide, getFarePrice } from '../../../api/book' // adjust if getFarePrice lives elsewhere
 
 const BOOKING_TYPES = [
     { value: "regular", label: "Regular" },
@@ -18,6 +17,8 @@ export default function book() {
     const [endAddress, setEndAddress] = useState(null);
     const [stops, setStops] = useState([]);
     const [price, setPrice] = useState(null);
+    const [fareLoading, setFareLoading] = useState(false);
+    const [fareError, setFareError] = useState(null);
     const [bookingStatus, setBookingStatus] = useState(null);
     const [submitting, setSubmitting] = useState(false);
     const [bookingType, setBookingType] = useState("regular");
@@ -31,6 +32,58 @@ export default function book() {
     const [routes, setRoutes] = useState([]);
 
     const idempotencyKeyRef = useRef(uuidv4());
+
+    // Only changes when a stop's coordinates change, not when its address text does
+    const stopsKey = stops
+        .filter((s) => s.location)
+        .map((s) => `${s.location.lat},${s.location.lng}`)
+        .join("|");
+
+    // Fetch the fare estimate whenever start / end / stops change
+    useEffect(() => {
+        if (!startLocation || !endLocation) {
+            setPrice(null);
+            setFareError(null);
+            return;
+        }
+
+        let cancelled = false;
+
+        // Debounce: onLocationChange can fire repeatedly while the pin is moved
+        const timer = setTimeout(async () => {
+            setFareLoading(true);
+            setFareError(null);
+
+            try {
+                const validStops = stops
+                    .filter((s) => s.location)
+                    .map((s) => s.location);
+
+                const fare = await getFarePrice(startLocation, endLocation, validStops);
+                if (!cancelled) setPrice(fare);
+            } catch (error) {
+                console.error("Fare estimate failed:", error);
+                if (!cancelled) {
+                    setPrice(null);
+                    setFareError("Couldn't get fare estimate.");
+                }
+            } finally {
+                if (!cancelled) setFareLoading(false);
+            }
+        }, 500);
+
+        // Cleanup runs on every change, so older in-flight responses are discarded
+        return () => {
+            cancelled = true;
+            clearTimeout(timer);
+        };
+    }, [
+        startLocation?.lat,
+        startLocation?.lng,
+        endLocation?.lat,
+        endLocation?.lng,
+        stopsKey,
+    ]);
 
     const handleSetStartLocation = (location, address) => {
         setStartLocation(location);
@@ -86,8 +139,22 @@ export default function book() {
     };
 
     const removeStop = (index) => {
-        setStops((prev) => prev.filter((_, i) => i !== index));
-        setMarkers((prev) => prev.filter((m) => m.id !== `stop-${index}`));
+        const nextStops = stops.filter((_, i) => i !== index);
+        setStops(nextStops);
+
+        // Rebuild stop markers so their ids match the new indexes
+        setMarkers((prev) => [
+            ...prev.filter((m) => !String(m.id).startsWith("stop-")),
+            ...nextStops
+                .map((stop, i) => ({ stop, i }))
+                .filter(({ stop }) => stop.location)
+                .map(({ stop, i }) => ({
+                    id: `stop-${i}`,
+                    lat: stop.location.lat,
+                    lng: stop.location.lng,
+                    full: stop.address,
+                })),
+        ]);
     };
 
     const applyLocation = (location, address) => {
@@ -232,10 +299,6 @@ export default function book() {
                 </Text>
             </TouchableOpacity>
 
-            <View>
-
-            </View>
-
             {stops.map((stop, index) => (
                 <View
                     key={index}
@@ -277,6 +340,17 @@ export default function book() {
                 </Text>
             </TouchableOpacity>
 
+            {/* Fare estimate */}
+            <View className="mt-4 items-center">
+                {fareLoading ? (
+                    <Text className="text-gray-500">Calculating fare...</Text>
+                ) : fareError ? (
+                    <Text className="text-red-500">{fareError}</Text>
+                ) : price != null ? (
+                    <Text className="text-lg font-semibold">Estimated fare: ₱{price}</Text>
+                ) : null}
+            </View>
+
             <SetLocationMapModal
                 selectedLocation={selectedLocation}
                 selectedAddress={selectedAddress}
@@ -288,13 +362,12 @@ export default function book() {
                 onLocationChange={handleLocationChange}
                 onRouteChange={handleRouteChange}
                 markers={markers}
-
             />
 
             <TouchableOpacity
                 className="bg-black p-4 rounded-xl mt-5"
                 onPress={handleBooking}
-                disabled={submitting}
+                disabled={submitting || fareLoading}
             >
                 <Text className="text-white text-center font-semibold">
                     {submitting ? "Booking..." : (bookingStatus || "Book Ride")}

@@ -26,12 +26,7 @@ def is_within_night_window(current: time, start: time, end: time) -> bool:
 
     return current >= start or current < end
 
-
 def get_night_fare_multiplier() -> float:
-    """
-    Returns the night fare multiplier if night fare is enabled and the
-    current PH time is within the night window. Otherwise returns 1.0.
-    """
     settings_obj = BookingSettings.objects.first()
 
     if settings_obj is None or not settings_obj.is_night_fare_enabled:
@@ -42,7 +37,7 @@ def get_night_fare_multiplier() -> float:
         settings_obj.night_fare_start_time,
         settings_obj.night_fare_multiplier_end_time,
     ):
-        return settings_obj.night_fare_multiplier
+        return float(settings_obj.night_fare_multiplier)
 
     return 1.0
 
@@ -112,6 +107,13 @@ def calculate_price(start: Point, end: Point, stops=None):
         price = station.base_fare + (
             (total_distance - 1) * RATE_PER_KM
         )
+
+    base_fare = float(station.base_fare)
+
+    if total_distance <= 1:
+        price = base_fare
+    else:
+        price = base_fare + ((total_distance - 1) * RATE_PER_KM)
 
     price *= get_night_fare_multiplier()
 
