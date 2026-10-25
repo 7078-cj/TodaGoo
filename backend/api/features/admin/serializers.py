@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from .models import RegisteredToda, Toda, TodaStation, BookingSettings
 from django.contrib.gis.geos import Polygon
-from ..booking.serializers import PointField
+from ..utils.fields import PointField
 
         
 class TodaReadSerializer(serializers.ModelSerializer):

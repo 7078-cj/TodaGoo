@@ -1,6 +1,7 @@
 import json
 from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer
+from api.features.utils.roles import get_admin_department
 
 VALID_DEPARTMENTS = {"TODA", "MDRRMO"}
 
@@ -54,6 +55,4 @@ class ReportsConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def check_admin_department(self, user, department):
-        admin = getattr(user, "admin", None)
-
-        return bool(admin and admin.department == department)
+        return get_admin_department(user) == department

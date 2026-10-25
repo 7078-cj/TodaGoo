@@ -1,4 +1,3 @@
-from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from rest_framework import permissions
 from rest_framework.exceptions import PermissionDenied, ValidationError
@@ -10,7 +9,6 @@ from ..booking.models import Booking
 from .models import Message
 from .serializers import MessageSerializer
 from .signals import broadcast_messages_seen
-from ...pagination import StandardPagination
 
 
 def get_booking_participant_or_403(booking_id, user):

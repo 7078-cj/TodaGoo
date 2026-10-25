@@ -1,10 +1,8 @@
-# middleware.py
 from urllib.parse import parse_qs
 from channels.middleware import BaseMiddleware
 from channels.db import database_sync_to_async
-from django.contrib.auth.models import AnonymousUser
+from django.contrib.auth.models import AnonymousUser, User
 from rest_framework_simplejwt.tokens import AccessToken
-from django.contrib.auth.models import User
 
 @database_sync_to_async
 def get_user_from_token(token):

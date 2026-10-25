@@ -1,12 +1,8 @@
-# Add to your existing signals file (keep your current imports and receivers).
-from django.core.cache import cache
-from django.db import transaction
-from django.db.models import Avg
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
 from ..user.models import Driver
-from ..utils.otp import issue_and_send_otp,_queue_otp, ROLE_DRIVER   # adjust to where you put otp.py
+from ..utils.otp import _queue_otp, ROLE_DRIVER
 
 
 @receiver(post_save, sender=Driver)

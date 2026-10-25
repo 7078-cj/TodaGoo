@@ -1,9 +1,8 @@
 from django.db import transaction
 from rest_framework import serializers
 
-from ..booking.models import Booking
 from .models import IncidentReport, IncidentEvidence
-from ..booking.serializers import PointField
+from ..utils.fields import PointField
 from ..booking.serializers import BookingSerializer
 
 class IncidentEvidenceSerializer(serializers.ModelSerializer):

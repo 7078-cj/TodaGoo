@@ -1,43 +1,31 @@
-from django.core.cache import cache
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework.decorators import api_view, throttle_classes, permission_classes
-from rest_framework import viewsets, permissions
-from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
-from .serializers import BookingSerializer, StopSerializer, DriverQueueSerializer, RateCreateSerializer, RateSerializer
-from .models import Booking, Stop, DriverQueue,Rate, User
-from django.shortcuts import get_object_or_404
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework import permissions
+from .serializers import (
+    BookingSerializer,
+    StopSerializer,
+    DriverQueueSerializer,
+    RateCreateSerializer,
+    RateSerializer,
+)
+from .models import Booking, DriverQueue, Rate
 from rest_framework.views import APIView
 from ..utils.distance import calculate_price
 from django.contrib.gis.geos import Point
 from django.core.exceptions import ObjectDoesNotExist
 from ...idempotency import IdempotentAPIView
-from  ...pagination import StandardPagination
-from datetime import datetime
-from django.utils import timezone
-from django.utils.dateparse import parse_date
+from ...pagination import StandardPagination
+from ..utils.filtering import apply_date_range_filter
 from rest_framework.exceptions import ValidationError
 
+from ..utils.roles import is_toda_admin
+
 def get_passenger(user):
-    try:
-        return user.passenger_profile
-    except ObjectDoesNotExist:
-        return None
+    return getattr(user, "passenger_profile", None)
 
 def get_driver(user):
-    try:
-        return user.driver_profile
-    except ObjectDoesNotExist:
-        return None
-        
-
-def is_toda_admin(user):
-    return bool(
-        user
-        and user.is_authenticated
-        and hasattr(user, "admin")
-        and user.admin.department == "TODA"
-    )
+    return getattr(user, "driver_profile", None)
 
 
 class BookingView(IdempotentAPIView, APIView):
@@ -74,22 +62,7 @@ class BookingView(IdempotentAPIView, APIView):
                 raise ValidationError({"toda_boundary": "Only TODA admins may filter by boundary."})
             qs = qs.filter(driver__toda_boundary_id=toda_boundary_id)
 
-        date_from = request.query_params.get("date_from")
-        date_to = request.query_params.get("date_to")
-
-        if date_from:
-            parsed_from = parse_date(date_from)
-            if parsed_from is None:
-                raise ValidationError({"date_from": "Must be in YYYY-MM-DD format."})
-            qs = qs.filter(created_at__date__gte=parsed_from)
-
-        if date_to:
-            parsed_to = parse_date(date_to)
-            if parsed_to is None:
-                raise ValidationError({"date_to": "Must be in YYYY-MM-DD format."})
-            qs = qs.filter(created_at__date__lte=parsed_to)
-
-        return qs
+        return apply_date_range_filter(qs, request.query_params)
     
     def post(self, request):
     
@@ -243,7 +216,7 @@ def driver_queue(request):
 
     location = Point(lng, lat)
 
-    exists = request.user.driver_profile.queue.exists()
+    exists = driver.queue.exists()
 
     if not exists:
         DriverQueue.objects.create(
@@ -265,7 +238,6 @@ def driver_queue(request):
 @permission_classes([permissions.IsAuthenticated])
 def driver_dequeue(request):
     driver = getattr(request.user, "driver_profile", None)
-    print(driver)
     if driver is None:
         return Response({"error": "no driver profile for this user"}, status=403)
 

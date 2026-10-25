@@ -1,6 +1,5 @@
 from rest_framework.permissions import BasePermission
 from ..utils.roles import is_admin, is_driver
-from rest_framework import viewsets, permissions
 
 
 class IsDriverOwnerOrAdmin(BasePermission):

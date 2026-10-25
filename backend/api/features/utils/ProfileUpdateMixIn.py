@@ -1,5 +1,6 @@
 from rest_framework.response import Response
-from ..utils.reconstruction import reconstruct_nested
+from .reconstruction import reconstruct_nested
+from .roles import is_toda_admin
 from rest_framework import status
 from django.core.cache import cache
 
@@ -28,8 +29,7 @@ class ProfileUpdateMixin:
         return Response(data)
 
     def _is_toda_admin(self, user):
-        admin = getattr(user, "admin", None)
-        return admin is not None and admin.department == "TODA"
+        return is_toda_admin(user)
 
     def update(self, request, *args, **kwargs):
         partial = kwargs.pop("partial", False)

@@ -8,9 +8,9 @@ from .permissions import IsDriverOwnerOrAdmin
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from ..utils.reconstruction import reconstruct_nested
 from rest_framework.response import Response
-from django.db.models import Q
 from ...pagination import StandardPagination
 from ..utils.ProfileUpdateMixIn import ProfileUpdateMixin
+from ..utils.filtering import apply_user_search_filter, apply_rating_filter
 from rest_framework.exceptions import ValidationError
 from ..utils.otp import (
     _verify_otp,
@@ -18,8 +18,6 @@ from ..utils.otp import (
     ROLE_DRIVER,
 )
 from ..user.models import Driver
-import re
-from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 
 
@@ -47,34 +45,13 @@ class DriverListCreateView(ListCreateAPIView):
             qs = qs.filter(driver_profile__toda_station_id=toda_station_id)
 
         search = self.request.query_params.get("search")
-        if search:
-            qs = qs.filter(
-                Q(username__icontains=search)
-                | Q(first_name__icontains=search)
-                | Q(last_name__icontains=search)
-            )
+        qs = apply_user_search_filter(qs, search)
 
         blacklisted = self.request.query_params.get("blacklisted")
         if blacklisted and blacklisted.lower() == "true":
             qs = qs.filter(driver_profile__status="BLACKLISTED")
 
-        min_rating = self.request.query_params.get("min_rating")
-        if min_rating:
-            try:
-                min_rating = float(min_rating)
-            except (TypeError, ValueError):
-                raise ValidationError({"min_rating": "Must be a number."})
-            qs = qs.filter(driver_profile__rating__gte=min_rating)
-
-        max_rating = self.request.query_params.get("max_rating")
-        if max_rating:
-            try:
-                max_rating = float(max_rating)
-            except (TypeError, ValueError):
-                raise ValidationError({"max_rating": "Must be a number."})
-            qs = qs.filter(driver_profile__rating__lte=max_rating)
-
-        return qs
+        return apply_rating_filter(qs, self.request.query_params, "driver_profile__rating")
 
     def create(self, request, *args, **kwargs):
         data = reconstruct_nested(request.data, prefix="driver_profile.")

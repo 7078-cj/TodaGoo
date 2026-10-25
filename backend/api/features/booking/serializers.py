@@ -4,55 +4,7 @@ from .models import Booking, Stop, DriverQueue, Rate, User
 from ..driver.serializers import DriverReadSerializer
 from ..passenger.serializers import PassengerReadSerializer
 from rest_framework.exceptions import PermissionDenied
-
-
-class PointField(serializers.Field):
-    """
-    Converts between:
-    Request:
-    {
-        "lat": 14.949,
-        "lng": 120.757
-    }
-
-    Database:
-    Point(120.757, 14.949)
-
-    Response:
-    {
-        "lat": 14.949,
-        "lng": 120.757
-    }
-    """
-
-    def to_representation(self, value):
-        if value is None:
-            return None
-
-        return {
-            "lat": value.y,
-            "lng": value.x,
-        }
-
-    def to_internal_value(self, data):
-        if not isinstance(data, dict):
-            raise serializers.ValidationError(
-                "Location must be an object containing lat and lng."
-            )
-
-        try:
-            lat = float(data["lat"])
-            lng = float(data["lng"])
-        except KeyError:
-            raise serializers.ValidationError(
-                "Both lat and lng are required."
-            )
-        except (TypeError, ValueError):
-            raise serializers.ValidationError(
-                "lat and lng must be numbers."
-            )
-
-        return Point(lng, lat)
+from ..utils.fields import PointField
 
 
 class StopSerializer(serializers.ModelSerializer):
@@ -209,25 +161,17 @@ class RateCreateSerializer(serializers.Serializer):
         elif rated_user_id == passenger_user_id:
             rated_role = "passenger"
         else:
-            print(f"Booking participants: driver_user_id={driver_user_id}, passenger_user_id={passenger_user_id}, rated_user_id={rated_user_id}")
-
             raise serializers.ValidationError(
                 {"user_id": "user_id is not a participant in this booking"}
             )
 
         if request.user.id == rated_user_id:
-            print(f"User {request.user.id} attempted to rate themselves for booking {booking.id}")
-
             raise serializers.ValidationError({"user_id": "You cannot rate yourself"})
 
         if request.user.id not in (driver_user_id, passenger_user_id):
-            print(f"User {request.user.id} attempted to rate booking {booking.id} but is not a participant")
-
             raise PermissionDenied("You are not a participant in this booking")
 
         if Rate.objects.filter(rater=request.user, booking=booking).exists():
-            print(f"User {request.user.id} has already rated booking {booking.id}")
-
             raise serializers.ValidationError(
                 "You have already rated this booking"
             )

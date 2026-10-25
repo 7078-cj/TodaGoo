@@ -1,24 +1,22 @@
 from rest_framework import permissions
-from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView, RetrieveUpdateAPIView
+from rest_framework.generics import ListCreateAPIView, RetrieveUpdateAPIView
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.response import Response
 from ..booking.models import Booking
 from rest_framework.exceptions import PermissionDenied, NotFound, ValidationError
-from  ...pagination import StandardPagination
+from ...pagination import StandardPagination
 from ..utils.reconstruction import reconstruct_nested
 from rest_framework import status
 from ...idempotency import IdempotentAPIView
 
-from .models import IncidentReport
+from .models import IncidentReport, MDRRMO_INCIDENT_TYPES
 from .serializers import (
     IncidentReportSerializer,
     IncidentReportCreateSerializer,
     IncidentReportStatusUpdateSerializer,
 )
 
-from django.db.models import Q
-from django.utils.dateparse import parse_date
-from rest_framework.exceptions import ValidationError
+from ..utils.filtering import apply_date_range_filter
 
 
 from datetime import timedelta
@@ -26,20 +24,11 @@ from django.utils import timezone
 
 INCIDENT_REPORT_WINDOW = timedelta(days=3)
 
-MDRRMO_INCIDENT_TYPES = {"accident", "reckless_driving", "others","harassment"}
 
+from ..utils.roles import is_toda_admin, is_mdrrmo_admin
 
-def _admin_department(user):
-    admin = getattr(user, "admin", None)
-    return getattr(admin, "department", None)
-
-
-def is_toda_admin_user(user):
-    return _admin_department(user) == "TODA"
-
-
-def is_mdrrmo_admin_user(user):
-    return _admin_department(user) == "MDRRMO"
+is_toda_admin_user = is_toda_admin
+is_mdrrmo_admin_user = is_mdrrmo_admin
 
 
 def get_booking_or_404(booking_id, user):
@@ -125,21 +114,7 @@ class IncidentReportListCreateView(IdempotentAPIView, ListCreateAPIView):
                 raise ValidationError({"incident_types": f"Must be one of {list(valid_types)}."})
             qs = qs.filter(incident_types=incident_type)
 
-        date_from = params.get("date_from")
-        if date_from:
-            parsed_from = parse_date(date_from)
-            if parsed_from is None:
-                raise ValidationError({"date_from": "Must be in YYYY-MM-DD format."})
-            qs = qs.filter(created_at__date__gte=parsed_from)
-
-        date_to = params.get("date_to")
-        if date_to:
-            parsed_to = parse_date(date_to)
-            if parsed_to is None:
-                raise ValidationError({"date_to": "Must be in YYYY-MM-DD format."})
-            qs = qs.filter(created_at__date__lte=parsed_to)
-
-        return qs
+        return apply_date_range_filter(qs, params)
 
     def get_serializer_class(self):
         if self.request.method == "POST":

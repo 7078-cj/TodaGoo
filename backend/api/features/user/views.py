@@ -3,15 +3,13 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework.response import Response
 from rest_framework.decorators import api_view, throttle_classes
 from .serializers import UserSerializer
-from django.contrib.auth.models import User
 from ...rate_limit.TestThrottle import TestThrottle
 from rest_framework import status
 from .utils import generate_pin, send_reset_email
 from django.core.cache import cache
 from django.contrib.auth import get_user_model
-from rest_framework import serializers
-from django.contrib.auth import authenticate
 from rest_framework.exceptions import AuthenticationFailed
+from ..utils.roles import get_user_role, get_admin_department
 
 User = get_user_model()
 
@@ -27,9 +25,9 @@ class AdminMyTokenObtainPairSerializer(TokenObtainPairSerializer):
         token = super().get_token(user)
         
         token['username'] = user.username
-        token['role'] = 'admin' if hasattr(user, 'admin') else 'passenger' if hasattr(user, 'passenger_profile') else 'driver' if hasattr(user, 'driver_profile') else 'unknown'
+        token['role'] = get_user_role(user)
         if token['role'] == 'admin':
-            token['department'] = user.admin.department
+            token['department'] = get_admin_department(user)
 
         return token
     
@@ -43,14 +41,9 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
     def get_token(cls, user):
         token = super().get_token(user)
         token['username'] = user.username
-        token['role'] = (
-            'admin' if hasattr(user, 'admin')
-            else 'passenger' if hasattr(user, 'passenger_profile')
-            else 'driver' if hasattr(user, 'driver_profile')
-            else 'unknown'
-        )
+        token['role'] = get_user_role(user)
         if token['role'] == 'admin':
-            token['department'] = user.admin.department
+            token['department'] = get_admin_department(user)
         token['verified'] = (
             user.driver_profile.verified if hasattr(user, 'driver_profile')
             else user.passenger_profile.verified if hasattr(user, 'passenger_profile')

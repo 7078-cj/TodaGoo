@@ -3,6 +3,9 @@ from django.contrib.auth.models import User
 from ..booking.models import Booking
 from django.contrib.gis.db import models as geomodels
 
+MDRRMO_INCIDENT_TYPES = {"accident", "reckless_driving", "others", "harassment"}
+
+
 class IncidentReport(models.Model):
     INCIDENT_TYPES = [
         ("accident", "Accident"),

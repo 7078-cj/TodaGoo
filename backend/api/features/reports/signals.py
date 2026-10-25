@@ -4,10 +4,8 @@ from django.db import transaction
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
-from .models import IncidentReport
+from .models import IncidentReport, MDRRMO_INCIDENT_TYPES
 from .serializers import IncidentReportSerializer
-
-MDRRMO_INCIDENT_TYPES = {"accident", "reckless_driving", "others", "harassment"}
 
 
 @receiver(post_save, sender=IncidentReport)

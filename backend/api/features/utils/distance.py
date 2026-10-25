@@ -1,11 +1,11 @@
 from django.contrib.gis.geos import Point
 from math import radians, sin, cos, sqrt, atan2
-from ..admin.models import Toda
-from datetime import datetime, time
+from ..admin.models import Toda, BookingSettings
+from datetime import time
 from zoneinfo import ZoneInfo
 
 from django.utils import timezone
-from api.features.admin.models import BookingSettings  
+  
 
 PH_TZ = ZoneInfo("Asia/Manila")
 
@@ -99,13 +99,6 @@ def calculate_price(start: Point, end: Point, stops=None):
         total_distance += haversine_distance(
             route[i],
             route[i + 1],
-        )
-
-    if total_distance <= 1:
-        price = station.base_fare
-    else:
-        price = station.base_fare + (
-            (total_distance - 1) * RATE_PER_KM
         )
 
     base_fare = float(station.base_fare)
