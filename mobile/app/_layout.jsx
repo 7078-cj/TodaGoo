@@ -26,6 +26,10 @@ function RootNavigator() {
 
 
       if (parsedUser) {
+        if(parsedUser.verified === false) {
+          router.replace("/(protected)/otp");
+          return;
+        }
         if (parsedUser.role === "passenger") {
           router.replace("/(protected)/passenger/home");
         } else {

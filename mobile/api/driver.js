@@ -19,3 +19,13 @@ export const driverDequeue = async () => {
     const res = await deleteRequest('booking/driver/queue', true)
     return res.data
 }
+
+export const verifyDriverOtp = async (body) => {
+    const res = await postRequest('driver/verify-otp/', body, true)
+    return res.data
+}
+
+export const resendDriverOtp = async () => {
+    const res = await postRequest('driver/resend-otp/', {}, true)
+    return res.data
+}
