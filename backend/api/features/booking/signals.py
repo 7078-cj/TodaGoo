@@ -9,7 +9,7 @@ from django.db.models import Avg
 from .utils import assign_driver_sync
 from ...broadcast import broadcast
 from .serializers import BookingSerializer
-from api.features.user.models import Driver, Passenger
+
 
 @receiver(post_save, sender=Rate)
 def update_rating_on_rate_created(sender, instance, created, **kwargs):

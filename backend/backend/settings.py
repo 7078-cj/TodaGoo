@@ -30,11 +30,12 @@ environ.Env.read_env(os.path.join(BASE_DIR, ".env"))
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = env('SECRET_KEY')
+ENVIRONMENT = env('ENVIRONMENT', default='development')  # 'development', 'staging', 'production'
 
 CLOUDINARY_URL = os.environ.get("CLOUDINARY_URL", "")
 USE_CLOUDINARY = bool(CLOUDINARY_URL)
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = env.bool("DEBUG", default=True)
 
 ALLOWED_HOSTS = env.list(
     "ALLOWED_HOSTS",
