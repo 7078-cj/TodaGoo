@@ -51,6 +51,11 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
         )
         if token['role'] == 'admin':
             token['department'] = user.admin.department
+        token['verified'] = (
+            user.driver_profile.verified if hasattr(user, 'driver_profile')
+            else user.passenger_profile.verified if hasattr(user, 'passenger_profile')
+            else None
+        )
         return token
 
 

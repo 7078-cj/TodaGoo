@@ -6,7 +6,7 @@ def get_nearest_driver(toda, toda_station, exclude_driver_ids, booking):
         DriverQueue.objects
         .select_for_update(of=("self",), skip_locked=True)
         .select_related("driver", "driver__user")
-        .filter(driver__status="ACTIVE")
+        .filter(driver__status="ACTIVE", driver__verified=True)
         .exclude(driver_id__in=exclude_driver_ids)
     )
 

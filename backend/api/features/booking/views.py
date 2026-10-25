@@ -222,6 +222,9 @@ def driver_queue(request):
     
     if driver.status == "BLACKLISTED":
         return Response({"error": "driver is blacklisted"}, status=403)
+    
+    if not driver.verified:
+        return Response({"error": "driver is not verified"}, status=403)
 
     lat = request.data.get("lat")
     lng = request.data.get("lng")
