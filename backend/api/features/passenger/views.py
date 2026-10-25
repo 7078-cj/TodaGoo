@@ -13,6 +13,15 @@ from django.db.models import Q
 from ..utils.ProfileUpdateMixIn import ProfileUpdateMixin
 from rest_framework.exceptions import ValidationError
 from ...features.admin.permission import IsAdminProfile
+from ..utils.otp import (
+    _verify_otp,
+    _resend_otp,
+    ROLE_PASSENGER,
+)
+from ..user.models import Passenger
+import re
+from rest_framework import status
+from rest_framework.decorators import api_view, permission_classes
 
 class PassengerListCreateView(ListCreateAPIView):
     queryset = User.objects.filter(passenger_profile__isnull=False).select_related(
@@ -78,3 +87,16 @@ class PassengerRetrieveUpdateDestroyView(ProfileUpdateMixin, RetrieveUpdateDestr
     permission_classes =  [IsPassengerOwnerOrAdmin, IsAuthenticated]
     profile_prefix = "passenger_profile."
     cache_prefix = "passenger_profile"
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def verify_passenger_otp(request):
+    """POST {"otp": "123456"} -> sets Passenger.verified = True when it matches."""
+    return _verify_otp(request, Passenger, ROLE_PASSENGER)
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def resend_passenger_otp(request):
+    """POST (no body) -> replaces the passenger's OTP and sends it again."""
+    return _resend_otp(request, Passenger, ROLE_PASSENGER)
