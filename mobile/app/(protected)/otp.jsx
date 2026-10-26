@@ -33,12 +33,12 @@ const ROLE_CONFIG = {
     driver: {
         verify: verifyDriverOtp,
         resend: resendDriverOtp,
-        redirect: "/(driver)/home",
+        redirect: "/(protected)/driver/home",
     },
     passenger: {
         verify: verifyPassengerOtp,
         resend: resendPassengerOtp,
-        redirect: "/(passenger)/home",
+        redirect: "/(protected)/passenger/home",
     },
 };
 
@@ -97,6 +97,11 @@ export default function otp() {
             setVerifying(true);
             try {
                 await config.verify({ otp: value });
+                // The protected layout reads this flag, so save it before leaving
+                await AsyncStorage.setItem(
+                    "user",
+                    JSON.stringify({ ...user, verified: true })
+                );
                 router.replace(config.redirect);
             } catch (e) {
                 setError(getMessage(e, "That code is wrong or expired. Try again."));
@@ -106,7 +111,7 @@ export default function otp() {
                 setVerifying(false);
             }
         },
-        [config, verifying]
+        [config, verifying, user]
     );
 
     const onChange = (text) => {

@@ -1,36 +1,62 @@
-import { Stack, router } from "expo-router";
+import { Stack, Redirect, router, useSegments } from "expo-router";
 import { useEffect, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Text } from "react-native";
+import { Text, View } from "react-native";
 import BottomNav from "../../components/layouts/BottomNav";
 
 export default function ProtectedLayout() {
-    const [checking, setChecking] = useState(true);
+    // "checking" | "unauthenticated" | "unverified" | "ok"
+    const [status, setStatus] = useState("checking");
+    const segments = useSegments();
+    const path = segments.join("/");
 
     useEffect(() => {
         const checkAuth = async () => {
             try {
-                const user = await AsyncStorage.getItem("user");
-                const parsedUser = user ? JSON.parse(user) : null;
+                const raw = await AsyncStorage.getItem("user");
+                const parsedUser = raw ? JSON.parse(raw) : null;
+
+                // Check for a missing user first, before reading any property on it
                 if (!parsedUser) {
-                    router.replace("/(global)/login");
+                    setStatus("unauthenticated");
+                } else if (parsedUser.verified === false) {
+                    setStatus("unverified");
+                } else {
+                    setStatus("ok");
                 }
-            } finally {
-                setChecking(false);
+            } catch {
+                // Corrupt or unreadable storage: treat as logged out
+                setStatus("unauthenticated");
             }
         };
 
-        checkAuth(); 
-    }, []);
+        checkAuth();
+    }, [path]);
 
-    if (checking) {
-        return (<>
-            <Text>Checking authentication...</Text>
-        </>); 
+    // Navigate to the OTP screen only once the Stack below is mounted
+    useEffect(() => {
+        if (status === "unverified" && !path.endsWith("otp")) {
+            router.replace("/(protected)/otp");
+        }
+    }, [status, path]);
+
+    if (status === "checking") {
+        return (
+            <View className="flex-1 items-center justify-center bg-background">
+                <Text className="text-dark">Checking authentication...</Text>
+            </View>
+        );
     }
 
-    return <>
-        <Stack screenOptions={{ headerShown: false }} />
-        <BottomNav/>
-    </>;
+    if (status === "unauthenticated") {
+        return <Redirect href="/(global)/login" />;
+    }
+
+    return (
+        <>
+            <Stack screenOptions={{ headerShown: false }} />
+            {/* Hide the nav while the user is stuck on OTP verification */}
+            {status === "ok" && <BottomNav />}
+        </>
+    );
 }

@@ -15,7 +15,7 @@ export default function passenger() {
         const res = await passengerRegister(data)
         if(res.success){
             const login = await loginUser(formData.username, formData.password)
-            login.success && router.push('/(protected)/passenger/home')
+            login.success && router.push('/(protected)/otp')
         }
     }
 
