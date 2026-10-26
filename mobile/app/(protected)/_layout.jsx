@@ -5,42 +5,52 @@ import { Text, View } from "react-native";
 import BottomNav from "../../components/layouts/BottomNav";
 
 export default function ProtectedLayout() {
-    // "checking" | "unauthenticated" | "unverified" | "ok"
-    const [status, setStatus] = useState("checking");
+    // status: "checking" | "unauthenticated" | "unverified" | "ok"
+    // `path` records which route the status was computed for, so a result
+    // from an earlier route is never acted on after navigation.
+    const [auth, setAuth] = useState({ status: "checking", path: null });
     const segments = useSegments();
     const path = segments.join("/");
 
     useEffect(() => {
+        let cancelled = false;
+
         const checkAuth = async () => {
+            let status;
             try {
                 const raw = await AsyncStorage.getItem("user");
                 const parsedUser = raw ? JSON.parse(raw) : null;
 
-                // Check for a missing user first, before reading any property on it
-                if (!parsedUser) {
-                    setStatus("unauthenticated");
-                } else if (parsedUser.verified === false) {
-                    setStatus("unverified");
-                } else {
-                    setStatus("ok");
-                }
+                if (!parsedUser) status = "unauthenticated";
+                else if (parsedUser.verified === false) status = "unverified";
+                else status = "ok";
             } catch {
                 // Corrupt or unreadable storage: treat as logged out
-                setStatus("unauthenticated");
+                status = "unauthenticated";
             }
+            if (!cancelled) setAuth({ status, path });
         };
 
         checkAuth();
+        return () => {
+            cancelled = true;
+        };
     }, [path]);
 
-    // Navigate to the OTP screen only once the Stack below is mounted
+    // Only redirect on a status that was computed for the current route.
+    // Otherwise, right after OTP succeeds, the old "unverified" status is still
+    // in state while the route is already /home, and it would bounce back to OTP.
     useEffect(() => {
-        if (status === "unverified" && !path.endsWith("otp")) {
+        if (
+            auth.status === "unverified" &&
+            auth.path === path &&
+            !path.endsWith("otp")
+        ) {
             router.replace("/(protected)/otp");
         }
-    }, [status, path]);
+    }, [auth, path]);
 
-    if (status === "checking") {
+    if (auth.status === "checking") {
         return (
             <View className="flex-1 items-center justify-center bg-background">
                 <Text className="text-dark">Checking authentication...</Text>
@@ -48,7 +58,7 @@ export default function ProtectedLayout() {
         );
     }
 
-    if (status === "unauthenticated") {
+    if (auth.status === "unauthenticated") {
         return <Redirect href="/(global)/login" />;
     }
 
@@ -56,7 +66,7 @@ export default function ProtectedLayout() {
         <>
             <Stack screenOptions={{ headerShown: false }} />
             {/* Hide the nav while the user is stuck on OTP verification */}
-            {status === "ok" && <BottomNav />}
+            {auth.status === "ok" && auth.path === path && <BottomNav />}
         </>
     );
 }

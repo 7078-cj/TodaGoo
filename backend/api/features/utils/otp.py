@@ -13,6 +13,8 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from ..user.views import MyTokenObtainPairSerializer
+
 logger = logging.getLogger(__name__)
 
 # Roles namespace the cache keys, because a driver and a passenger can share the same pk
@@ -36,6 +38,19 @@ OTP_LOCKED = "locked"
 RESEND_OK = "ok"
 RESEND_COOLDOWN = "cooldown"
 RESEND_LIMIT = "limit"
+
+def _token_response(user, message):
+    """Issue a fresh token pair so the `verified` claim matches the database."""
+    user.refresh_from_db()  # drops cached driver_profile / passenger_profile
+    refresh = MyTokenObtainPairSerializer.get_token(user)
+    return Response(
+        {
+            "message": message,
+            "access": str(refresh.access_token),
+            "refresh": str(refresh),
+        },
+        status=status.HTTP_200_OK,
+    )
 
 def _queue_otp(role, instance):
     pk = instance.pk
@@ -155,8 +170,10 @@ def _verify_otp(request, model, role):
     if profile is None:
         return Response({"error": f"{model.__name__} profile not found."}, status=status.HTTP_404_NOT_FOUND)
 
+    # Return tokens here too: the database may say verified while the app's
+    # token still says false, and the user would otherwise be stuck on the OTP screen.
     if profile.verified:
-        return Response({"message": f"{model.__name__} is already verified."}, status=status.HTTP_200_OK)
+        return _token_response(request.user, f"{model.__name__} is already verified.")
 
     otp = str(request.data.get("otp", "")).strip()
     if not re.fullmatch(r"\d{6}", otp):
@@ -167,7 +184,7 @@ def _verify_otp(request, model, role):
     if result == OTP_OK:
         profile.verified = True
         profile.save(update_fields=["verified"])
-        return Response({"message": f"{model.__name__} verified."}, status=status.HTTP_200_OK)
+        return _token_response(request.user, f"{model.__name__} verified.")
 
     if result == OTP_LOCKED:
         return Response(

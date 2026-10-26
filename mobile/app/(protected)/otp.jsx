@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useContext, useEffect, useRef, useState } from "react";
 import {
     ActivityIndicator,
     KeyboardAvoidingView,
@@ -14,18 +14,13 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AuthHeader from "@/components/AuthHeader"; // adjust paths
 import ButtonComponent from "@/components/ButtonComponent";
 import colors from "@/constants/colors";
-import {
-    verifyDriverOtp,
-    resendDriverOtp,
-} from '../../api/driver'
-
-import {
-    verifyPassengerOtp,
-    resendPassengerOtp,
-} from '../../api/passenger'
+import { jwtDecode } from "jwt-decode";
+import AuthContext from "../../contexts/AuthContext"; // adjust path to your AuthProvider file
+import { verifyDriverOtp, resendDriverOtp } from "../../api/driver";
+import { verifyPassengerOtp, resendPassengerOtp } from "../../api/passenger";
 
 const OTP_LENGTH = 6;
-const RESEND_SECONDS = 30;
+const RESEND_SECONDS = 60; // matches the backend resend cooldown
 
 // Everything that differs between roles lives here.
 // Adjust the routes to match your app.
@@ -45,6 +40,7 @@ const ROLE_CONFIG = {
 export default function otp() {
     const insets = useSafeAreaInsets();
     const inputRef = useRef(null);
+    const { setToken, setUser: setAuthUser } = useContext(AuthContext);
 
     const [user, setUser] = useState(null);
     const [loadingUser, setLoadingUser] = useState(true);
@@ -96,12 +92,34 @@ export default function otp() {
             setInfo("");
             setVerifying(true);
             try {
-                await config.verify({ otp: value });
-                // The protected layout reads this flag, so save it before leaving
-                await AsyncStorage.setItem(
-                    "user",
-                    JSON.stringify({ ...user, verified: true })
-                );
+                const data = await config.verify({ otp: value });
+
+                // postRequest never throws: failures come back as { error, ... }
+                // (or undefined when offline), so check for the tokens explicitly.
+                if (!data?.access) {
+                    setError(
+                        data?.error ||
+                            data?.detail ||
+                            data?.message ||
+                            "That code is wrong or expired. Try again."
+                    );
+                    setCode("");
+                    inputRef.current?.focus();
+                    return;
+                }
+
+                const decoded = jwtDecode(data.access);
+                const tokens = { access: data.access, refresh: data.refresh };
+
+                // Same keys and shape that loginUser saves
+                await AsyncStorage.setItem("token", JSON.stringify(tokens));
+                await AsyncStorage.setItem("user", JSON.stringify(decoded));
+
+                // Update AuthContext too. Its token refresh job reads the refresh token
+                // from this state, and the old one would bring `verified: false` back.
+                setToken(tokens);
+                setAuthUser(decoded);
+
                 router.replace(config.redirect);
             } catch (e) {
                 setError(getMessage(e, "That code is wrong or expired. Try again."));
@@ -111,7 +129,7 @@ export default function otp() {
                 setVerifying(false);
             }
         },
-        [config, verifying, user]
+        [config, verifying, setToken, setAuthUser]
     );
 
     const onChange = (text) => {
@@ -127,7 +145,17 @@ export default function otp() {
         setInfo("");
         setResending(true);
         try {
-            await config.resend();
+            const data = await config.resend();
+            // Same as verify: failures are returned, not thrown
+            if (!data?.message) {
+                setError(
+                    data?.error ||
+                        data?.detail ||
+                        "Could not resend the code. Try again in a moment."
+                );
+                if (data?.retry_after) setCooldown(data.retry_after);
+                return;
+            }
             setCode("");
             setCooldown(RESEND_SECONDS);
             setInfo("We sent you a new code.");
