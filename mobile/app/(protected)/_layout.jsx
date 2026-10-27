@@ -4,12 +4,24 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Text, View } from "react-native";
 import BottomNav from "../../components/layouts/BottomNav";
 import Header from "../../components/layouts/Header";
+import { ProfileProvider } from "../../contexts/ProfileContext";
+
+// Works out "driver" | "passenger" from the stored user. Adjust to match
+// whatever your login actually saves.
+function getRole(user) {
+    const explicit = user?.role ?? user?.user_type;
+    if (typeof explicit === "string") return explicit.toLowerCase();
+    if (user?.driver_profile) return "driver";
+    if (user?.passenger_profile) return "passenger";
+    return null;
+}
 
 export default function ProtectedLayout() {
     // status: "checking" | "unauthenticated" | "unverified" | "ok"
     // `path` records which route the status was computed for, so a result
     // from an earlier route is never acted on after navigation.
-    const [auth, setAuth] = useState({ status: "checking", path: null });
+    const [auth, setAuth] = useState({ status: "checking", path: null, role: null });
+
     const segments = useSegments();
     const path = segments.join("/");
 
@@ -18,6 +30,7 @@ export default function ProtectedLayout() {
 
         const checkAuth = async () => {
             let status;
+            let role = null;
             try {
                 const raw = await AsyncStorage.getItem("user");
                 const parsedUser = raw ? JSON.parse(raw) : null;
@@ -25,11 +38,13 @@ export default function ProtectedLayout() {
                 if (!parsedUser) status = "unauthenticated";
                 else if (parsedUser.verified === false) status = "unverified";
                 else status = "ok";
+
+                role = getRole(parsedUser);
             } catch {
                 // Corrupt or unreadable storage: treat as logged out
                 status = "unauthenticated";
             }
-            if (!cancelled) setAuth({ status, path });
+            if (!cancelled) setAuth({ status, path, role });
         };
 
         checkAuth();
@@ -63,12 +78,17 @@ export default function ProtectedLayout() {
         return <Redirect href="/(global)/login" />;
     }
 
+    const isReady = auth.status === "ok" && auth.path === path;
+
     return (
-        <>
-            {auth.status === "ok" && auth.path === path && <Header />}
+        // Role is only passed once the user is verified, so no profile
+        // request is made while they're stuck on OTP. If the role is null
+        // the provider just clears the profile and skips the fetch.
+        <ProfileProvider role={auth.status === "ok" ? auth.role : null}>
+            {isReady && <Header />}
             <Stack screenOptions={{ headerShown: false }} />
             {/* Hide the nav while the user is stuck on OTP verification */}
-            {auth.status === "ok" && auth.path === path && <BottomNav />}
-        </>
+            {isReady && <BottomNav />}
+        </ProfileProvider>
     );
 }
