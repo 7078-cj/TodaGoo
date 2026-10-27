@@ -18,6 +18,7 @@ from ..utils.otp import (
     ROLE_PASSENGER,
 )
 from ..user.models import Passenger
+from rest_framework import status
 
 class PassengerListCreateView(ListCreateAPIView):
     queryset = User.objects.filter(passenger_profile__isnull=False).select_related(
@@ -62,6 +63,25 @@ class PassengerRetrieveUpdateDestroyView(ProfileUpdateMixin, RetrieveUpdateDestr
     permission_classes =  [IsPassengerOwnerOrAdmin, IsAuthenticated]
     profile_prefix = "passenger_profile."
     cache_prefix = "passenger_profile"
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def get_profile(request):
+    """GET -> returns the authenticated passenger's own profile."""
+    try:
+        user = (
+            User.objects
+            .select_related("passenger_profile")
+            .get(pk=request.user.pk, passenger_profile__isnull=False)
+        )
+    except User.DoesNotExist:
+        return Response(
+            {"detail": "Passenger profile not found."},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+
+    serializer = PassengerSerializer(user, context={"request": request})
+    return Response(serializer.data, status=status.HTTP_200_OK)
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])

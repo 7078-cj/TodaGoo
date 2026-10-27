@@ -2,6 +2,7 @@ from django.urls import path
 from .views import (
     PassengerListCreateView,
     PassengerRetrieveUpdateDestroyView,
+    get_profile,
     verify_passenger_otp,
     resend_passenger_otp
 )
@@ -11,4 +12,5 @@ urlpatterns = [
     path('<int:pk>/', PassengerRetrieveUpdateDestroyView.as_view(), name="retrieve_update_delete_passenger"),
     path("verify-otp/", verify_passenger_otp, name="verify-passenger-otp"),
     path("resend-otp/", resend_passenger_otp, name="resend-passenger-otp"),
+    path("me/", get_profile, name="passenger-profile"),
 ]

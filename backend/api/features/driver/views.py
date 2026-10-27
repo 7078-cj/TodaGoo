@@ -19,6 +19,7 @@ from ..utils.otp import (
 )
 from ..user.models import Driver
 from rest_framework.decorators import api_view, permission_classes
+from rest_framework import status
 
 
 class DriverListCreateView(ListCreateAPIView):
@@ -83,6 +84,29 @@ class DriverRetrieveUpdateDestroyView(ProfileUpdateMixin, RetrieveUpdateDestroyA
     permission_classes = [IsDriverOwnerOrAdmin, IsAuthenticated]
     profile_prefix = "driver_profile."
     cache_prefix = "driver_profile"
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def get_profile(request):
+    """GET -> returns the authenticated driver's own profile."""
+    try:
+        user = (
+            User.objects
+            .select_related(
+                "driver_profile",
+                "driver_profile__toda_boundary",
+                "driver_profile__toda_station",
+            )
+            .get(pk=request.user.pk, driver_profile__isnull=False)
+        )
+    except User.DoesNotExist:
+        return Response(
+            {"detail": "Driver profile not found."},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+
+    serializer = DriverSerializer(user, context={"request": request})
+    return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 @api_view(["POST"])
