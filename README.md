@@ -1,378 +1,138 @@
-## (Group4)CAPSTONEEEE :<<<<
+# TodaGoo
 
-# Directory Structure
+TodaGoo is a tricycle ride-booking and operations platform. Passengers can request rides, drivers can manage and complete bookings, and operations teams can manage TODA information and review incident reports.
 
-```text
-7078-cj-todagoo/
-├── README.md
-├── PostGres.md
-├── run-dev.ps1
-├── setup-db.py
-├── backend/
-│   ├── create_feature.py
-│   ├── Dockerfile
-│   ├── manage.py
-│   ├── Procfile
-│   ├── requirements.txt
-│   ├── seed.py
-│   ├── .env.example
-│   ├── api/
-│   │   ├── __init__.py
-│   │   ├── admin.py
-│   │   ├── apps.py
-│   │   ├── broadcast.py
-│   │   ├── idempotency.py
-│   │   ├── models.py
-│   │   ├── pagination.py
-│   │   ├── permissions.py
-│   │   ├── tests.py
-│   │   ├── urls.py
-│   │   ├── validators.py
-│   │   │
-│   │   ├── features/
-│   │   │   ├── admin/
-│   │   │   │   ├── models.py
-│   │   │   │   ├── serializers.py
-│   │   │   │   ├── signals.py
-│   │   │   │   ├── urls.py
-│   │   │   │   └── views.py
-│   │   │   │
-│   │   │   ├── booking/
-│   │   │   │   ├── models.py
-│   │   │   │   ├── serializers.py
-│   │   │   │   ├── signals.py
-│   │   │   │   ├── urls.py
-│   │   │   │   ├── utils.py
-│   │   │   │   ├── views.py
-│   │   │   │   └── helpers/
-│   │   │   │       ├── booking_error.py
-│   │   │   │       ├── nearest_driver.py
-│   │   │   │       ├── nearest_toda.py
-│   │   │   │       ├── nearest_toda_station.py
-│   │   │   │       └── offer_driver.py
-│   │   │   │
-│   │   │   ├── chat/
-│   │   │   │   ├── models.py
-│   │   │   │   ├── serializers.py
-│   │   │   │   ├── signals.py
-│   │   │   │   ├── urls.py
-│   │   │   │   └── views.py
-│   │   │   │
-│   │   │   ├── driver/
-│   │   │   │   ├── models.py
-│   │   │   │   ├── permissions.py
-│   │   │   │   ├── serializers.py
-│   │   │   │   ├── signals.py
-│   │   │   │   ├── urls.py
-│   │   │   │   ├── utils.py
-│   │   │   │   └── views.py
-│   │   │   │
-│   │   │   ├── passenger/
-│   │   │   │   ├── models.py
-│   │   │   │   ├── permissions.py
-│   │   │   │   ├── serializers.py
-│   │   │   │   ├── signals.py
-│   │   │   │   ├── urls.py
-│   │   │   │   └── views.py
-│   │   │   │
-│   │   │   ├── reports/
-│   │   │   │   ├── models.py
-│   │   │   │   ├── serializers.py
-│   │   │   │   ├── signals.py
-│   │   │   │   ├── urls.py
-│   │   │   │   └── views.py
-│   │   │   │
-│   │   │   ├── user/
-│   │   │   │   ├── __init__.py
-│   │   │   │   ├── models.py
-│   │   │   │   ├── serializers.py
-│   │   │   │   ├── urls.py
-│   │   │   │   ├── utils.py
-│   │   │   │   └── views.py
-│   │   │   │
-│   │   │   └── utils/
-│   │   │       ├── distance.py
-│   │   │       ├── reconstruction.py
-│   │   │       ├── roles.py
-│   │   │       └── validation.py
-│   │   │
-│   │   ├── middleware/
-│   │   │   ├── __init__.py
-│   │   │   └── logger.py
-│   │   │
-│   │   ├── migrations/
-│   │   │   ├── 0001_initial.py
-│   │   │   ├── 0002_admin_delete_test.py
-│   │   │   ├── 0003_driver_passenger.py
-│   │   │   ├── 0004_registeredtoda.py
-│   │   │   ├── 0005_alter_registeredtoda_registration_date.py
-│   │   │   ├── 0006_toda.py
-│   │   │   ├── 0007_registeredtoda_toda.py
-│   │   │   ├── 0008_rename_toda_name_toda_name.py
-│   │   │   ├── 0009_toda_color.py
-│   │   │   ├── 0010_driver_status.py
-│   │   │   ├── 0011_alter_driver_user_alter_passenger_user.py
-│   │   │   ├── 0012_driver_contact_number_driver_toda_station_and_more.py
-│   │   │   ├── 0013_alter_driver_contact_number_and_more.py
-│   │   │   ├── 0014_booking_driverqueue_stop.py
-│   │   │   ├── 0015_alter_booking_driver.py
-│   │   │   ├── 0016_booking_end_address_booking_start_address.py
-│   │   │   ├── 0017_stop_address.py
-│   │   │   ├── 0018_toda_prefix.py
-│   │   │   ├── 0019_driverqueue_created_at.py
-│   │   │   ├── 0020_driver_rating_passenger_rating_rate.py
-│   │   │   ├── 0021_rate_feedback.py
-│   │   │   ├── 0022_rate_booking_rate_created_at_rate_rater_and_more.py
-│   │   │   ├── 0023_rename_toda_station_driver_toda_boundary_and_more.py
-│   │   │   ├── 0024_rename_toda_stations_driver_toda_station_and_more.py
-│   │   │   ├── 0025_remove_driver_franchise_permit_number_and_more.py
-│   │   │   ├── 0026_booking_routes.py
-│   │   │   ├── 0027_alter_driver_toda_boundary_alter_driver_toda_station_and_more.py
-│   │   │   ├── 0028_alter_incidentevidence_file.py
-│   │   │   ├── 0029_remove_incidentreport_gps_lat_and_more.py
-│   │   │   ├── 0030_booking_type.py
-│   │   │   ├── 0031_message.py
-│   │   │   ├── 0032_passenger_status_alter_driver_status.py
-│   │   │   └── __init__.py
-│   │   │
-│   │   └── rate_limit/
-│   │       └── TestThrottle.py
-│   │
-│   ├── backend/
-│   │   ├── __init__.py
-│   │   ├── asgi.py
-│   │   ├── settings.py
-│   │   ├── urls.py
-│   │   └── wsgi.py
-│   │
-│   ├── executables/
-│   │   └── start_web.sh
-│   │
-│   └── websocket/
-│       ├── __init__.py
-│       ├── admin.py
-│       ├── apps.py
-│       ├── consumers.py
-│       ├── middleware.py
-│       ├── models.py
-│       ├── routing.py
-│       ├── features/
-│       │   ├── booking.py
-│       │   ├── driver.py
-│       │   ├── passenger.py
-│       │   └── reports.py
-│       └── migrations/
-│           └── __init__.py
-│
-├── frontend/
-│   ├── README.md
-│   ├── components.json
-│   ├── Dockerfile
-│   ├── eslint.config.js
-│   ├── index.html
-│   ├── package.json
-│   ├── tsconfig.json
-│   ├── vercel.json
-│   ├── vite.config.js
-│   ├── .env.example
-│   └── src/
-│       ├── App.css
-│       ├── App.jsx
-│       ├── index.css
-│       ├── main.jsx
-│       │
-│       ├── api/
-│       │   ├── incident_reports.js
-│       │   ├── passenger.js
-│       │   ├── registered_toda.js
-│       │   ├── toda.js
-│       │   ├── toda_station.js
-│       │   └── todagoo_drivers.js
-│       │
-│       ├── app/
-│       │   └── store.js
-│       │
-│       ├── components/
-│       │   ├── CreateUpdateStation.jsx
-│       │   ├── DeleteConfirmModal.jsx
-│       │   ├── Footer.jsx
-│       │   ├── Header.jsx
-│       │   ├── MapComponent.jsx
-│       │   ├── OverviewCard.jsx
-│       │   ├── Pagination.jsx
-│       │   ├── RegisteredTodaModal.jsx
-│       │   ├── SearchFilter.jsx
-│       │   ├── SearchInput.jsx
-│       │   ├── SideBarComponent.jsx
-│       │   ├── Table.jsx
-│       │   ├── UploadExcel.jsx
-│       │   ├── forgot_password/
-│       │   │   ├── EmailStep.jsx
-│       │   │   ├── ResetPasswordStep.jsx
-│       │   │   └── VerifyCodeStep.jsx
-│       │   ├── IncidentReport/
-│       │   │   ├── IncidentReportCard.jsx
-│       │   │   ├── IncidentReportMap.jsx
-│       │   │   └── IncidentReportModal.jsx
-│       │   ├── Toda/
-│       │   │   ├── AddBoundaries.jsx
-│       │   │   ├── AddBoundariesModal.jsx
-│       │   │   ├── TodaCard.jsx
-│       │   │   ├── TodaList.jsx
-│       │   │   └── TodaPage.jsx
-│       │   └── ui/
-│       │       ├── button.tsx
-│       │       ├── dialog.tsx
-│       │       ├── input.tsx
-│       │       ├── separator.tsx
-│       │       ├── sheet.tsx
-│       │       ├── sidebar.tsx
-│       │       ├── skeleton.tsx
-│       │       └── tooltip.tsx
-│       │
-│       ├── context/
-│       │   ├── MDRRMOroutes.jsx
-│       │   ├── PrivateRoutes.jsx
-│       │   └── TODAroutes.jsx
-│       │
-│       ├── features/
-│       │   └── auth/
-│       │       └── authSlice.js
-│       │
-│       ├── hooks/
-│       │   ├── use-mobile.ts
-│       │   └── useWebsocket.js
-│       │
-│       ├── lib/
-│       │   └── utils.ts
-│       │
-│       ├── listener/
-│       │   └── reportListener.js
-│       │
-│       ├── pages/
-│       │   ├── DashBoard.jsx
-│       │   ├── ForgotPassword.jsx
-│       │   ├── IncidentReports.jsx
-│       │   ├── Login.jsx
-│       │   ├── MdrrmoDashboard.jsx
-│       │   ├── Passengers.jsx
-│       │   ├── RegisteredToda.jsx
-│       │   ├── TodaBoundaries.jsx
-│       │   ├── TodaDashboard.jsx
-│       │   ├── TodaGooDrivers.jsx
-│       │   ├── TodaStation.jsx
-│       │   └── Unauthorized.jsx
-│       │
-│       └── utils/
-│           ├── auth.js
-│           ├── cookies.js
-│           ├── forgot_password.js
-│           ├── requests.js
-│           ├── validation.js
-│           └── map_utils/
-│               ├── fetch_routes.js
-│               ├── map.js
-│               └── mapEventListener.jsx
-│
-└── mobile/
-    ├── README.md
-    ├── app.json
-    ├── babel.config.js
-    ├── eslint.config.js
-    ├── global.css
-    ├── metro.config.js
-    ├── nativewind-env.d.ts
-    ├── package.json
-    ├── tailwind.config.js
-    ├── tsconfig.json
-    ├── .env.example
-    │
-    ├── api/
-    │   ├── auth.js
-    │   ├── book.js
-    │   ├── chat.js
-    │   ├── driver.js
-    │   ├── passenger.js
-    │   ├── rate.js
-    │   ├── report.js
-    │   └── toda.js
-    │
-    ├── app/
-    │   ├── _layout.jsx
-    │   ├── index.jsx
-    │   ├── (global)/
-    │   │   ├── _layout.jsx
-    │   │   ├── login.jsx
-    │   │   └── register/
-    │   │       ├── driver.jsx
-    │   │       └── passenger.jsx
-    │   │
-    │   └── (protected)/
-    │       ├── _layout.jsx
-    │       ├── driver/
-    │       │   ├── _layout.jsx
-    │       │   ├── complete.jsx
-    │       │   ├── en_route.jsx
-    │       │   └── home.jsx
-    │       │
-    │       └── passenger/
-    │           ├── _layout.jsx
-    │           ├── book.jsx
-    │           ├── complete.jsx
-    │           ├── en_route.jsx
-    │           └── home.jsx
-    │
-    ├── components/
-    │   ├── BottomDetails.jsx
-    │   ├── ButtonComponent.jsx
-    │   ├── DriverProfileForm.jsx
-    │   ├── IncidentReportModal.jsx
-    │   ├── NewBookingModal.jsx
-    │   ├── PassengerProfileForm.jsx
-    │   ├── PickTodaStation.jsx
-    │   ├── RateUser.jsx
-    │   ├── SetLocationMapModal.jsx
-    │   ├── UserRegisterForm.jsx
-    │   ├── chat/
-    │   │   ├── ChatInput.jsx
-    │   │   ├── ChatModal.jsx
-    │   │   └── Messages.jsx
-    │   ├── inputs/
-    │   │   ├── FormTextField.jsx
-    │   │   └── PickImageComponent.jsx
-    │   ├── layouts/
-    │   │   └── BottomNav.jsx
-    │   └── map/
-    │       ├── LeafletMapView.jsx
-    │       ├── MapComponent.jsx
-    │       ├── MapControls.jsx
-    │       └── SearchInput.jsx
-    │
-    ├── contexts/
-    │   ├── AuthContext.js
-    │   ├── DriverContext.js
-    │   └── PassengerContext.js
-    │
-    ├── hooks/
-    │   └── useWebsocket.js
-    │
-    ├── listeners/
-    │   ├── bookingListener.js
-    │   ├── driverListener.js
-    │   └── passengerListener.js
-    │
-    ├── types/
-    │   └── index.ts
-    │
-    └── utils/
-        ├── imagePicker.js
-        ├── location.js
-        ├── requests.js
-        ├── validation.js
-        └── mapUtils/
-            ├── fetchOsrmRoutes.js
-            ├── handleSearch.js
-            ├── initLocation.js
-            └── reverseGeolocation.js
+The project is split into three apps:
+
+| App | Location | Stack | Purpose |
+| --- | --- | --- | --- |
+| Backend | [`backend/`](./backend/) | Django, Django REST Framework, Channels | REST API, authentication, bookings, chat, incident reports, and real-time updates |
+| Web dashboard | [`frontend/`](./frontend/) | React, Vite | Operations and TODA dashboards |
+| Mobile app | [`mobile/`](./mobile/) | React Native, Expo | Passenger and driver experience |
+
+## Requirements
+
+- Python compatible with Django 6
+- Node.js and npm
+- PostgreSQL with the PostGIS extension
+- GDAL and GEOS libraries available to GeoDjango
+- Redis for a shared Channels layer and cache in multi-process deployments (optional for local development)
+
+The backend can fall back to SQLite when PostgreSQL settings are omitted, but PostgreSQL with PostGIS is the intended database for the project's geospatial features.
+
+## Getting started
+
+### 1. Configure the backend
+
+In PowerShell, from the repository root:
+
+```powershell
+cd backend
+py -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
+Copy-Item .env.example .env
 ```
 
+Edit `backend/.env` and set at least:
+
+```env
+SECRET_KEY=replace-with-a-long-random-secret
+EMAIL_HOST_USER=your-email@example.com
+EMAIL_HOST_PASSWORD=your-email-app-password
+
+PG_NAME=todagoo
+PG_USER=todagoo
+PG_PASSWORD=choose-a-database-password
+PG_HOST=localhost
+PG_PORT=5432
+```
+
+Create the PostgreSQL database and enable PostGIS before running migrations. The optional `setup-db.py` helper in the repository root can create a database, user, and PostGIS extensions; it requires `psql` to be installed and available on `PATH`. On Windows, GeoDjango may also need valid `GDAL_PATH` and `GEOS_LIBRARY_PATH` values in `backend/.env`.
+
+Apply migrations and start the API:
+
+```powershell
+python manage.py migrate
+python manage.py runserver
+```
+
+The API is served at `http://127.0.0.1:8000/`; routes are under `/api/` and the Django admin is at `/admin/`.
+
+### 2. Run the web dashboard
+
+In a second terminal at the repository root:
+
+```powershell
+cd frontend
+npm install
+Copy-Item .env.example .env
+npm run dev
+```
+
+The Vite development server prints the local URL when it starts (usually `http://localhost:5173`). Check `frontend/.env` and set `VITE_API_URL` and `VITE_WS_URL` to the backend's API and WebSocket base URLs if they differ from the example.
+
+### 3. Run the mobile app (optional)
+
+In a third terminal:
+
+```powershell
+cd mobile
+npm install
+Copy-Item .env.example .env
+npm start
+```
+
+Follow the Expo CLI prompts to open the app in an emulator or on a device. For a physical device, set `EXPO_PUBLIC_API_URL` and `EXPO_PUBLIC_WS_URL` in `mobile/.env` to use your development computer's LAN IP address instead of `127.0.0.1` or `localhost`. The phone and computer need to be on a network that allows the device to reach the backend.
+
+## Environment variables
+
+Environment files are intentionally kept out of version control. Start from the templates and never commit real passwords, API keys, or Django secrets.
+
+| File | Variables used |
+| --- | --- |
+| `backend/.env` | `SECRET_KEY`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`; PostgreSQL: `PG_NAME`, `PG_USER`, `PG_PASSWORD`, `PG_HOST`, `PG_PORT`; optional `CORS_ALLOWED_ORIGINS`, `ALLOWED_HOSTS`, `REDIS_HOST`, `REDIS_PORT`, `CLOUDINARY_URL`, `GDAL_PATH`, `GEOS_LIBRARY_PATH` |
+| `frontend/.env` | `VITE_API_URL`, `VITE_WS_URL`; optional `VITE_MEDIA_URL` |
+| `mobile/.env` | `EXPO_PUBLIC_API_URL`, `EXPO_PUBLIC_WS_URL`; optional `EXPO_PUBLIC_ORS_API_KEY` for route services |
+
+## Common commands
+
+Run these from the relevant app directory:
+
+```powershell
+# Backend tests
+cd backend
+python manage.py test
+
+# Web dashboard
+cd frontend
+npm run lint
+npm run build
+
+# Mobile app
+cd mobile
+npm run lint
+```
+
+## Project layout
+
+```text
+backend/
+  api/features/     Django API features (users, bookings, drivers, passengers, chat, reports)
+  websocket/        Channels consumers and real-time event handling
+  backend/          Django project configuration and URL routing
+frontend/
+  src/pages/        Web dashboard pages
+  src/components/   Shared dashboard components
+mobile/
+  app/              Expo Router screens and navigation
+  api/              Mobile API clients
+  components/       Shared mobile UI
+```
+
+## Additional documentation
+
+- [`PostGres.md`](./PostGres.md) — PostgreSQL setup notes
+- [`backend/.env.example`](./backend/.env.example) — backend environment template
+- [`frontend/.env.example`](./frontend/.env.example) — web environment template
+- [`mobile/.env.example`](./mobile/.env.example) — mobile environment template
