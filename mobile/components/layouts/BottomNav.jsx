@@ -28,7 +28,7 @@ export default function BottomNav() {
         },
         {
             label: "Booking",
-            route: "/booking",
+            route: "/(protected)/passenger/book",
             icon: "location-outline",
             activeIcon: "location",
         },
@@ -45,7 +45,7 @@ export default function BottomNav() {
             activeIcon: "person-circle",
         },
     ];
-
+    console.log({ pathname});
 
     return (
         <View
