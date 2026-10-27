@@ -1,38 +1,37 @@
+
 import "react-native-get-random-values";
 import { Stack, router } from "expo-router";
 import "../global.css";
-import AuthContext from '@/contexts/AuthContext';
-import { AuthProvider } from "@/contexts/AuthContext";
+import AuthContext, { AuthProvider } from "@/contexts/AuthContext";
 import { useContext, useEffect } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { updateToken } from "@/api/auth";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import NetworkStatus from "@/components/NetworkStatus";
 
 function RootNavigator() {
   const { setToken, setUser, logoutUser } = useContext(AuthContext);
 
   useEffect(() => {
     const checkAuth = async () => {
+      try {
+        const user = await AsyncStorage.getItem("user");
+        const parsedUser = user ? JSON.parse(user) : null;
 
-      const user = await AsyncStorage.getItem("user");
-      const parsedUser = user ? JSON.parse(user) : null;
-
-      if (!user) {
+        if (!parsedUser) {
           router.replace("/");
           return;
-      }
+        }
 
-      await updateToken(setToken, setUser, logoutUser);
+        await updateToken(setToken, setUser, logoutUser);
 
-
-      if (parsedUser) {
-        
         if (parsedUser.role === "passenger") {
           router.replace("/(protected)/passenger/home");
         } else {
           router.replace("/(protected)/driver/home");
         }
-      } else {
+      } catch (error) {
+        console.error("Authentication check failed:", error);
         router.replace("/");
       }
     };
@@ -48,6 +47,7 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <AuthProvider>
         <RootNavigator />
+        <NetworkStatus />
       </AuthProvider>
     </SafeAreaProvider>
   );
