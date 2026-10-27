@@ -7,7 +7,7 @@ function safeJSONStringify(value) {
     return JSON.stringify(value ?? null).replace(/</g, "\\u003c");
 }
 
-function buildMapHtml(center, zoom) {
+function buildMapHtml(center, zoom, canHover) {
     return `<!DOCTYPE html>
 <html>
 <head>
@@ -342,6 +342,34 @@ L.tileLayer(
 
 map.setView([${center.lat}, ${center.lng}], ${zoom});
 
+/* ============================
+   Interaction lock (canHover)
+   false = user can't drag / pinch / double-tap zoom.
+   Programmatic moves (recenter, flyTo, fitBounds) still work.
+============================ */
+
+window.setInteractive = function (enabled) {
+    var handlers = [
+        "dragging",
+        "touchZoom",
+        "doubleClickZoom",
+        "scrollWheelZoom",
+        "boxZoom",
+        "keyboard"
+    ];
+    handlers.forEach(function (name) {
+        if (!map[name]) return;
+        if (enabled) map[name].enable();
+        else map[name].disable();
+    });
+    if (map.tap) {
+        if (enabled) map.tap.enable();
+        else map.tap.disable();
+    }
+};
+
+window.setInteractive(${canHover ? "true" : "false"});
+
 /* Layers */
 
 window.markersLayer = L.layerGroup().addTo(map);
@@ -657,6 +685,7 @@ export const LeafletMapView = forwardRef(function LeafletMapView(
         route = [],
         areas = [],
         editMode = false,
+        canHover = true,
         onMarkerPress,
         onAreaPress,
         onMapPress
@@ -675,7 +704,9 @@ export const LeafletMapView = forwardRef(function LeafletMapView(
 
     // HTML is built once per mount; center/zoom updates after that go
     // through mapRecenter, not a WebView reload, so the map never flashes.
-    const htmlRef = useRef(buildMapHtml(center, zoom));
+    // canHover is baked in for the first frame and synced afterwards
+    // via setInteractive.
+    const htmlRef = useRef(buildMapHtml(center, zoom, canHover));
 
     const inject = (script) => {
         if (!readyRef.current) {
@@ -715,6 +746,11 @@ export const LeafletMapView = forwardRef(function LeafletMapView(
         if (!readyRef.current) return;
         inject(`window.setEditMode(${!!editMode})`);
     }, [editMode]);
+
+    useEffect(() => {
+        if (!readyRef.current) return;
+        inject(`window.setInteractive(${!!canHover})`);
+    }, [canHover]);
 
     useImperativeHandle(ref, () => ({
 
@@ -775,6 +811,7 @@ export const LeafletMapView = forwardRef(function LeafletMapView(
                             inject(`window.setRoute(${safeJSONStringify(route)}, ${route.length > 1})`);
                             inject(`window.setAreas(${safeJSONStringify(areas)})`);
                             inject(`window.setEditMode(${!!editMode})`);
+                            inject(`window.setInteractive(${!!canHover})`);
                             flushPending();
                             return;
                         }

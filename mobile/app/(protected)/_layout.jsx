@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Text, View } from "react-native";
 import BottomNav from "../../components/layouts/BottomNav";
+import Header from "../../components/layouts/Header";
 
 export default function ProtectedLayout() {
     // status: "checking" | "unauthenticated" | "unverified" | "ok"
@@ -64,6 +65,7 @@ export default function ProtectedLayout() {
 
     return (
         <>
+            {auth.status === "ok" && auth.path === path && <Header />}
             <Stack screenOptions={{ headerShown: false }} />
             {/* Hide the nav while the user is stuck on OTP verification */}
             {auth.status === "ok" && auth.path === path && <BottomNav />}

@@ -1,27 +1,51 @@
-import { View, Text, TouchableOpacity } from 'react-native'
-import React, { useState } from 'react'
-import MapComponent from "@/components/map/MapComponent";
-import SetLocationMapModal from '@/components/SetLocationMapModal';
-import { router } from 'expo-router';
+import { View, Text, TouchableOpacity, Image } from 'react-native'
+import React from 'react'
+import MapComponent from '@/components/map/MapComponent'
+import { router } from 'expo-router'
 
-export default function home() {
-
+export default function Home() {
     const handleRoute = () => {
-        router.push('/(protected)/passenger/book');
+        router.push('/(protected)/passenger/book')
     }
 
-return (
-    <View>
-        <Text>passenger home</Text>
+    return (
+        <View className="flex-1 bg-[#FBF8EC]">
+            {/* Map: only marks the passenger, no location fetching */}
+            <View style={{ flex: 1.1 }}>
+                <MapComponent
+                    location={null}
+                    userLocation={true}
+                    editMode={false}
+                    isRoute={false}
+                    canHover={false}
+                />
+            </View>
 
+            {/* Bottom card */}
+            <View className="flex  bg-[#FBF8EC] px-6 pt-6 pb-8 justify-center">
+                <View className="flex-row items-center justify-between mb-5">
+                    <Text className="flex-1 text-2xl text-gray-800 pr-3">
+                        Where would you like to go{' '}
+                        <Text className="font-bold">today</Text>?
+                    </Text>
 
-        <TouchableOpacity
-            className="bg-blue-500 p-3 rounded-lg mt-4"
-            onPress={handleRoute}
-        >
-            <Text className="text-white text-center">Book Ride</Text>
-        </TouchableOpacity>
+                    <Image
+                        source={require('@/assets/passenger_home.png')}
+                        style={{ width: 150, height: 150 }}
+                        resizeMode="contain"
+                    />
+                </View>
 
+                <TouchableOpacity
+                    onPress={handleRoute}
+                    activeOpacity={0.85}
+                    className="bg-[#0F5A4A] py-4 rounded-full"
+                >
+                    <Text className="text-white text-center text-lg font-medium">
+                        Book a Ride
+                    </Text>
+                </TouchableOpacity>
+            </View>
         </View>
     )
 }
