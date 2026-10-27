@@ -9,6 +9,7 @@ export default function Home() {
         router.push('/(protected)/passenger/book')
     }
 
+    
     return (
         <SafeAreaView className="flex-1 bg-[#FBF8EC]"  edges={[, "left", "right"]}>
             {/* Map: only marks the passenger, no location fetching */}
@@ -40,7 +41,7 @@ export default function Home() {
                 <TouchableOpacity
                     onPress={handleRoute}
                     activeOpacity={0.85}
-                    className="bg-[#0F5A4A] py-4 rounded-full"
+                    className="bg-[#0F5A4A] py-4 rounded-full" 
                 >
                     <Text className="text-white text-center text-lg font-medium">
                         Book a Ride
