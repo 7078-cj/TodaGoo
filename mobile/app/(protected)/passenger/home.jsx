@@ -2,6 +2,7 @@ import { View, Text, TouchableOpacity, Image } from 'react-native'
 import React from 'react'
 import MapComponent from '@/components/map/MapComponent'
 import { router } from 'expo-router'
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function Home() {
     const handleRoute = () => {
@@ -9,7 +10,7 @@ export default function Home() {
     }
 
     return (
-        <View className="flex-1 bg-[#FBF8EC]">
+        <SafeAreaView className="flex-1 bg-[#FBF8EC]"  edges={[, "left", "right"]}>
             {/* Map: only marks the passenger, no location fetching */}
             <View style={{ flex: 1.1 }}>
                 <MapComponent
@@ -46,6 +47,6 @@ export default function Home() {
                     </Text>
                 </TouchableOpacity>
             </View>
-        </View>
+        </SafeAreaView>
     )
 }
