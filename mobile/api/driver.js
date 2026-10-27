@@ -29,3 +29,8 @@ export const resendDriverOtp = async () => {
     const res = await postRequest('driver/resend-otp/', {}, true)
     return res.data
 }
+
+export const getDriverProfile = async () => {
+    const res = await getRequest('driver/me/', true)
+    return res.data
+}

@@ -14,3 +14,8 @@ export const resendPassengerOtp = async () => {
     const res = await postRequest('passenger/resend-otp/', {}, true)
     return res.data
 }
+
+export const getPassengerProfile = async () => {
+    const res = await getRequest('passenger/me/', true)
+    return res.data
+}
