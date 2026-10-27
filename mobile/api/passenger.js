@@ -1,4 +1,4 @@
-import { postRequest } from "../utils/requests";
+import { getRequest, postRequest } from "../utils/requests";
 
 export const passengerRegister = async (body) =>{
     const res = await postRequest('passenger/', body, false)
@@ -16,6 +16,6 @@ export const resendPassengerOtp = async () => {
 }
 
 export const getPassengerProfile = async () => {
-    const res = await getRequest('passenger/me/', true)
+    const res = await getRequest('passenger/me/', {},true)
     return res.data
 }
