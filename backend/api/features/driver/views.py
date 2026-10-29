@@ -36,7 +36,7 @@ class DriverListCreateView(ListCreateAPIView):
 
     def get_queryset(self):
         qs = super().get_queryset()
-
+    
         toda_boundary_id = self.request.query_params.get("toda_boundary")
         if toda_boundary_id:
             qs = qs.filter(driver_profile__toda_boundary_id=toda_boundary_id)
