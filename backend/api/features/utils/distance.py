@@ -26,6 +26,7 @@ def is_within_night_window(current: time, start: time, end: time) -> bool:
 
     return current >= start or current < end
 
+
 def get_night_fare_multiplier() -> float:
     settings_obj = BookingSettings.objects.first()
 
@@ -41,11 +42,12 @@ def get_night_fare_multiplier() -> float:
 
     return 1.0
 
+
 def haversine_distance(p1: Point, p2: Point):
     """
     Returns the distance between two Point objects in kilometers.
+    Uses the Haversine formula for accurate great-circle distance.
     """
-
     R = 6371.0  # Earth radius in km
 
     lat1 = radians(p1.y)
@@ -67,18 +69,11 @@ def haversine_distance(p1: Point, p2: Point):
 
 
 def calculate_price(start: Point, end: Point, stops=None):
-    """
-    Calculates the total fare from the complete route.
-    The base fare covers the first kilometer.
-    If night fare is enabled and the current PH time is within the
-    night window, the total fare is multiplied by the night fare multiplier.
-    """
-
     if stops is None:
         stops = []
 
     station = Toda.objects.filter(area__contains=start).first()
-    if station is None:
+    if not station:
         raise ValueError("No TODA station covers the starting location.")
 
     route = [start]
@@ -111,3 +106,4 @@ def calculate_price(start: Point, end: Point, stops=None):
     price *= get_night_fare_multiplier()
 
     return round(price)
+
