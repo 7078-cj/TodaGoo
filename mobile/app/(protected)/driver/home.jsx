@@ -14,6 +14,7 @@ export default function home() {
     const checkStatus = useCallback(async () => {
         try {
             const res = await driverQueueStatus()
+            console.log('Driver queue status:', res)
             setIsReady(res.ready)
             if (res.ready && res.location) {
                 setLocation({ coords: { latitude: res.location.lat, longitude: res.location.lng } })

@@ -172,11 +172,27 @@ class BookingDetailView(IdempotentAPIView,APIView):
 @api_view(['GET'])
 @permission_classes([permissions.IsAuthenticated])
 def driver_queue_status(request):
-
     driver = getattr(request.user, "driver_profile", None)
 
     if driver is None:
-        return Response({"ready": False}, status=200)
+        return Response({"ready": False, "en_route": False}, status=200)
+
+    # Active trip: accepted (going to pickup) or in progress (passenger on board)
+    active_booking = (
+        Booking.objects
+        .filter(
+            driver=driver,
+            status__in=[Booking.Status.ACCEPTED, Booking.Status.IN_PROGRESS],
+        )
+        .order_by("-updated_at")
+        .first()
+    )
+
+    trip = {
+        "en_route": active_booking is not None,
+        "booking_id": active_booking.id if active_booking else None,
+        "booking_status": active_booking.status if active_booking else None,
+    }
 
     entry = driver.queue.first()
 
@@ -185,6 +201,7 @@ def driver_queue_status(request):
             {
                 "ready": False,
                 "driver_id": driver.id,
+                **trip,
             },
             status=200,
         )
@@ -194,6 +211,7 @@ def driver_queue_status(request):
             "ready": True,
             "driver_id": driver.id,
             "location": {"lat": entry.location.y, "lng": entry.location.x},
+            **trip,
         },
         status=200,
     )
