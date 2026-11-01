@@ -45,8 +45,6 @@ export default function BottomNav() {
             activeIcon: "person-circle",
         },
     ];
-    console.log({ pathname});
-
     return (
         <View
             className="w-full flex-row items-center justify-around px-2 pt-1"

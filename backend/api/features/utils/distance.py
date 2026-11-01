@@ -67,34 +67,42 @@ def haversine_distance(p1: Point, p2: Point):
 
     return R * c
 
+MAX_STATION_DISTANCE_M = 50          # how far outside a zone is still accepted
+METERS_PER_DEGREE = 111_000          # close enough for a 50 m tolerance
+
+
+def find_station(point: Point):
+    """
+    Returns the TODA whose area contains `point`, or the nearest one
+    within MAX_STATION_DISTANCE_M. Returns None if nothing is close enough.
+    """
+    max_degrees = MAX_STATION_DISTANCE_M / METERS_PER_DEGREE
+
+    candidates = Toda.objects.filter(area__dwithin=(point, max_degrees))
+
+    # distance is 0 when the point is inside a zone, so containing zones win
+    return min(candidates, key=lambda s: s.area.distance(point), default=None)
+
 
 def calculate_price(start: Point, end: Point, stops=None):
     if stops is None:
         stops = []
 
-    station = Toda.objects.filter(area__contains=start).first()
+    # Only the pickup point decides which TODA (and base fare) applies
+    station = find_station(start)
     if not station:
-        raise ValueError("No TODA station covers the starting location.")
+        raise ValueError("Pickup location is outside all TODA service areas.")
 
+    # End and stops are used only to measure the route distance
     route = [start]
-
     for stop in stops:
-        route.append(
-            Point(
-                stop["location"]["lng"],
-                stop["location"]["lat"],
-            )
-        )
-
+        route.append(Point(stop["location"]["lng"], stop["location"]["lat"]))
     route.append(end)
 
-    total_distance = 0
-
-    for i in range(len(route) - 1):
-        total_distance += haversine_distance(
-            route[i],
-            route[i + 1],
-        )
+    total_distance = sum(
+        haversine_distance(route[i], route[i + 1])
+        for i in range(len(route) - 1)
+    )
 
     base_fare = float(station.base_fare)
 

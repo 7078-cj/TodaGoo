@@ -1,220 +1,139 @@
-import { View, Text, TouchableOpacity } from 'react-native'
-import React, { useState, useRef, useEffect } from 'react'
+import { View, Text, ScrollView, useWindowDimensions } from 'react-native'
+import React, { useState, useRef, useMemo, useEffect } from 'react'
 import { v4 as uuidv4 } from 'uuid'
+import MapComponent from '@/components/map/MapComponent' 
 import SetLocationMapModal from '@/components/SetLocationMapModal';
-import { bookRide, getFarePrice } from '../../../api/book' // adjust if getFarePrice lives elsewhere
+import RouteCard from '@/components/booking/RouteCard'
+import FareFooter from '@/components/booking/FareFooter'
+import useFareEstimate from '@/hooks/useFareEstimate'
+import colors from '@/constants/colors'
+import { bookRide } from '../../../api/book' 
 
-const BOOKING_TYPES = [
-    { value: "regular", label: "Regular" },
-    { value: "special", label: "Special" },
-];
+// Every booking is a special booking
+const BOOKING_TYPE = "special";
 
-export default function book() {
+export default function Book() {
+    const { height } = useWindowDimensions();
+    const mapRef = useRef(null);
+
     const [modalVisible, setModalVisible] = useState(false);
     const [startLocation, setStartLocation] = useState(null);
     const [startAddress, setStartAddress] = useState(null);
     const [endLocation, setEndLocation] = useState(null);
     const [endAddress, setEndAddress] = useState(null);
     const [stops, setStops] = useState([]);
-    const [price, setPrice] = useState(null);
-    const [fareLoading, setFareLoading] = useState(false);
-    const [fareError, setFareError] = useState(null);
     const [bookingStatus, setBookingStatus] = useState(null);
     const [submitting, setSubmitting] = useState(false);
-    const [bookingType, setBookingType] = useState("regular");
 
     const [selectionType, setSelectionType] = useState(null);
     const [selectedStopIndex, setSelectedStopIndex] = useState(null);
 
     const [selectedLocation, setSelectedLocation] = useState(null);
     const [selectedAddress, setSelectedAddress] = useState(null);
-    const [markers, setMarkers] = useState([]);
     const [routes, setRoutes] = useState([]);
 
     const idempotencyKeyRef = useRef(uuidv4());
 
-    // Only changes when a stop's coordinates change, not when its address text does
-    const stopsKey = stops
-        .filter((s) => s.location)
-        .map((s) => `${s.location.lat},${s.location.lng}`)
-        .join("|");
+    const { price, loading: fareLoading, error: fareError } = useFareEstimate(
+        startLocation,
+        endLocation,
+        stops
+    );
 
-    // Fetch the fare estimate whenever start / end / stops change
-    useEffect(() => {
-        if (!startLocation || !endLocation) {
-            setPrice(null);
-            setFareError(null);
-            return;
+    /* ----- markers, always in route order: start -> stops -> end ----- */
+
+    const markers = useMemo(() => {
+        const list = [];
+
+        if (startLocation) {
+            list.push({ id: "start", lat: startLocation.lat, lng: startLocation.lng, full: startAddress });
         }
 
-        let cancelled = false;
-
-        // Debounce: onLocationChange can fire repeatedly while the pin is moved
-        const timer = setTimeout(async () => {
-            setFareLoading(true);
-            setFareError(null);
-
-            try {
-                const validStops = stops
-                    .filter((s) => s.location)
-                    .map((s) => s.location);
-
-                const fare = await getFarePrice(startLocation, endLocation, validStops);
-                if (!cancelled) setPrice(fare);
-            } catch (error) {
-                console.error("Fare estimate failed:", error);
-                if (!cancelled) {
-                    setPrice(null);
-                    setFareError("Couldn't get fare estimate.");
-                }
-            } finally {
-                if (!cancelled) setFareLoading(false);
+        stops.forEach((stop, i) => {
+            if (stop.location) {
+                list.push({
+                    id: `stop-${i}`,
+                    lat: stop.location.lat,
+                    lng: stop.location.lng,
+                    full: stop.address,
+                });
             }
-        }, 500);
+        });
 
-        // Cleanup runs on every change, so older in-flight responses are discarded
-        return () => {
-            cancelled = true;
-            clearTimeout(timer);
-        };
-    }, [
-        startLocation?.lat,
-        startLocation?.lng,
-        endLocation?.lat,
-        endLocation?.lng,
-        stopsKey,
-    ]);
+        if (endLocation) {
+            list.push({ id: "end", lat: endLocation.lat, lng: endLocation.lng, full: endAddress });
+        }
 
-    const handleSetStartLocation = (location, address) => {
-        setStartLocation(location);
-        setStartAddress(address);
-    };
+        return list;
+    }, [startLocation, startAddress, stops, endLocation, endAddress]);
 
-    const handleSetEndLocation = (location, address) => {
-        setEndLocation(location);
-        setEndAddress(address);
-    };
+    // Keep every marker in view on the main map (skipped while the picker modal is open)
+    useEffect(() => {
+        if (modalVisible || markers.length === 0) return;
+        mapRef.current?.fitToContent();
+    }, [markers, modalVisible]);
+
+    /* ----- opening the location modal ----- */
 
     const openStartModal = () => {
         setSelectionType("start");
-
         setSelectedLocation(startLocation);
         setSelectedAddress(startAddress);
-
         setModalVisible(true);
     };
 
     const openEndModal = () => {
         setSelectionType("end");
-
         setSelectedLocation(endLocation);
         setSelectedAddress(endAddress);
-
         setModalVisible(true);
     };
 
     const addStop = () => {
-        setStops((prev) => [
-            ...prev,
-            {
-                location: null,
-                address: "",
-                order: prev.length + 1,
-            },
-        ]);
-
+        setStops((prev) => [...prev, { location: null, address: "", order: prev.length + 1 }]);
         setSelectionType("stop");
         setSelectedStopIndex(stops.length);
+        setSelectedLocation(null);
+        setSelectedAddress(null);
         setModalVisible(true);
     };
 
     const editStop = (index) => {
         setSelectionType("stop");
         setSelectedStopIndex(index);
-
         setSelectedLocation(stops[index]?.location ?? null);
         setSelectedAddress(stops[index]?.address ?? null);
-
         setModalVisible(true);
     };
 
     const removeStop = (index) => {
-        const nextStops = stops.filter((_, i) => i !== index);
-        setStops(nextStops);
-
-        // Rebuild stop markers so their ids match the new indexes
-        setMarkers((prev) => [
-            ...prev.filter((m) => !String(m.id).startsWith("stop-")),
-            ...nextStops
-                .map((stop, i) => ({ stop, i }))
-                .filter(({ stop }) => stop.location)
-                .map(({ stop, i }) => ({
-                    id: `stop-${i}`,
-                    lat: stop.location.lat,
-                    lng: stop.location.lng,
-                    full: stop.address,
-                })),
-        ]);
+        setStops((prev) => prev.filter((_, i) => i !== index));
     };
+
+    /* ----- applying a picked location ----- */
 
     const applyLocation = (location, address) => {
         switch (selectionType) {
             case "start":
                 setStartLocation(location);
                 setStartAddress(address);
-                setMarkers((prev) => [
-                    ...prev.filter((marker) => marker.id !== "start"),
-                    {
-                        id: "start",
-                        lat: location.lat,
-                        lng: location.lng,
-                        full: address,
-                    },
-                ]);
                 break;
 
             case "end":
                 setEndLocation(location);
                 setEndAddress(address);
-                setMarkers((prev) => [
-                    ...prev.filter((marker) => marker.id !== "end"),
-                    {
-                        id: "end",
-                        lat: location.lat,
-                        lng: location.lng,
-                        full: address,
-                    },
-                ]);
                 break;
 
             case "stop":
                 if (selectedStopIndex == null) return;
-
                 setStops((prev) =>
                     prev.map((stop, index) =>
-                        index === selectedStopIndex
-                            ? { ...stop, location, address }
-                            : stop
+                        index === selectedStopIndex ? { ...stop, location, address } : stop
                     )
                 );
-                setMarkers((prev) => [
-                    ...prev.filter((marker) => marker.id !== `stop-${selectedStopIndex}`),
-                    {
-                        id: `stop-${selectedStopIndex}`,
-                        lat: location.lat,
-                        lng: location.lng,
-                        full: address,
-                    },
-                ]);
                 break;
         }
     };
-
-
-    const handleLocationChange = (location, address) => {
-        applyLocation(location, address);
-    };
-
 
     const handleLocationSelected = (location, address, route) => {
         applyLocation(location, address);
@@ -222,10 +141,7 @@ export default function book() {
         setModalVisible(false);
     };
 
-
-    const handleRouteChange = (route) => {
-        setRoutes(route);
-    };
+    /* ----- booking ----- */
 
     const handleBooking = async () => {
         if (submitting) return;
@@ -236,6 +152,7 @@ export default function book() {
         }
 
         setSubmitting(true);
+        setBookingStatus(null);
 
         const formData = {
             start: startLocation,
@@ -247,108 +164,85 @@ export default function book() {
                 address: stop.address,
                 order: index + 1,
             })),
-            routes: routes,
-            type: bookingType,
+            routes,
+            type: BOOKING_TYPE,
         };
 
         try {
-            const response = await bookRide(formData, idempotencyKeyRef.current);
+            await bookRide(formData, idempotencyKeyRef.current);
             setBookingStatus("Booking successful!");
-        }
-        catch (error) {
+        } catch (error) {
             console.error("Booking failed:", error);
             setBookingStatus("Booking failed. Please try again.");
-        }
-        finally {
+        } finally {
             setSubmitting(false);
         }
-    }
+    };
+
+    const bookingOk = bookingStatus?.startsWith("Booking successful");
 
     return (
-        <View className="flex-1 p-5 bg-white">
-
-            <Text className="text-gray-700 mb-1">Booking Type</Text>
-            <View className="flex-row mb-4">
-                {BOOKING_TYPES.map(({ value, label }) => (
-                    <TouchableOpacity
-                        key={value}
-                        onPress={() => setBookingType(value)}
-                        className={`flex-1 p-3 rounded-xl mr-2 items-center border ${
-                            bookingType === value
-                                ? "bg-black border-black"
-                                : "bg-white border-gray-300"
-                        }`}
-                    >
-                        <Text
-                            className={
-                                bookingType === value ? "text-white font-semibold" : "text-gray-700"
-                            }
-                        >
-                            {label}
-                        </Text>
-                    </TouchableOpacity>
-                ))}
+        <View className="flex-1" style={{ backgroundColor: colors.background }}>
+            {/* Map: shows start, stop and end markers plus the route */}
+            <View style={{ height: height * 0.38 }}>
+                <MapComponent
+                    ref={mapRef}
+                    markers={markers}
+                    onRouteChange={setRoutes}
+                    userLocation={false}
+                />
             </View>
 
-            <TouchableOpacity
-                className="bg-blue-500 p-4 rounded-xl"
-                onPress={openStartModal}
+            {/* Booking panel, overlapping the map's bottom edge */}
+            <View
+                className="flex-1"
+                style={{
+                    backgroundColor: colors.background,
+                    marginTop: -24,
+                    borderTopLeftRadius: 28,
+                    borderTopRightRadius: 28,
+                    overflow: "hidden",
+                }}
             >
-                <Text className="text-white">
-                    {startAddress || "Pickup Location"}
-                </Text>
-            </TouchableOpacity>
-
-            {stops.map((stop, index) => (
-                <View
-                    key={index}
-                    className="flex-row items-center mt-3"
-                >
-                    <TouchableOpacity
-                        className="flex-1 bg-yellow-500 rounded-xl p-4"
-                        onPress={() => editStop(index)}
-                    >
-                        <Text className="text-white">
-                            {stop.address || `Stop ${index + 1}`}
-                        </Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                        className="ml-2 bg-red-500 px-4 py-4 rounded-xl"
-                        onPress={() => removeStop(index)}
-                    >
-                        <Text className="text-white">✕</Text>
-                    </TouchableOpacity>
+                <View className="px-5 pt-5 pb-3">
+                    <Text style={{ color: colors.secondary, fontSize: 18, fontWeight: "600" }}>
+                        Book a Ride
+                    </Text>
                 </View>
-            ))}
 
-            <TouchableOpacity
-                className="bg-gray-700 p-4 rounded-xl mt-3"
-                onPress={addStop}
-            >
-                <Text className="text-white text-center">
-                    + Add Stop
-                </Text>
-            </TouchableOpacity>
+                <ScrollView
+                    className="flex-1"
+                    contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 16 }}
+                    showsVerticalScrollIndicator={false}
+                >
+                    <RouteCard
+                        startAddress={startAddress}
+                        endAddress={endAddress}
+                        stops={stops}
+                        onPressStart={openStartModal}
+                        onPressEnd={openEndModal}
+                        onPressStop={editStop}
+                        onRemoveStop={removeStop}
+                        onAddStop={addStop}
+                    />
 
-            <TouchableOpacity
-                className="bg-green-500 p-4 rounded-xl mt-4"
-                onPress={openEndModal}
-            >
-                <Text className="text-white">
-                    {endAddress || "Destination"}
-                </Text>
-            </TouchableOpacity>
+                    {bookingStatus ? (
+                        <Text
+                            className="text-center mt-4"
+                            style={{ color: bookingOk ? colors.success : colors.error }}
+                        >
+                            {bookingStatus}
+                        </Text>
+                    ) : null}
+                </ScrollView>
 
-            {/* Fare estimate */}
-            <View className="mt-4 items-center">
-                {fareLoading ? (
-                    <Text className="text-gray-500">Calculating fare...</Text>
-                ) : fareError ? (
-                    <Text className="text-red-500">{fareError}</Text>
-                ) : price != null ? (
-                    <Text className="text-lg font-semibold">Estimated fare: ₱{price}</Text>
-                ) : null}
+                <FareFooter
+                    price={price}
+                    loading={fareLoading}
+                    error={fareError}
+                    submitting={submitting}
+                    onBook={handleBooking}
+                />
             </View>
 
             <SetLocationMapModal
@@ -359,22 +253,10 @@ export default function book() {
                 visible={modalVisible}
                 setVisible={setModalVisible}
                 onConfirm={handleLocationSelected}
-                onLocationChange={handleLocationChange}
-                onRouteChange={handleRouteChange}
+                onLocationChange={applyLocation}
+                onRouteChange={setRoutes}
                 markers={markers}
             />
-
-            <TouchableOpacity
-                className="bg-black p-4 rounded-xl mt-5"
-                onPress={handleBooking}
-                disabled={submitting || fareLoading}
-            >
-                <Text className="text-white text-center font-semibold">
-                    {submitting ? "Booking..." : (bookingStatus || "Book Ride")}
-                </Text>
-
-            </TouchableOpacity>
-
         </View>
     )
 }
