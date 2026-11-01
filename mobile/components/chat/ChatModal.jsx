@@ -1,9 +1,10 @@
 import { Modal, KeyboardAvoidingView, Platform } from "react-native";
 import React, { useEffect, useState, useCallback, useRef } from "react";
+import ChatHeader from "./ChatHeader";
 import Messages from "./Messages";
 import ChatInput from "./ChatInput";
+import colors from "../../constants/colors";
 import { postMessage, getMessages, seenMessages } from "../../api/chat";
-
 
 export default function ChatModal({
     visible,
@@ -12,6 +13,9 @@ export default function ChatModal({
     currentUserId,
     messages,
     setMessages,
+    title = "Message",
+    onNotifPress,
+    onAttach,
 }) {
     const [loading, setLoading] = useState(false);
     const [sending, setSending] = useState(false);
@@ -24,7 +28,7 @@ export default function ChatModal({
         };
     }, []);
 
-
+    // Load the conversation when the modal opens
     useEffect(() => {
         if (!visible || !bookingId) return;
 
@@ -32,21 +36,24 @@ export default function ChatModal({
             setLoading(true);
             try {
                 const res = await getMessages({ booking_id: bookingId });
-                await seenMessages({ booking_id: bookingId });
                 if (mountedRef.current) setMessages(res);
             } catch (err) {
                 console.log("Failed to load messages:", err);
             } finally {
                 if (mountedRef.current) setLoading(false);
             }
+
+            seenMessages({ booking_id: bookingId }).catch((err) =>
+                console.log("Failed to mark seen:", err)
+            );
         })();
     }, [visible, bookingId]);
 
-
+    // Mark new incoming messages as seen while the chat is open
     useEffect(() => {
-        if (!visible || !bookingId || messages?.length === 0) return;
+        if (!visible || !bookingId || !messages?.length) return;
 
-        const hasUnseenIncoming = messages?.some(
+        const hasUnseenIncoming = messages.some(
             (m) => m.receiver === currentUserId && !m.seen
         );
         if (!hasUnseenIncoming) return;
@@ -56,20 +63,19 @@ export default function ChatModal({
         );
     }, [visible, bookingId, currentUserId, messages]);
 
-
+    // Returns true/false so the input can restore the text if sending failed
     const handleSend = useCallback(
         async (text) => {
             const trimmed = text.trim();
-            if (!trimmed || !bookingId || sending) return;
+            if (!trimmed || !bookingId || sending) return false;
 
             setSending(true);
             try {
-                await postMessage({
-                    message: trimmed,
-                    booking_id: bookingId,
-                });
+                await postMessage({ message: trimmed, booking_id: bookingId });
+                return true;
             } catch (err) {
                 console.log("Failed to send message:", err);
+                return false;
             } finally {
                 setSending(false);
             }
@@ -82,18 +88,21 @@ export default function ChatModal({
             visible={visible}
             animationType="slide"
             onRequestClose={onClose}
+            statusBarTranslucent
         >
             <KeyboardAvoidingView
-                style={{ flex: 1 }}
+                style={{ flex: 1, backgroundColor: colors.background }}
                 behavior={Platform.OS === "ios" ? "padding" : undefined}
-                keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
             >
+                <ChatHeader title={title} onBack={onClose} onNotifPress={onNotifPress} />
+
                 <Messages
                     messages={messages}
                     currentUserId={currentUserId}
                     loading={loading}
                 />
-                <ChatInput onSend={handleSend} sending={sending} />
+
+                <ChatInput onSend={handleSend} onAttach={onAttach} sending={sending} />
             </KeyboardAvoidingView>
         </Modal>
     );
