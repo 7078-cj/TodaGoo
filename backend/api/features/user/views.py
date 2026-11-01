@@ -2,7 +2,9 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework.response import Response
 from rest_framework.decorators import api_view, throttle_classes
-from .serializers import UserSerializer
+
+from .models import Notification
+from .serializers import UserSerializer, NotificationSerializer
 from ...rate_limit.TestThrottle import TestThrottle
 from rest_framework import status
 from .utils import generate_pin, send_reset_email
@@ -72,6 +74,32 @@ def registerUser(request):
 
 
 RESET_CODE_TIMEOUT = 300 
+
+@api_view(['GET'])
+def get_user_notification(request):
+    user = request.user
+    notifications = user.notifications.all().order_by('-created_at')
+    serializer = NotificationSerializer(notifications, many=True)
+    return Response(serializer.data)
+
+@api_view(['PATCH'])
+def mark_notification_as_read(request, notification_id):
+    user = request.user
+    try:
+        notification = user.notifications.get(id=notification_id)
+    except Notification.DoesNotExist:
+        return Response({"error": "Notification not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    notification.read = True
+    notification.save()
+    return Response({"message": "Notification marked as read"})
+
+@api_view(['PATCH'])
+def mark_all_unread_notifications_as_read(request):
+    user = request.user
+    unread_notifications = user.notifications.filter(read=False)
+    unread_notifications.update(read=True)
+    return Response({"message": "All unread notifications marked as read", "Status": "Success"})
 
 
 @api_view(["POST"])

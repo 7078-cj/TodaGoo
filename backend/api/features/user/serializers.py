@@ -1,5 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
+
+from backend.api.features.user.models import Notification
 from ..utils.validation import UserValidationMixin
 
 class UserSerializer(UserValidationMixin, serializers.ModelSerializer):
@@ -28,3 +30,8 @@ class UserSerializer(UserValidationMixin, serializers.ModelSerializer):
 
         instance.save()
         return instance
+
+class NotificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Notification
+        fields = ('id', 'user', 'message', 'created_at', 'read')
