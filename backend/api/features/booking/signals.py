@@ -8,6 +8,8 @@ from django.db.models import Avg
 from .utils import assign_driver_sync
 from ...broadcast import broadcast
 from .serializers import BookingSerializer
+import logging
+logger = logging.getLogger(__name__)
 
 
 @receiver(post_save, sender=Rate)
@@ -32,15 +34,26 @@ def update_rating_on_rate_created(sender, instance, created, **kwargs):
 
 
 
+def _run_assignment(booking_id):
+    try:
+        logger.info("Assigning driver for booking %s", booking_id)
+        assign_driver_sync(booking_id)
+    except Exception:
+        logger.exception("Driver assignment failed for booking %s", booking_id)
+
+
 @receiver(post_save, sender=Booking)
 def trigger_driver_assignment(sender, instance, created, **kwargs):
+    logger.info("Booking post_save: id=%s created=%s status=%s driver_id=%s",
+                instance.id, created, instance.status, instance.driver_id)
     if created and instance.status == Booking.Status.PENDING and instance.driver_id is None:
         transaction.on_commit(
-            lambda: threading.Thread(target=assign_driver_sync, args=(instance.id,), daemon=True).start()
+            lambda: threading.Thread(target=_run_assignment, args=(instance.id,), daemon=True).start()
         )
 
 @receiver(post_save, sender=Booking)
 def booking_updated(sender, instance, created, **kwargs):
+    logger.info("Booking updated: id=%s status=%s", instance.id, instance.status)
     if created:
         return
 

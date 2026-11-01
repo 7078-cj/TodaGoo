@@ -6,7 +6,7 @@ export const driverRegister = async (body) =>{
 }
 
 export const driverQueueStatus = async () => {
-    const res = await getRequest('booking/driver/queue/status', true)
+    const res = await getRequest('booking/driver/queue/status',{}, true)
     return res.data
 }
 
@@ -31,6 +31,6 @@ export const resendDriverOtp = async () => {
 }
 
 export const getDriverProfile = async () => {
-    const res = await getRequest('driver/me/', true)
+    const res = await getRequest('driver/me/',{}, true)
     return res.data
 }

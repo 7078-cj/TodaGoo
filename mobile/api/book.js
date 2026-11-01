@@ -47,7 +47,22 @@ export const getFarePrice = async (start, end, stops = []) => {
     params.set("end", `${end.lat},${end.lng}`);
     stops.forEach((stop) => params.append("stops", `${stop.lat},${stop.lng}`));
 
-    const res = await postRequest(`booking/fare/?${params.toString()}`, {}, true)
-    if (!res.success) throw new Error(res.error || "Failed to get fare price")
-    return res.data.price;
-}
+    const res = await postRequest(`booking/fare/?${params.toString()}`, {}, true);
+
+    if (!res.success) {
+        // res.error may be a string or an object like { error: "..." } / { detail: "..." }
+        const message =
+            typeof res.error === "string"
+                ? res.error
+                : res.error?.error || res.error?.detail || "Failed to get fare estimate";
+        throw new Error(message);
+    }
+
+    const price = Number(res.data?.price);
+    if (!Number.isFinite(price)) {
+        console.warn("Unexpected fare response:", JSON.stringify(res));
+        throw new Error("Unexpected fare response");
+    }
+
+    return price;
+};

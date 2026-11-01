@@ -34,13 +34,13 @@ export default function useFareEstimate(startLocation, endLocation, stops) {
                 const validStops = stops.filter((s) => s.location).map((s) => s.location);
                 const fare = await getFarePrice(startLocation, endLocation, validStops);
                 if (!cancelled) setPrice(fare);
+                if(fare.error) setError(fare.error);
             } catch (err) {
-                console.error("Fare estimate failed:", err);
                 if (!cancelled) {
                     setPrice(null);
-                    setError("Couldn't get fare estimate.");
+                    setError(err.message || "Couldn't get fare estimate.");
                 }
-            } finally {
+            }finally {
                 if (!cancelled) setLoading(false);
             }
         }, 500);

@@ -2,82 +2,74 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function useWebSocket(url, options = {}) {
-    const BASE_URL =
-        process.env.EXPO_PUBLIC_WS_URL || "ws://localhost:8000";
+    const BASE_URL = process.env.EXPO_PUBLIC_WS_URL || "ws://localhost:8000";
 
     const socketRef = useRef(null);
 
     const [connected, setConnected] = useState(false);
-    const [connectionStatus, setConnectionStatus] =
-        useState("disconnected");
+    const [connectionStatus, setConnectionStatus] = useState("disconnected");
     const [lastMessage, setLastMessage] = useState(null);
 
-    const {
-        onOpen,
-        onClose,
-        onError,
-        onMessage,
-        onRefresh,
-        reconnect = false,
-        reconnectInterval = 3000,
-    } = options;
+    // Always call the latest callbacks without reconnecting when they change
+    const optionsRef = useRef(options);
+    optionsRef.current = options;
+
+    const { reconnect = true, reconnectInterval = 3000 } = options;
 
     useEffect(() => {
         if (!url) return;
 
-        let socket;
-        let reconnectTimer;
+        let disposed = false;
+        let socket = null;
+        let reconnectTimer = null;
 
         const connect = async () => {
             try {
                 const stored = await AsyncStorage.getItem("token");
-
-                if (!stored) return;
+                if (disposed || !stored) return;
 
                 const { access } = JSON.parse(stored);
 
                 setConnectionStatus("connecting");
 
-                socket = new WebSocket(
-                    `${BASE_URL}${url}?token=${access}`
-                );
-
+                socket = new WebSocket(`${BASE_URL}${url}?token=${access}`);
                 socketRef.current = socket;
 
                 socket.onopen = async () => {
+                    if (disposed) return;
                     setConnected(true);
                     setConnectionStatus("connected");
 
-                    onOpen?.();
-                    await onRefresh?.();
+                    optionsRef.current.onOpen?.();
+                    await optionsRef.current.onRefresh?.();
                 };
 
                 socket.onmessage = (event) => {
                     let payload = event.data;
-
                     try {
                         payload = JSON.parse(event.data);
                     } catch {}
 
                     setLastMessage(payload);
-                    onMessage?.(payload);
+                    optionsRef.current.onMessage?.(payload);
                 };
 
                 socket.onerror = (err) => {
-                    onError?.(err);
+                    optionsRef.current.onError?.(err);
                 };
 
-                socket.onclose = () => {
+                socket.onclose = (event) => {
+                    console.log("WS closed:", event.code, event.reason);
+
+                    // Closed on purpose by the cleanup below: don't report or reconnect
+                    if (disposed) return;
+
                     setConnected(false);
                     setConnectionStatus("disconnected");
-
-                    onClose?.();
+                    optionsRef.current.onClose?.(event);
 
                     if (reconnect) {
-                        reconnectTimer = setTimeout(
-                            connect,
-                            reconnectInterval
-                        );
+                        reconnectTimer = setTimeout(connect, reconnectInterval);
                     }
                 };
             } catch (err) {
@@ -88,8 +80,11 @@ export default function useWebSocket(url, options = {}) {
         connect();
 
         return () => {
+            disposed = true;
             clearTimeout(reconnectTimer);
             socket?.close();
+            setConnected(false);
+            setConnectionStatus("disconnected");
         };
     }, [url, reconnect, reconnectInterval]);
 
@@ -97,9 +92,7 @@ export default function useWebSocket(url, options = {}) {
         if (socketRef.current?.readyState !== WebSocket.OPEN) return;
 
         socketRef.current.send(
-            typeof data === "string"
-                ? data
-                : JSON.stringify(data)
+            typeof data === "string" ? data : JSON.stringify(data)
         );
     }, []);
 

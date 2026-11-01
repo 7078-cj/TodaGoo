@@ -65,12 +65,13 @@ class BookingView(IdempotentAPIView, APIView):
         return apply_date_range_filter(qs, request.query_params)
     
     def post(self, request):
-    
         passenger = get_passenger(request.user)
         if not passenger:
             return Response({"error": "User is not a passenger"}, status=400)
-        
-        user_booking = Booking.objects.filter(passenger=passenger, status__in=['pending', 'in_progress']).first()
+
+        user_booking = Booking.objects.filter(
+            passenger=passenger, status__in=['pending', 'in_progress']
+        ).first()
         if user_booking:
             return Response({"error": "You already have an ongoing or pending booking."}, status=400)
 
@@ -80,19 +81,30 @@ class BookingView(IdempotentAPIView, APIView):
         if not start or not end:
             return Response({"error": "Start and end locations are required"}, status=400)
 
-        start_point = Point(start["lng"], start["lat"])
-        end_point = Point(end["lng"], end["lat"])
-        price = calculate_price(start_point, end_point)
+        try:
+            start_point = Point(float(start["lng"]), float(start["lat"]), srid=4326)
+            end_point = Point(float(end["lng"]), float(end["lat"]), srid=4326)
+        except (KeyError, TypeError, ValueError):
+            return Response({"error": "Invalid start or end location"}, status=400)
 
-        request.data["price"] = price
-        serializer = BookingSerializer(data=request.data)
+        # Price with the stops, same as the fare estimate (skip stops with no location)
+        stops = [s for s in (request.data.get("stops") or []) if s.get("location")]
+
+        try:
+            price = calculate_price(start_point, end_point, stops)
+        except ValueError as e:
+            return Response({"error": str(e)}, status=400)
+        except (KeyError, TypeError):
+            return Response({"error": "Invalid stop location"}, status=400)
+
+        data = request.data.copy()   # don't mutate request.data
+        data["price"] = price
+
+        serializer = BookingSerializer(data=data)
 
         if serializer.is_valid():
             booking = serializer.save(passenger=passenger)
-            return Response(
-                BookingSerializer(booking).data,
-                status=201,
-            )
+            return Response(BookingSerializer(booking).data, status=201)
 
         return Response(serializer.errors, status=400)
     
