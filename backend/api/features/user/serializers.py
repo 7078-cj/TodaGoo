@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
 
-from backend.api.features.user.models import Notification
+from .models import Notification
 from ..utils.validation import UserValidationMixin
 
 class UserSerializer(UserValidationMixin, serializers.ModelSerializer):
