@@ -25,6 +25,4 @@ COPY . .
 
 EXPOSE 8000
 
-# [SEC-C3] Serve with daphne (production ASGI server, handles HTTP + websockets)
-# instead of the runserver development server.
-CMD python manage.py migrate --noinput && daphne -b 0.0.0.0 -p ${PORT:-8000} backend.asgi:application
+CMD python manage.py migrate --noinput && python manage.py runserver 0.0.0.0:${PORT:-8000} --noreload
