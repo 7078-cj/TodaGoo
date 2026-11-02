@@ -1,12 +1,13 @@
 import json
 from channels.generic.websocket import AsyncWebsocketConsumer
+from websocket.auth import SubprotocolAcceptMixin
 from channels.db import database_sync_to_async
 from django.core.exceptions import ObjectDoesNotExist
 from api.features.booking.models import Booking
 from api.features.booking.serializers import BookingSerializer
 
 
-class PassengerConsumer(AsyncWebsocketConsumer):
+class PassengerConsumer(SubprotocolAcceptMixin, AsyncWebsocketConsumer):  # [SEC-H8]
     async def connect(self):
         self.id = self.scope['url_route']['kwargs']['user_id']
         self.group_name = f'user_{self.id}'

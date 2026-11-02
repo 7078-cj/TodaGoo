@@ -42,11 +42,11 @@ export default function VerifyCodeStep({ onSubmit, onResend }) {
 
       <input
         type="text"
-        placeholder="Enter 4-digit code"
+        placeholder="Enter 6-digit code"
         value={code}
         onChange={(e)=>setCode(e.target.value)}
         className="border rounded-lg px-4 py-2 text-center tracking-widest text-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-        maxLength={4}
+        maxLength={6} // [SEC-C2] reset codes are now 6 digits
         required
       />
 

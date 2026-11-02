@@ -4,6 +4,7 @@ from rest_framework import serializers
 from .models import IncidentReport, IncidentEvidence
 from ..utils.fields import PointField
 from ..booking.serializers import BookingSerializer
+from ..utils.uploads import validate_file_size, validate_file_count
 
 class IncidentEvidenceSerializer(serializers.ModelSerializer):
     class Meta:
@@ -45,8 +46,9 @@ class IncidentReportCreateSerializer(serializers.ModelSerializer):
     booking_id = serializers.IntegerField(write_only=True)
     reported_by = serializers.PrimaryKeyRelatedField(read_only=True)
     evidence = IncidentEvidenceSerializer(many=True, read_only=True)
+    # [SEC-H9] each file size-checked; count checked in validate_evidence_files
     evidence_files = serializers.ListField(
-        child=serializers.ImageField(),
+        child=serializers.ImageField(validators=[validate_file_size]),
         write_only=True,
         required=False,
         allow_empty=True,
@@ -69,6 +71,9 @@ class IncidentReportCreateSerializer(serializers.ModelSerializer):
             "reported_by",
         ]
         read_only_fields = ["id", "status", "created_at", "evidence", "booking", "reported_by"]
+
+    def validate_evidence_files(self, value):
+        return validate_file_count(value)
 
     def create(self, validated_data):
         validated_data.pop("booking_id", None)

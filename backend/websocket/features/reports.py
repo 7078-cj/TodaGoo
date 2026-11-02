@@ -1,12 +1,13 @@
 import json
 from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer
+from websocket.auth import SubprotocolAcceptMixin
 from api.features.utils.roles import get_admin_department
 
 VALID_DEPARTMENTS = {"TODA", "MDRRMO"}
 
 
-class ReportsConsumer(AsyncWebsocketConsumer):
+class ReportsConsumer(SubprotocolAcceptMixin, AsyncWebsocketConsumer):  # [SEC-H8]
 
     async def connect(self):
 

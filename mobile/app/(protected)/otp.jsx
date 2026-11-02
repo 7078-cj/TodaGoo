@@ -9,6 +9,7 @@ import {
     View,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { setStoredToken } from "../../utils/tokenStorage";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AuthHeader from "@/components/AuthHeader"; // adjust paths
@@ -112,7 +113,7 @@ export default function otp() {
                 const tokens = { access: data.access, refresh: data.refresh };
 
                 // Same keys and shape that loginUser saves
-                await AsyncStorage.setItem("token", JSON.stringify(tokens));
+                await setStoredToken(JSON.stringify(tokens)); // [SEC-L4] secure storage
                 await AsyncStorage.setItem("user", JSON.stringify(decoded));
 
                 // Update AuthContext too. Its token refresh job reads the refresh token

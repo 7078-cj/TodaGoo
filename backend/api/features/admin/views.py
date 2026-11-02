@@ -1,5 +1,6 @@
 from datetime import timedelta
 
+from django.conf import settings
 from django.core.cache import cache
 from django.db.models import Count, Q, Sum
 from django.db.models.functions import ExtractHour, TruncDate
@@ -21,6 +22,7 @@ import re
 from rest_framework import status
 from django.db.models.deletion import ProtectedError
 from ...idempotency import IdempotentAPIView
+from ..utils.uploads import validate_excel_upload
 from django.utils import timezone
 
 
@@ -171,10 +173,21 @@ class TODAListCreateAPIView(ListCreateAPIView):
         return Response(serializer.data, status=201)
 
     def _handle_excel_upload(self, file):
+        # [SEC-H9] Check type/size before parsing, and cap the row count after.
+        upload_error = validate_excel_upload(file)
+        if upload_error:
+            return Response({"error": upload_error}, status=400)
+
         try:
             df = pd.read_excel(file, dtype={"toda_number": str})
         except Exception:
             return Response({"error": "Could not read the Excel file."}, status=400)
+
+        if len(df) > settings.MAX_EXCEL_ROWS:
+            return Response(
+                {"error": f"Too many rows. Maximum is {settings.MAX_EXCEL_ROWS}."},
+                status=400,
+            )
 
         required_cols = {"toda_number", "vehicle_plate", "driver_name",
                             "registration_date", "toda_name"}
@@ -310,6 +323,7 @@ class TodaStationRetrieveUpdateDestroyView(IdempotentAPIView, RetrieveUpdateDest
 
 
 @api_view(['GET'])
+@permission_classes([permissions.AllowAny])  # [SEC-H5] used by the public driver sign-up form
 def get_toda_stations_with_prefix(request):
     prefix = request.query_params.get('prefix')
     if not prefix:

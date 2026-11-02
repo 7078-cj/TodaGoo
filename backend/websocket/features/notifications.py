@@ -1,8 +1,9 @@
 from asgiref.sync import sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer
+from websocket.auth import SubprotocolAcceptMixin
 from django.core.serializers import json
 
-class NotificationConsumer(AsyncWebsocketConsumer):
+class NotificationConsumer(SubprotocolAcceptMixin, AsyncWebsocketConsumer):  # [SEC-H8]
     async def connect(self):
         self.user_id = self.scope["url_route"]["kwargs"]["user_id"]
         self.group_name = f"user_{self.user_id}"

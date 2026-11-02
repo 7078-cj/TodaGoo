@@ -36,8 +36,11 @@ export default function useWebSocket(url, options = {}) {
 
                 setConnectionStatus("connecting");
 
+                // [SEC-H8] token goes in the subprotocol list, not the URL,
+                // so it never shows up in server/proxy logs (see backend websocket/auth.py)
                 socket = new WebSocket(
-                    `${BASE_URL}${url}?token=${access}`
+                    `${BASE_URL}${url}`,
+                    ["access_token", access]
                 );
 
                 socketRef.current = socket;

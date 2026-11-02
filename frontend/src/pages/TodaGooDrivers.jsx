@@ -48,7 +48,11 @@ export default function TodaGooDrivers() {
 
     const handleEdit = async (driver) => {
         const isBlacklisted = driver.driver_profile.status === "BLACKLISTED";
-        const confirmMsg = isBlacklisted
+        // [SEC-H6] self-registered drivers start as PENDING; approving sets them ACTIVE
+        const isPending = driver.driver_profile.status === "PENDING";
+        const confirmMsg = isPending
+            ? `Approve ${driver.first_name} ${driver.last_name} as a driver?`
+            : isBlacklisted
             ? `Remove ${driver.first_name} ${driver.last_name} from the blacklist?`
             : `Blacklist ${driver.first_name} ${driver.last_name}?`;
 
@@ -56,7 +60,7 @@ export default function TodaGooDrivers() {
 
         try {
             setActionLoadingId(driver.id);
-            if (isBlacklisted) {
+            if (isBlacklisted || isPending) {
                 await unBlackListTODAGOODriver(driver.id);
             } else {
                 await blackListTODAGOODriver(driver.id);

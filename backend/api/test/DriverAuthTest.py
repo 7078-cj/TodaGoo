@@ -2,6 +2,7 @@ from unittest.mock import patch
 
 from django.contrib.auth.models import User
 from django.contrib.gis.geos import Point, Polygon
+from django.test import override_settings
 from django.urls import reverse
 from django.utils import timezone
 from rest_framework import status
@@ -141,14 +142,22 @@ class DriverListCreateViewTests(APITestCase):
         user = User.objects.get(username="newdriver")
         mock_cache_delete.assert_called_with(f"driver_profile:{user.id}")
 
-    def test_create_sets_boundary_from_registration_and_status_active(self):
+    def test_create_sets_boundary_from_registration_and_status_pending(self):
         payload = self.valid_payload(**{"driver_profile.status": "BLACKLISTED"})
         response = self.client.post(self.url, payload, format="multipart")
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED, response.data)
         driver = Driver.objects.get(user__username="newdriver")
         self.assertEqual(driver.toda_boundary, self.toda_a)
-        self.assertEqual(driver.status, "ACTIVE")  # client cannot choose status
+        # client cannot choose status; [SEC-H6] new drivers wait for TODA admin approval
+        self.assertEqual(driver.status, "PENDING")
+
+    @override_settings(DRIVER_SIGNUP_REQUIRES_APPROVAL=False)
+    def test_create_status_active_when_approval_disabled(self):
+        response = self.client.post(self.url, self.valid_payload(), format="multipart")
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED, response.data)
+        self.assertEqual(Driver.objects.get(user__username="newdriver").status, "ACTIVE")
 
     def test_create_with_toda_station(self):
         payload = self.valid_payload(toda_station_id=self.station_a.id)

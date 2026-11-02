@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.urls import path
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
@@ -21,7 +22,6 @@ urlpatterns = [
     path('token/user', MyTokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('register/', registerUser, name='register_user'),
-    path('test/', test, name='test'),
     path("forgot-password/", request_password_reset, name='request_password_reset'),
     path("verify-code/", verify_reset_code, name='verify_reset_code'),
     path("reset-password/", reset_password, name='reset_password'),
@@ -31,3 +31,7 @@ urlpatterns = [
     path("notifications/mark-all-as-read/", mark_all_unread_notifications_as_read, name='mark_all_unread_notifications_as_read'),
     
 ]
+
+# [SEC-L3] The throttle test endpoint is only routed in development.
+if settings.DEBUG:
+    urlpatterns.append(path('test/', test, name='test'))

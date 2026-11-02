@@ -1,5 +1,6 @@
 import { loginRequest, updateToken } from "@/api/auth";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { getStoredToken, setStoredToken, removeStoredToken } from "../utils/tokenStorage";
 import React, { createContext, ReactNode, useEffect, useState } from "react";
 import { jwtDecode } from "jwt-decode";
 
@@ -15,14 +16,15 @@ export function AuthProvider({ children }) {
     useEffect(() => {
         const loadAuthData = async () => {
             try {
-                const storedToken = await AsyncStorage.getItem("token");
+                const storedToken = await getStoredToken(); // [SEC-L4] secure storage
                 const storedUser = await AsyncStorage.getItem("user");
 
                 if (storedToken) setToken(JSON.parse(storedToken));
                 if (storedUser) setUser(JSON.parse(storedUser));
             } catch (err) {
                 console.error("Failed to load auth data:", err);
-                await AsyncStorage.multiRemove(["token", "user"]).catch(() => {});
+                await removeStoredToken().catch(() => {});
+                await AsyncStorage.removeItem("user").catch(() => {});
             } finally {
                 setAuthHydrated(true);
             }
@@ -61,7 +63,7 @@ export function AuthProvider({ children }) {
         setUser(decodedUser);
 
         try {
-            await AsyncStorage.setItem("token", JSON.stringify(data));
+            await setStoredToken(JSON.stringify(data)); // [SEC-L4]
             await AsyncStorage.setItem("user", JSON.stringify(decodedUser));
         } catch (err) {
             console.error("Failed to persist auth data:", err);
@@ -74,7 +76,8 @@ export function AuthProvider({ children }) {
         setToken(null);
         setUser(null);
         try {
-            await AsyncStorage.multiRemove(["token", "user"]);
+            await removeStoredToken(); // [SEC-L4]
+            await AsyncStorage.removeItem("user");
         } catch (err) {
             console.error("Failed to clear auth data:", err);
         }

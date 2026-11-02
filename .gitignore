@@ -8,3 +8,4 @@ celerybeat-*
 __pycache__/
 LLM.md
 .continue/
+SECURITY_FIXES.md

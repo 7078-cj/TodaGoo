@@ -20,6 +20,12 @@ from ..utils.filtering import apply_date_range_filter
 from rest_framework.exceptions import ValidationError
 
 from ..utils.roles import is_toda_admin
+from ..utils.security import validate_booking_payload, DRIVER_PENDING
+
+# [SEC-M12] statuses that count as "the passenger already has a booking"
+ACTIVE_BOOKING_STATUSES = ['pending', 'accepted', 'in_progress']
+# [SEC-M11] a passenger may only delete a booking that no driver has taken yet
+DELETABLE_BOOKING_STATUSES = ['pending']
 
 def get_passenger(user):
     return getattr(user, "passenger_profile", None)
@@ -70,7 +76,7 @@ class BookingView(IdempotentAPIView, APIView):
             return Response({"error": "User is not a passenger"}, status=400)
 
         user_booking = Booking.objects.filter(
-            passenger=passenger, status__in=['pending', 'in_progress']
+            passenger=passenger, status__in=ACTIVE_BOOKING_STATUSES
         ).first()
         if user_booking:
             return Response({"error": "You already have an ongoing or pending booking."}, status=400)
@@ -86,6 +92,9 @@ class BookingView(IdempotentAPIView, APIView):
             end_point = Point(float(end["lng"]), float(end["lat"]), srid=4326)
         except (KeyError, TypeError, ValueError):
             return Response({"error": "Invalid start or end location"}, status=400)
+
+        # [SEC-M15] cap stop count and route payload size before doing any work
+        validate_booking_payload(request.data.get("stops"), request.data.get("routes"))
 
         # Price with the stops, same as the fare estimate (skip stops with no location)
         stops = [s for s in (request.data.get("stops") or []) if s.get("location")]
@@ -165,6 +174,13 @@ class BookingDetailView(IdempotentAPIView,APIView):
         except Booking.DoesNotExist:
             return Response({"error": "Booking not found"}, status=404)
 
+        # [SEC-M11] keep accepted/completed bookings (history, ratings, incident evidence)
+        if booking.status not in DELETABLE_BOOKING_STATUSES:
+            return Response(
+                {"error": "Only pending bookings can be deleted."},
+                status=400,
+            )
+
         booking.delete()
         return Response(status=204)
     
@@ -225,6 +241,10 @@ def driver_queue(request):
     
     if driver.status == "BLACKLISTED":
         return Response({"error": "driver is blacklisted"}, status=403)
+
+    # [SEC-H6] drivers who registered themselves can't take rides until approved
+    if driver.status == DRIVER_PENDING:
+        return Response({"error": "driver is awaiting TODA admin approval"}, status=403)
     
     if not driver.verified:
         return Response({"error": "driver is not verified"}, status=403)

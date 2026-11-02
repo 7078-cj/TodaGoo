@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { getStoredToken } from "../utils/tokenStorage";
 
 export default function useWebSocket(url, options = {}) {
     const BASE_URL = process.env.EXPO_PUBLIC_WS_URL || "ws://localhost:8000";
@@ -25,14 +25,16 @@ export default function useWebSocket(url, options = {}) {
 
         const connect = async () => {
             try {
-                const stored = await AsyncStorage.getItem("token");
+                const stored = await getStoredToken(); // [SEC-L4] secure storage
                 if (disposed || !stored) return;
 
                 const { access } = JSON.parse(stored);
 
                 setConnectionStatus("connecting");
 
-                socket = new WebSocket(`${BASE_URL}${url}?token=${access}`);
+                // [SEC-H8] token goes in the subprotocol list, not the URL,
+                // so it never shows up in server/proxy logs (see backend websocket/auth.py)
+                socket = new WebSocket(`${BASE_URL}${url}`, ["access_token", access]);
                 socketRef.current = socket;
 
                 socket.onopen = async () => {

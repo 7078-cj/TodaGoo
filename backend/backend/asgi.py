@@ -14,6 +14,7 @@ from django.core.asgi import get_asgi_application
 from channels.routing import ProtocolTypeRouter, URLRouter
 from websocket.routing import websocket_urlpatterns
 from websocket.middleware import JWTAuthMiddleware
+from websocket.auth import with_origin_check
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'backend.settings')
 
@@ -21,5 +22,6 @@ http_response_app = get_asgi_application()
 
 application = ProtocolTypeRouter({
     "http": http_response_app,
-    "websocket": JWTAuthMiddleware(URLRouter(websocket_urlpatterns)),
+    # [SEC-H8] reject sockets opened from unknown Origins (toggle: WS_ORIGIN_CHECK)
+    "websocket": with_origin_check(JWTAuthMiddleware(URLRouter(websocket_urlpatterns))),
 })

@@ -7,6 +7,11 @@ import { useNavigate } from "react-router-dom";
 
 
 
+// [SEC-C2] the reset endpoints can also answer with password-rule errors
+// ({password: [...]}) or throttle errors ({detail}); show whichever is present.
+const errorText = (data) =>
+  data.error || data.password?.join(" ") || data.detail || "Something went wrong.";
+
 export default function ForgotPasswordPage() {
 
   const [step, setStep] = useState(1);
@@ -24,7 +29,7 @@ export default function ForgotPasswordPage() {
       setStep(2);
       setMessage(data.message);
     } else {
-      setMessage(data.error);
+      setMessage(errorText(data));
     }
   };
 
@@ -36,7 +41,7 @@ export default function ForgotPasswordPage() {
       setCode(codeInput);
       setStep(3);
     } else {
-      setMessage(data.error);
+      setMessage(errorText(data));
     }
   };
 
@@ -48,14 +53,14 @@ export default function ForgotPasswordPage() {
       setMessage(data.message);
       nav('/')
     } else {
-      setMessage(data.error);
+      setMessage(errorText(data));
     }
   };
 
   const handleResendCode = async () => {
 
     const data = await resendCode(email);
-    setMessage(data.message || data.error);
+    setMessage(data.message || errorText(data));
   };
 
   return (

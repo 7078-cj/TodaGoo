@@ -1,6 +1,7 @@
 import { postRequest } from "../utils/requests";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { jwtDecode } from "jwt-decode";
+import { getStoredToken, setStoredToken } from "../utils/tokenStorage";
 
 
 export async function loginRequest(username, password) {
@@ -9,7 +10,7 @@ export async function loginRequest(username, password) {
 }
 
 export const updateToken = async (setToken, setUser, logoutUser) => {
-    const storedToken = await AsyncStorage.getItem("token");
+    const storedToken = await getStoredToken(); // [SEC-L4] secure storage
 
     if (!storedToken) return;
 
@@ -39,10 +40,7 @@ export const updateToken = async (setToken, setUser, logoutUser) => {
     const user = jwtDecode(newToken.access);
     setUser(user);
 
-    await AsyncStorage.setItem(
-        "token",
-        JSON.stringify(newToken)
-    );
+    await setStoredToken(JSON.stringify(newToken)); // [SEC-L4]
 
     await AsyncStorage.setItem(
         "user",

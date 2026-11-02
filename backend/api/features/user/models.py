@@ -21,6 +21,7 @@ class Driver(models.Model):
     STATUS_CHOICES = [
         ('ACTIVE', 'Active'),
         ('BLACKLISTED', 'Blacklisted'),
+        ('PENDING', 'Pending approval'),  # [SEC-H6] new sign-ups wait for a TODA admin
     ]
 
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="driver_profile")

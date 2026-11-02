@@ -5,6 +5,8 @@ from ..admin.models import RegisteredToda, TodaStation
 from ..user.serializers import UserSerializer
 
 from ..utils.validation import DriverValidationMixin
+from ..utils.uploads import validate_file_size
+from ..utils.security import initial_driver_status
 from django.db import transaction, IntegrityError
 
 
@@ -22,7 +24,13 @@ class DriverProfileSerializer(DriverValidationMixin, serializers.ModelSerializer
             "status"
         )
         read_only_fields = ('status',)
-        extra_kwargs = {'vehicle_plate': {'validators': []}}
+        extra_kwargs = {
+            'vehicle_plate': {'validators': []},
+            # [SEC-H9] size limit on every uploaded image
+            'profile_picture': {'validators': [validate_file_size]},
+            'vehicle_front_picture': {'validators': [validate_file_size]},
+            'vehicle_back_picture': {'validators': [validate_file_size]},
+        }
 
 
 class DriverSerializer(serializers.ModelSerializer):
@@ -115,7 +123,7 @@ class DriverSerializer(serializers.ModelSerializer):
                 driver_serializer.is_valid(raise_exception=True)
                 driver_serializer.save(
                     user=user,
-                    status='ACTIVE',
+                    status=initial_driver_status(),  # [SEC-H6] PENDING until a TODA admin approves
                     toda_boundary=toda_boundary,
                     toda_station=self._toda_station
                 )

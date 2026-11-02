@@ -1,14 +1,16 @@
 import json
 from channels.generic.websocket import AsyncWebsocketConsumer
+from websocket.auth import SubprotocolAcceptMixin
 from channels.db import database_sync_to_async
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.cache import cache
 
 from api.features.booking.models import Booking
 from api.features.booking.serializers import BookingSerializer
+from api.features.utils.security import parse_lat_lng
 
 
-class BookingConsumer(AsyncWebsocketConsumer):
+class BookingConsumer(SubprotocolAcceptMixin, AsyncWebsocketConsumer):  # [SEC-H8]
     async def connect(self):
         self.booking_id = self.scope['url_route']['kwargs']['booking_id']
         self.group_name = f'booking_{self.booking_id}'
@@ -21,9 +23,8 @@ class BookingConsumer(AsyncWebsocketConsumer):
 
         self.user = user
 
-        await self.channel_layer.group_add(self.group_name, self.channel_name)
-        await self.accept()
-
+        # [SEC-M14] check the booking + participant BEFORE joining the group,
+        # so non-participants never receive a single broadcast.
         result = await self.get_booking()
 
         if result is None:
@@ -44,6 +45,9 @@ class BookingConsumer(AsyncWebsocketConsumer):
         self.booking = booking
         self.is_passenger = getattr(booking.passenger, 'user_id', None) == user.id
 
+        await self.channel_layer.group_add(self.group_name, self.channel_name)
+        await self.accept()
+
         cached_location = cache.get(f"booking_{self.booking_id}_driver_location")
         if cached_location is not None:
             await self.send(text_data=json.dumps({
@@ -52,14 +56,29 @@ class BookingConsumer(AsyncWebsocketConsumer):
             }))
 
     async def receive(self, text_data):
-        message = json.loads(text_data)
+        try:
+            message = json.loads(text_data)
+        except (TypeError, ValueError):
+            return
+        if not isinstance(message, dict):
+            return
         action = message.get("action")
 
         if action == "driver_location":
             if not await self.check_driver():
                 return
 
-            location = message.get("location")
+            # [SEC-M14] only forward a well-formed expo-location payload
+            # ({"coords": {"latitude", "longitude"}}), stripped to those two numbers.
+            raw = message.get("location")
+            coords = parse_lat_lng(
+                raw.get("coords") if isinstance(raw, dict) else None,
+                lat_key="latitude",
+                lng_key="longitude",
+            )
+            if coords is None:
+                return
+            location = {"coords": {"latitude": coords[0], "longitude": coords[1]}}
             cache.set(f"booking_{self.booking_id}_driver_location", location, 20)
 
             await self.channel_layer.group_send(

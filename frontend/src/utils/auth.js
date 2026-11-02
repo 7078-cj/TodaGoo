@@ -1,7 +1,7 @@
 import { jwtDecode } from "jwt-decode";
 import { setAuth, logout } from "../features/auth/authSlice";
 import { getRequest } from "./requests";
-import { Cookie } from "./cookies";
+import { Cookie, AUTH_COOKIE_MAX_AGE } from "./cookies";
 import { validateLoginFields } from "./validation";
 
 const API_URL = import.meta.env.VITE_API_URL;
@@ -60,8 +60,8 @@ export const loginUser = async (e, dispatch, navigate,setError, setLoading) => {
             })
         );
 
-        Cookie.set("access", tokens.access, 540000);
-        Cookie.set("refresh", tokens.refresh, 604800);
+        Cookie.set("access", tokens.access, AUTH_COOKIE_MAX_AGE); // [SEC-H7]
+        Cookie.set("refresh", tokens.refresh, AUTH_COOKIE_MAX_AGE);
 
         navigate("/");
         return true;
@@ -111,8 +111,8 @@ export const updateToken = async (dispatch) => {
                 })
             );
 
-            Cookie.set("access", newAccess, 540000);
-            Cookie.set("refresh", newRefresh, 604800);
+            Cookie.set("access", newAccess, AUTH_COOKIE_MAX_AGE); // [SEC-H7]
+            Cookie.set("refresh", newRefresh, AUTH_COOKIE_MAX_AGE);
         } else {
             dispatch(logout());
         }

@@ -1,5 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { Cookie } from "../../utils/cookies";
+import { Cookie, AUTH_COOKIE_MAX_AGE } from "../../utils/cookies";
 
 const initialState = {
     access: Cookie.get("access") || null,
@@ -20,9 +20,10 @@ const authSlice = createSlice({
             state.refresh = tokens.refresh;
             state.user = user;
 
-            Cookie.set("access", tokens.access, 540000);
-            Cookie.set("refresh", tokens.refresh, 604800);
-            Cookie.set("user", JSON.stringify(user), 604800);
+            // [SEC-H7] lifetimes aligned with the token lifetime
+            Cookie.set("access", tokens.access, AUTH_COOKIE_MAX_AGE);
+            Cookie.set("refresh", tokens.refresh, AUTH_COOKIE_MAX_AGE);
+            Cookie.set("user", JSON.stringify(user), AUTH_COOKIE_MAX_AGE);
         },
 
         logout(state) {

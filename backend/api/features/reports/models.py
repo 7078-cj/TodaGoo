@@ -52,7 +52,9 @@ class IncidentReport(models.Model):
 
 
 def incident_evidence_path(instance, filename):
-    return f"incident_evidence/{instance.report_id}/{filename}"
+    # [SEC-H9] store under a random name instead of the uploader's filename
+    from ..utils.uploads import random_filename
+    return f"incident_evidence/{instance.report_id}/{random_filename(filename)}"
 
 
 class IncidentEvidence(models.Model):

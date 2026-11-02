@@ -1,11 +1,11 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { getStoredToken } from "./tokenStorage";
 
 const API = process.env.EXPO_PUBLIC_API_URL ?? "";
 
 const getToken = async (isToken) => {
     if (!isToken) return null;
 
-    const stored = await AsyncStorage.getItem("token");
+    const stored = await getStoredToken(); // [SEC-L4] secure storage
     if (!stored) return null;
 
     const parsed = JSON.parse(stored);

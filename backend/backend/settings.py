@@ -35,7 +35,8 @@ ENVIRONMENT = env('ENVIRONMENT', default='development')  # 'development', 'stagi
 CLOUDINARY_URL = os.environ.get("CLOUDINARY_URL", "")
 USE_CLOUDINARY = bool(CLOUDINARY_URL)
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = env.bool("DEBUG", default=True)
+# [SEC-C3] Defaults to False so a missing DEBUG env var never exposes stack traces.
+DEBUG = env.bool("DEBUG", default=False)
 
 ALLOWED_HOSTS = env.list(
     "ALLOWED_HOSTS",
@@ -123,6 +124,10 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
+    # [SEC-H5] Deny anonymous access unless a view opts in with AllowAny.
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAuthenticated",
+    ],
     "DEFAULT_THROTTLE_CLASSES": [
         "rest_framework.throttling.AnonRateThrottle",
         "rest_framework.throttling.UserRateThrottle",
@@ -130,6 +135,8 @@ REST_FRAMEWORK = {
     "DEFAULT_THROTTLE_RATES": {
         "anon": "20/min",
         "user": "100/min",
+        # [SEC-C2] Used by ScopedRateThrottle on the forgot/verify/reset/resend endpoints.
+        "password_reset": "10/hour",
     },
     "UPLOADED_FILE_USER_URL": False
 }
@@ -176,13 +183,15 @@ SIMPLE_JWT = {
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    # [SEC-L1] CorsMiddleware must run before CommonMiddleware so CORS headers
+    # are added to every response (including CommonMiddleware redirects).
+    'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
     'api.middleware.logger.LoggingMiddleware'
 ]
 
@@ -357,3 +366,48 @@ EMAIL_HOST_USER = env('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD')
 EMAIL_USE_TLS = True
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+
+# =========================
+# SECURITY TOGGLES
+# Every fix in SECURITY_FIXES.md that can be switched off reads its flag here.
+# =========================
+
+# [SEC-H8] WebSocket hardening
+WS_ORIGIN_CHECK = env.bool("WS_ORIGIN_CHECK", default=True)            # reject sockets from unknown Origins
+WS_ALLOW_QUERY_TOKEN = env.bool("WS_ALLOW_QUERY_TOKEN", default=False)  # legacy ?token= support (leaks into logs)
+
+# [SEC-H6] New drivers start as PENDING until a TODA admin approves them
+DRIVER_SIGNUP_REQUIRES_APPROVAL = env.bool("DRIVER_SIGNUP_REQUIRES_APPROVAL", default=True)
+
+# [SEC-H9] Upload limits
+MAX_UPLOAD_SIZE_MB = env.int("MAX_UPLOAD_SIZE_MB", default=5)
+MAX_EVIDENCE_FILES = env.int("MAX_EVIDENCE_FILES", default=5)
+MAX_EXCEL_ROWS = env.int("MAX_EXCEL_ROWS", default=5000)
+DATA_UPLOAD_MAX_NUMBER_FILES = env.int("DATA_UPLOAD_MAX_NUMBER_FILES", default=10)
+
+# [SEC-M15] Booking payload limits
+MAX_BOOKING_STOPS = env.int("MAX_BOOKING_STOPS", default=5)
+MAX_ROUTES_JSON_BYTES = env.int("MAX_ROUTES_JSON_BYTES", default=200_000)
+
+# [SEC-C2] Password reset codes
+PASSWORD_RESET_CODE_TTL = env.int("PASSWORD_RESET_CODE_TTL", default=300)
+PASSWORD_RESET_MAX_ATTEMPTS = env.int("PASSWORD_RESET_MAX_ATTEMPTS", default=5)
+PASSWORD_RESET_RESEND_COOLDOWN = env.int("PASSWORD_RESET_RESEND_COOLDOWN", default=60)
+
+# [SEC-C3] HTTPS / production hardening (only when DEBUG is off)
+CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[])
+
+if not DEBUG:
+    SECURE_SSL_REDIRECT = env.bool("SECURE_SSL_REDIRECT", default=True)
+    # Trust X-Forwarded-Proto from the hosting proxy (Railway/Render/Heroku style).
+    # Set USE_X_FORWARDED_PROTO=False when Django is reached directly without a proxy.
+    if env.bool("USE_X_FORWARDED_PROTO", default=True):
+        SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    # Start low; raise to 31536000 (1 year) once HTTPS is confirmed working everywhere.
+    SECURE_HSTS_SECONDS = env.int("SECURE_HSTS_SECONDS", default=3600)
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = env.bool("SECURE_HSTS_INCLUDE_SUBDOMAINS", default=False)
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    SECURE_REFERRER_POLICY = "same-origin"
+    X_FRAME_OPTIONS = "DENY"

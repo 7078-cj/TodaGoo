@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 from ..user.models import Passenger
 from ..user.serializers import UserSerializer
 from ..utils.validation import PassengerValidationMixin
+from ..utils.uploads import validate_file_size
 
 
 class PassengerProfileSerializer(PassengerValidationMixin, serializers.ModelSerializer):
@@ -17,6 +18,8 @@ class PassengerProfileSerializer(PassengerValidationMixin, serializers.ModelSeri
             'status'
         )
         read_only_fields = ('status',)
+        # [SEC-H9] size limit on the uploaded image
+        extra_kwargs = {'profile_picture': {'validators': [validate_file_size]}}
 
 
 class PassengerSerializer(serializers.ModelSerializer):

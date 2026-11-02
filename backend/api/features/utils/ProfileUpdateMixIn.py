@@ -1,6 +1,7 @@
 from rest_framework.response import Response
 from .reconstruction import reconstruct_nested
 from .roles import is_toda_admin
+from .security import require_current_password, blacklist_user_tokens
 from rest_framework import status
 from django.core.cache import cache
 
@@ -37,8 +38,12 @@ class ProfileUpdateMixin:
         context = self.get_serializer_context()
 
         data = reconstruct_nested(request.data, prefix=self.profile_prefix)
+        password_changed = False
 
         if request.user.id == instance.id:
+            # [SEC-M13] a new password needs the current one
+            password_changed = require_current_password(request.user, data)
+            data.pop("current_password", None)
             serializer = self.serializer_class(
                 instance, data=data, partial=partial, context=context
             )
@@ -57,6 +62,9 @@ class ProfileUpdateMixin:
 
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
+
+        if password_changed:
+            blacklist_user_tokens(instance)  # [SEC-M13] sign out other sessions
 
         cache.delete(f"{self.cache_prefix}:{instance.pk}")
 

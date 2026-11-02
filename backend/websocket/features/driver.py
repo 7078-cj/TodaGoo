@@ -2,6 +2,7 @@ import json
 
 from asgiref.sync import sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer
+from websocket.auth import SubprotocolAcceptMixin
 from channels.db import database_sync_to_async
 from django.db import transaction
 from django.core.cache import cache
@@ -13,9 +14,11 @@ from api.features.booking.models import DriverQueue
 from django.contrib.gis.geos import Point
 import asyncio
 from api.features.booking.serializers import BookingSerializer
+from api.features.booking.helpers.offer_guard import is_booking_offered_to
+from api.features.utils.security import parse_lat_lng
 
 
-class DriverConsumer(AsyncWebsocketConsumer):
+class DriverConsumer(SubprotocolAcceptMixin, AsyncWebsocketConsumer):  # [SEC-H8]
     async def connect(self):
         self.id = self.scope["url_route"]["kwargs"]["user_id"]
         self.group_name = f"driver_{self.id}"
@@ -43,7 +46,12 @@ class DriverConsumer(AsyncWebsocketConsumer):
         await self.channel_layer.group_discard(self.group_name, self.channel_name)
 
     async def receive(self, text_data):
-        message = json.loads(text_data)
+        try:
+            message = json.loads(text_data)
+        except (TypeError, ValueError):
+            return
+        if not isinstance(message, dict):
+            return
 
         action = message.get("action")
         booking_id = message.get("booking_id")
@@ -177,6 +185,10 @@ class DriverConsumer(AsyncWebsocketConsumer):
                 "message": "Your booking offer has expired."
             }
 
+        # [SEC-C4] only the booking currently offered to this driver can be accepted
+        if not is_booking_offered_to(driver.id, booking_id):
+            return {"success": False, "message": "This booking was not offered to you."}
+
         with transaction.atomic():
             try:
                 booking = Booking.objects.select_for_update().get(id=booking_id)
@@ -203,16 +215,19 @@ class DriverConsumer(AsyncWebsocketConsumer):
     def decline_booking(self, booking_id, location):
         driver = self.driver
 
+        # [SEC-C4] only the offered booking can be declined, and the location must be valid
+        if not is_booking_offered_to(driver.id, booking_id):
+            return False
+
+        coords = parse_lat_lng(location, lat_key="latitude", lng_key="longitude")
+        if coords is None:
+            return False
+        lat, lng = coords
+
         with transaction.atomic():
             DriverQueue.objects.get_or_create(
                 driver=driver,
-                defaults={
-                    "location": Point(
-                        float(location["longitude"]),
-                        float(location["latitude"]),
-                        srid=4326,
-                    )
-                },
+                defaults={"location": Point(lng, lat, srid=4326)},
             )
 
             cache.delete(f"driver_{driver.id}_booking")

@@ -3,4 +3,5 @@ from .test.PassengerAuthTest import PassengerListCreateViewTests, PassengerRetri
 from .test.DriverAuthTest import DriverListCreateViewTests, DriverRetrieveUpdateDestroyViewTests
 from .test.LoginAuthTest import UserLoginTests, AdminLoginTests, TokenRefreshTests
 from .test.AdminModuleTest import *
+from .test.SecurityFixesTest import *
 # Create your tests here.
