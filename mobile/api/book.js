@@ -24,8 +24,9 @@ export const completeBooking = async (bookingId, idempotencyKey) => {
     return res.data;
 }
 
-export const inProgressBooking = async (bookingId, idempotencyKey) => {
-    const res = await putRequest(`booking/${bookingId}/`, { status: "in_progress" }, true, idempotencyKey)
+// location: { latitude, longitude } of the driver; the backend only allows pickup near the start point
+export const inProgressBooking = async (bookingId, idempotencyKey, location) => {
+    const res = await putRequest(`booking/${bookingId}/`, { status: "in_progress", location }, true, idempotencyKey)
     if (!res.success) throw new Error(res.error || "Failed to update booking status")
     return res.data;
 }

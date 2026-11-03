@@ -1,7 +1,9 @@
 import React from "react";
 import { View, Text, FlatList, TouchableOpacity, RefreshControl } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
 import { useNotifications } from "../../contexts/NotificationContext";
+import { useProfile } from "../../contexts/ProfileContext";
 import colors from "../../constants/colors";
 import timeAgo from "../../utils/timeAgo";
 
@@ -52,12 +54,30 @@ export default function Notifications() {
         if (!item.read) markRead(item.id);
     };
 
+    const { role } = useProfile();
+
+    // Opened from anywhere via the header bell, so go back; fall back to the user's home
+    const handleClose = () => {
+        if (router.canGoBack()) router.back();
+        else router.replace(`/(protected)/${role === "driver" ? "driver" : "passenger"}/home`);
+    };
+
     return (
         <View className="flex-1" style={{ backgroundColor: colors.background }}>
             <View className="flex-row items-center justify-between px-4 py-3">
-                <Text className="text-xl font-bold" style={{ color: colors.dark }}>
-                    Notifications
-                </Text>
+                <View className="flex-row items-center gap-2">
+                    <TouchableOpacity
+                        onPress={handleClose}
+                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                        accessibilityRole="button"
+                        accessibilityLabel="Close notifications"
+                    >
+                        <Ionicons name="close" size={26} color={colors.dark} />
+                    </TouchableOpacity>
+                    <Text className="text-xl font-bold" style={{ color: colors.dark }}>
+                        Notifications
+                    </Text>
+                </View>
 
                 <TouchableOpacity onPress={markAllRead} disabled={unreadCount === 0}>
                     <Text

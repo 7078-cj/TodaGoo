@@ -5,3 +5,7 @@ from .test.LoginAuthTest import UserLoginTests, AdminLoginTests, TokenRefreshTes
 from .test.AdminModuleTest import *
 from .test.SecurityFixesTest import *
 # Create your tests here.
+from .test.BookingFlowTest import *
+from .test.ChatAndReportsTest import *
+from .test.NotificationsTest import *
+from .test.WebsocketConsumersTest import *

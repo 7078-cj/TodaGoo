@@ -1,5 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import React, { createContext, useEffect, useState } from "react";
+import React, { createContext, useEffect, useRef, useState } from "react";
 import useDriverListener from "../listeners/driverListener";
 import {router } from "expo-router";
 
@@ -11,6 +11,7 @@ export function DriverProvider({ children }) {
     const [userId, setUserId] = useState(null);
     const [pendingBooking, setPendingBooking] = useState(null);
     const [acceptedBooking, setAcceptedBooking] = useState(null);
+    const lastScreenRef = useRef(null);
     
 
     useEffect(() => {
@@ -33,11 +34,12 @@ export function DriverProvider({ children }) {
     useEffect(() => {
         if (!acceptedBooking) return;
 
-        if (acceptedBooking.status === "completed") {
-            router.push("/(protected)/driver/complete");
-        } else {
-            router.push("/(protected)/driver/en_route");
-        }
+        const screen = acceptedBooking.status === "completed" ? "complete" : "en_route";
+        const key = `${acceptedBooking.id}:${screen}`;
+        if (lastScreenRef.current === key) return;
+        lastScreenRef.current = key;
+
+        router.push(`/(protected)/driver/${screen}`);
     }, [acceptedBooking]);
     
         

@@ -23,7 +23,7 @@ const broadcastDriverLocation = async (sendMessage) => {
 }
 
 export default function booking() {
-    const { acceptedBooking } = useContext(DriverContext)
+    const { acceptedBooking, setAcceptedBooking } = useContext(DriverContext)
     const [driverLocation, setDriverLocation] = useState()
     const [chatVisible, setChatVisible] = useState(false)
     const [messages, setMessages] = useState([])
@@ -92,13 +92,6 @@ export default function booking() {
 
     return (
         <View className="flex-1">
-            <Text>en_route</Text>
-            {
-                driverLocation && <>
-                    <Text>{driverLocation.latitude}</Text>
-                    <Text>{driverLocation.latitude}</Text>
-                </>
-            }
             <MapComponent
                 markers={markers}
                 editMode={false}
@@ -107,7 +100,12 @@ export default function booking() {
                 isRoute={false}
 
             />
-            <BottomDetails booking={acceptedBooking} setChatVisible={setChatVisible} />
+            <BottomDetails
+                booking={acceptedBooking}
+                setChatVisible={setChatVisible}
+                driverLocation={driverLocation}
+                onStatusChange={setAcceptedBooking}
+            />
             <ChatModal
                 visible={chatVisible}
                 onClose={() => setChatVisible(false)}

@@ -1,5 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import React, { createContext, useEffect, useState } from "react";
+import React, { createContext, useEffect, useRef, useState } from "react";
 import passengerListener from "../listeners/passengerListener";
 import {router } from "expo-router";
 
@@ -10,6 +10,7 @@ export default PassengerContext;
 export function PassengerProvider({ children }) {
     const [userId, setUserId] = useState(null);
     const [pendingBooking, setPendingBooking] = useState(null);
+    const lastScreenRef = useRef(null);
     
     useEffect(() => {
         (async () => {
@@ -24,11 +25,12 @@ export function PassengerProvider({ children }) {
     useEffect(() => {
         if (!pendingBooking) return;
 
-        if (pendingBooking.status === "completed") {
-            router.push("/(protected)/passenger/complete");
-        } else {
-            router.push("/(protected)/passenger/en_route");
-        }
+        const screen = pendingBooking.status === "completed" ? "complete" : "en_route";
+        const key = `${pendingBooking.id}:${screen}`;
+        if (lastScreenRef.current === key) return;
+        lastScreenRef.current = key;
+
+        router.push(`/(protected)/passenger/${screen}`);
     }, [pendingBooking]);
     
     

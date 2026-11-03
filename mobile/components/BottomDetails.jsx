@@ -1,11 +1,12 @@
-import { View, Text, TouchableOpacity, Image, ActivityIndicator } from 'react-native'
+import { View, Text, TouchableOpacity, Image, ActivityIndicator, Alert } from 'react-native'
 import React, { useState, useRef } from 'react'
-import { v4 as uuidv4 } from 'uuid'
+import newIdempotencyKey from '../utils/idempotencyKey'
 import { Ionicons } from '@expo/vector-icons'
 import { completeBooking, inProgressBooking } from "../api/book"
 import IncidentReportModal from './IncidentReportModal'
 import PersonDetailsModal from './PersonDetailsModal'
 import colors from '../constants/colors'
+import { PICKUP_RADIUS_M, distanceToPickupM } from '../utils/pickupProximity'
 
 const FLAG_BG = "#D9A5A0"; // muted red from the design
 
@@ -89,6 +90,7 @@ export default function BottomDetails({
     isDriver = true,
     onStatusChange,
     setChatVisible,
+    driverLocation,
 }) {
     const [loading, setLoading] = useState(false)
     const [visible, setVisible] = useState(false)
@@ -101,18 +103,25 @@ export default function BottomDetails({
     const person = getPerson(booking, isDriver)
     const showAction = isDriver && (booking.status === "accepted" || booking.status === "in_progress")
 
+    // Pickup is only allowed within PICKUP_RADIUS_M of the start point (the backend checks too)
+    const distanceToPickup = distanceToPickupM(booking, driverLocation)
+    const pickupLocked =
+        booking.status === "accepted" && (distanceToPickup == null || distanceToPickup > PICKUP_RADIUS_M)
+
     const handleInProgress = async () => {
         if (!inProgressKeyRef.current) {
-            inProgressKeyRef.current = uuidv4()
+            inProgressKeyRef.current = newIdempotencyKey()
         }
 
         setLoading(true)
         try {
-            const updated = await inProgressBooking(booking.id, inProgressKeyRef.current)
+            const updated = await inProgressBooking(booking.id, inProgressKeyRef.current, driverLocation)
             onStatusChange?.(updated)
             inProgressKeyRef.current = null
         } catch (err) {
-            console.error("Failed to mark booking in progress:", err)
+            // the request failed, so the next tap is a new attempt
+            inProgressKeyRef.current = null
+            Alert.alert("Can't pick up yet", err.message)
         } finally {
             setLoading(false)
         }
@@ -120,7 +129,7 @@ export default function BottomDetails({
 
     const handleComplete = async () => {
         if (!completeKeyRef.current) {
-            completeKeyRef.current = uuidv4()
+            completeKeyRef.current = newIdempotencyKey()
         }
 
         setLoading(true)
@@ -129,14 +138,15 @@ export default function BottomDetails({
             onStatusChange?.(updated)
             completeKeyRef.current = null
         } catch (err) {
-            console.error("Failed to complete booking:", err)
+            completeKeyRef.current = null
+            Alert.alert("Couldn't complete the ride", err.message)
         } finally {
             setLoading(false)
         }
     }
 
     const handlePress = () => {
-        if (loading) return
+        if (loading || pickupLocked) return
         if (booking.status === "accepted") {
             handleInProgress()
         } else if (booking.status === "in_progress") {
@@ -169,19 +179,6 @@ export default function BottomDetails({
                     ₱ {booking.price ?? "--"}
                 </Text>
 
-                {booking.type === "special" && (
-                    <View
-                        style={{
-                            marginLeft: 10,
-                            backgroundColor: colors.primary,
-                            borderRadius: 4,
-                            paddingHorizontal: 8,
-                            paddingVertical: 2,
-                        }}
-                    >
-                        <Text style={{ color: colors.onPrimary, fontSize: 10 }}>Priority</Text>
-                    </View>
-                )}
 
                 <View style={{ flex: 1 }} />
 
@@ -263,7 +260,7 @@ export default function BottomDetails({
             {showAction && (
                 <TouchableOpacity
                     onPress={handlePress}
-                    disabled={loading}
+                    disabled={loading || pickupLocked}
                     activeOpacity={0.85}
                     style={{
                         marginTop: 18,
@@ -271,7 +268,7 @@ export default function BottomDetails({
                         borderRadius: 999,
                         paddingVertical: 16,
                         alignItems: "center",
-                        opacity: loading ? 0.7 : 1,
+                        opacity: loading ? 0.7 : pickupLocked ? 0.5 : 1,
                     }}
                 >
                     {loading ? (
@@ -282,6 +279,14 @@ export default function BottomDetails({
                         </Text>
                     )}
                 </TouchableOpacity>
+            )}
+
+            {showAction && pickupLocked && (
+                <Text style={{ marginTop: 8, textAlign: "center", color: colors.dark, fontSize: 12 }}>
+                    {distanceToPickup == null
+                        ? "Getting your location..."
+                        : `You are ${Math.round(distanceToPickup)} m away. Get within ${PICKUP_RADIUS_M} m of the pickup point to pick up the passenger.`}
+                </Text>
             )}
 
             <PersonDetailsModal

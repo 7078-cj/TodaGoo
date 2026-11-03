@@ -1,12 +1,10 @@
-from django.contrib.gis.geos import Point
 from django.core.cache import cache
 
+from ..booking.helpers.pickup_proximity import is_near_pickup
 from ..booking.models import Booking
 from ..user.utils import create_notification
-from ..utils.distance import haversine_distance
 from .chat_presence import is_chat_open
 
-DRIVER_NEARBY_RADIUS_M = 150
 DRIVER_NEARBY_FLAG_TIMEOUT = 60 * 60 * 24
 
 
@@ -32,8 +30,7 @@ def notify_if_driver_nearby(booking_id, lat, lng):
     if booking.status != Booking.Status.ACCEPTED:
         return False
 
-    distance_m = haversine_distance(Point(lng, lat, srid=4326), booking.start) * 1000
-    if distance_m > DRIVER_NEARBY_RADIUS_M:
+    if not is_near_pickup(booking, lat, lng):
         return False
 
     # cache.add is atomic: only the first location update inside the radius notifies

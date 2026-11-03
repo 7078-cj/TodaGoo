@@ -22,8 +22,9 @@ def assign_driver_sync(booking_id, exclude_driver_ids=None):
 
         passenger_user_id = booking.passenger.user.id
 
+        # Already taken (e.g. a decline/timeout re-ran assignment after another driver accepted):
+        # nothing to assign. booking_error() would delete the booking, so leave it alone.
         if booking.status != Booking.Status.PENDING or booking.driver_id is not None:
-            booking_error("Booking is accepted", passenger_user_id, booking, transaction)
             return
 
         toda = get_nearest_toda(booking)

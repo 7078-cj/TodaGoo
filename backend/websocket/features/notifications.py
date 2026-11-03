@@ -1,7 +1,7 @@
 from asgiref.sync import sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer
 from websocket.auth import SubprotocolAcceptMixin
-from django.core.serializers import json
+import json
 
 class NotificationConsumer(SubprotocolAcceptMixin, AsyncWebsocketConsumer):  # [SEC-H8]
     async def connect(self):

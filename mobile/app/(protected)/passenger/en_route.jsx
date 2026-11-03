@@ -62,7 +62,6 @@ export default function booking() {
 
     return (
         <View className="flex-1">
-            <Text>en_route</Text>
             <MapComponent
                 markers={markers}
                 editMode={false}

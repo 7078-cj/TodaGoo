@@ -16,7 +16,7 @@ export const driverQueue = async (location) => {
 }
 
 export const driverDequeue = async () => {
-    const res = await deleteRequest('booking/driver/queue', true)
+    const res = await deleteRequest('booking/driver/dequeue', true)
     return res.data
 }
 

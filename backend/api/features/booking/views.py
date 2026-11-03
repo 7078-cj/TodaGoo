@@ -21,6 +21,7 @@ from rest_framework.exceptions import ValidationError
 
 from ..utils.roles import is_toda_admin
 from ..utils.security import validate_booking_payload, DRIVER_PENDING
+from .helpers.pickup_proximity import PICKUP_RADIUS_M, distance_to_pickup_m, get_driver_coords
 
 # [SEC-M12] statuses that count as "the passenger already has a booking"
 ACTIVE_BOOKING_STATUSES = ['pending', 'accepted', 'in_progress']
@@ -159,6 +160,19 @@ class BookingDetailView(IdempotentAPIView,APIView):
                 {"error": f"Cannot transition booking from '{booking.status}' to '{new_status}'"},
                 status=400,
             )
+
+        # the driver can only pick up the passenger once they are at the pickup point
+        if new_status == Booking.Status.IN_PROGRESS:
+            coords = get_driver_coords(booking.id, request.data.get("location"))
+            if coords is None:
+                return Response({"error": "Your location is not available yet. Please try again."}, status=400)
+
+            distance_m = distance_to_pickup_m(booking, *coords)
+            if distance_m > PICKUP_RADIUS_M:
+                return Response(
+                    {"error": f"You are {round(distance_m)} m from the pickup point. Get within {PICKUP_RADIUS_M} m to pick up the passenger."},
+                    status=400,
+                )
 
         booking.status = new_status
         booking.save()

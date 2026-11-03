@@ -1,6 +1,6 @@
 import { View, Text, ScrollView, useWindowDimensions } from 'react-native'
 import React, { useState, useRef, useMemo, useEffect } from 'react'
-import { v4 as uuidv4 } from 'uuid'
+import newIdempotencyKey from '../../../utils/idempotencyKey'
 import MapComponent from '@/components/map/MapComponent' 
 import SetLocationMapModal from '@/components/SetLocationMapModal';
 import RouteCard from '@/components/booking/RouteCard'
@@ -32,7 +32,7 @@ export default function Book() {
     const [selectedAddress, setSelectedAddress] = useState(null);
     const [routes, setRoutes] = useState([]);
 
-    const idempotencyKeyRef = useRef(uuidv4());
+    const idempotencyKeyRef = useRef(newIdempotencyKey());
 
     const { price, loading: fareLoading, error: fareError } = useFareEstimate(
         startLocation,
