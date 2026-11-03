@@ -1,4 +1,5 @@
 import useWebSocket from "../hooks/useWebsocket";
+import { setReadyDrivers } from "../utils/driverAvailabilityStore";
 
 function handlePassengerMessage(data, setPendingBooking) {
     switch (data.type) {
@@ -8,6 +9,14 @@ function handlePassengerMessage(data, setPendingBooking) {
 
         case "booking_updated":
             setPendingBooking(data.data);
+            break;
+
+        case "driver_availability":
+            setReadyDrivers(data.data.ready_drivers);
+            break;
+
+        // handled by NotificationContext over ws/notifications
+        case "notification_update":
             break;
 
         default:

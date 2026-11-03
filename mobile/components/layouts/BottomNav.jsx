@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AuthContext from "@/contexts/AuthContext";
 import colors from "@/constants/colors";
+import { useNoDriversAvailable } from "@/utils/driverAvailabilityStore";
 
 export default function BottomNav() {
     const router = useRouter();
@@ -13,6 +14,7 @@ export default function BottomNav() {
     const { user } = useContext(AuthContext);
 
     const role = user?.role?.toLowerCase();
+    const noDrivers = useNoDriversAvailable();
 
     const homeRoute =
         role === "passenger"
@@ -61,11 +63,13 @@ export default function BottomNav() {
                         ? pathname === `/${role}/home`
                         : pathname === tab.route ||
                         pathname.startsWith(`${tab.route}/`);
+                const isBookingLocked =
+                    tab.label === "Booking" && role === "passenger" && noDrivers;
 
                 return (
                     <TouchableOpacity
                         key={tab.label}
-                        disabled={isActive}
+                        disabled={isActive || isBookingLocked}
                         activeOpacity={0.7}
                         onPress={() => {
                             if (!isActive) router.push(tab.route);
@@ -77,6 +81,7 @@ export default function BottomNav() {
                                 : "transparent",
                             marginHorizontal: 2,
                             borderRadius: 12,
+                            opacity: isBookingLocked ? 0.4 : 1,
                         }}
                     >
                         <Ionicons

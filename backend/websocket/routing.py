@@ -4,6 +4,7 @@ from .features.driver import DriverConsumer
 from .features.passenger import PassengerConsumer
 from .features.booking import BookingConsumer
 from .features.reports import ReportsConsumer
+from .features.notifications import NotificationConsumer
 
 websocket_urlpatterns = [
     path('ws/some_path/<str:id>/', consumers.MyWebSocketConsumer.as_asgi()),
@@ -11,4 +12,5 @@ websocket_urlpatterns = [
     path('ws/passenger/<str:user_id>', PassengerConsumer.as_asgi()),
     path('ws/booking/<str:booking_id>', BookingConsumer.as_asgi()),
     path('ws/reports/<str:department>', ReportsConsumer.as_asgi()),
+    path('ws/notifications/<str:user_id>', NotificationConsumer.as_asgi()),
 ]

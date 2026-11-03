@@ -16,6 +16,7 @@ import asyncio
 from api.features.booking.serializers import BookingSerializer
 from api.features.booking.helpers.offer_guard import is_booking_offered_to
 from api.features.utils.security import parse_lat_lng
+from api.features.notifications.triggers import notify_booking_accepted
 
 
 class DriverConsumer(SubprotocolAcceptMixin, AsyncWebsocketConsumer):  # [SEC-H8]
@@ -208,6 +209,7 @@ class DriverConsumer(SubprotocolAcceptMixin, AsyncWebsocketConsumer):  # [SEC-H8
             cache.delete(f"driver_{driver.id}_booking")
             cache.delete(f"driver_{driver.id}_location")
             data = BookingSerializer(booking).data
+            notify_booking_accepted(booking)
 
         return data
 

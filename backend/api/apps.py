@@ -13,3 +13,5 @@ class ApiConfig(AppConfig):
         import api.features.reports.signals
         import api.features.chat.signals
         import api.features.user.signals
+        import api.features.notifications.signals
+        import api.features.booking.availability_signals

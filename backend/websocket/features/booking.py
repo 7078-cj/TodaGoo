@@ -8,6 +8,8 @@ from django.core.cache import cache
 from api.features.booking.models import Booking
 from api.features.booking.serializers import BookingSerializer
 from api.features.utils.security import parse_lat_lng
+from api.features.notifications.triggers import notify_if_driver_nearby
+from api.features.notifications.chat_presence import set_chat_open, set_chat_closed
 
 
 class BookingConsumer(SubprotocolAcceptMixin, AsyncWebsocketConsumer):  # [SEC-H8]
@@ -89,6 +91,14 @@ class BookingConsumer(SubprotocolAcceptMixin, AsyncWebsocketConsumer):  # [SEC-H
                 }
             )
 
+            await database_sync_to_async(notify_if_driver_nearby)(self.booking_id, coords[0], coords[1])
+
+        elif action == "chat_open":
+            await database_sync_to_async(set_chat_open)(self.booking_id, self.user.id)
+
+        elif action == "chat_close":
+            await database_sync_to_async(set_chat_closed)(self.booking_id, self.user.id)
+
 
     async def driver_location(self, event):
         await self.send(text_data=json.dumps({
@@ -111,6 +121,8 @@ class BookingConsumer(SubprotocolAcceptMixin, AsyncWebsocketConsumer):  # [SEC-H
     async def disconnect(self, close_code):
         if hasattr(self, "group_name"):
             await self.channel_layer.group_discard(self.group_name, self.channel_name)
+        if hasattr(self, "booking"):
+            await database_sync_to_async(set_chat_closed)(self.booking_id, self.user.id)
 
     @database_sync_to_async
     def check_driver(self):

@@ -5,6 +5,7 @@ from channels.db import database_sync_to_async
 from django.core.exceptions import ObjectDoesNotExist
 from api.features.booking.models import Booking
 from api.features.booking.serializers import BookingSerializer
+from api.features.booking.helpers.driver_availability import PASSENGERS_ONLINE_GROUP, driver_availability_payload
 
 
 class PassengerConsumer(SubprotocolAcceptMixin, AsyncWebsocketConsumer):  # [SEC-H8]
@@ -18,7 +19,13 @@ class PassengerConsumer(SubprotocolAcceptMixin, AsyncWebsocketConsumer):  # [SEC
             return
 
         await self.channel_layer.group_add(self.group_name, self.channel_name)
+        await self.channel_layer.group_add(PASSENGERS_ONLINE_GROUP, self.channel_name)
         await self.accept()
+
+        await self.send(text_data=json.dumps({
+            "type": "driver_availability",
+            "data": await database_sync_to_async(driver_availability_payload)(),
+        }))
 
 
         booking = await self.get_accepted_booking()
@@ -30,6 +37,7 @@ class PassengerConsumer(SubprotocolAcceptMixin, AsyncWebsocketConsumer):  # [SEC
 
     async def disconnect(self, close_code):
         await self.channel_layer.group_discard(self.group_name, self.channel_name)
+        await self.channel_layer.group_discard(PASSENGERS_ONLINE_GROUP, self.channel_name)
 
     async def booking_accepted(self, event):
         await self.send(text_data=json.dumps({
@@ -42,6 +50,16 @@ class PassengerConsumer(SubprotocolAcceptMixin, AsyncWebsocketConsumer):  # [SEC
                 "type": "booking_completed",
                 "data": event["data"]
             }))
+
+    async def driver_availability(self, event):
+        await self.send(text_data=json.dumps({
+            "type": "driver_availability",
+            "data": event["data"],
+        }))
+
+    # notifications are sent to user_<id>, the same group this consumer joins
+    async def notification_update(self, event):
+        await self.send(text_data=json.dumps(event))
 
     async def booking_unavailable(self, event):
         await self.send(text_data=json.dumps({

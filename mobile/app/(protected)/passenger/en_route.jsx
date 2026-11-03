@@ -5,6 +5,7 @@ import bookingListener from '../../../listeners/bookingListener'
 import MapComponent from '../../../components/map/MapComponent'
 import BottomDetails from '../../../components/BottomDetails'
 import ChatModal from '../../../components/chat/ChatModal'
+import useChatPresence from '../../../hooks/useChatPresence'
 
 export default function booking() {
     const { pendingBooking } = useContext(PassengerContext)
@@ -18,6 +19,8 @@ export default function booking() {
         setDriverLocation,
         setMessages
     )
+
+    useChatPresence(ws.sendMessage, ws.connected, chatVisible)
 
     const markers = [
         {

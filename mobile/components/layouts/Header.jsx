@@ -4,9 +4,11 @@ import { useProfile } from "../../contexts/ProfileContext";
 import colors from "../../constants/colors";
 import { Ionicons } from "@expo/vector-icons";
 import {router } from "expo-router";
+import { useNotifications } from "../../contexts/NotificationContext";
 
 export default function Header() {
     const { profile, details } = useProfile();
+    const { unreadCount } = useNotifications();
 
     const username = profile?.first_name ?? profile?.username ?? "User";
     const photo = details?.profile_picture;
@@ -58,6 +60,16 @@ export default function Header() {
                     size={25}
                     color={colors.onPrimary}
                 />
+                {unreadCount > 0 && (
+                    <View
+                        className="absolute -right-1 -top-1 h-5 items-center justify-center rounded-full px-1"
+                        style={{ minWidth: 20, backgroundColor: colors.error }}
+                    >
+                        <Text className="text-xs font-bold" style={{ color: colors.onPrimary }}>
+                            {unreadCount > 99 ? "99+" : unreadCount}
+                        </Text>
+                    </View>
+                )}
             </TouchableOpacity>
         </View>
     );

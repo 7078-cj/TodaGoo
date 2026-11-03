@@ -5,6 +5,8 @@ import { Text, View } from "react-native";
 import BottomNav from "../../components/layouts/BottomNav";
 import Header from "../../components/layouts/Header";
 import { ProfileProvider } from "../../contexts/ProfileContext";
+import { NotificationProvider } from "../../contexts/NotificationContext";
+import NotificationToast from "../../components/NotificationToast";
 
 function getRole(user) {
     const explicit = user?.role ?? user?.user_type;
@@ -98,17 +100,20 @@ export default function ProtectedLayout() {
 
     return (
         <ProfileProvider role={auth.status === "ok" ? auth.role : null}>
-            {!isOtpRoute && <Header />}
+            <NotificationProvider>
+                {!isOtpRoute && <Header />}
 
-            <Stack
-                screenOptions={{
-                    headerShown: false,
-                    animation: "fade",
-                    animationDuration: 180,
-                }}
-            />
+                <Stack
+                    screenOptions={{
+                        headerShown: false,
+                        animation: "fade",
+                        animationDuration: 180,
+                    }}
+                />
 
-            {!isOtpRoute && <BottomNav />}
+                {!isOtpRoute && <BottomNav />}
+                {!isOtpRoute && <NotificationToast />}
+            </NotificationProvider>
         </ProfileProvider>
     );
 }

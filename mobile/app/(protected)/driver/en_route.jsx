@@ -6,6 +6,7 @@ import { getLocation } from "../../../utils/location"
 import MapComponent from '../../../components/map/MapComponent'
 import BottomDetails from '../../../components/BottomDetails';
 import ChatModal from '../../../components/chat/ChatModal';
+import useChatPresence from '../../../hooks/useChatPresence';
 
 const broadcastDriverLocation = async (sendMessage) => {
     try {
@@ -34,6 +35,8 @@ export default function booking() {
             setDriverLocation,
             setMessages
         )
+
+    useChatPresence(sendMessage, connected, chatVisible)
 
     useEffect(() => {
         broadcastDriverLocation(sendMessage);

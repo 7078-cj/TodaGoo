@@ -3,8 +3,11 @@ import React from 'react'
 import MapComponent from '@/components/map/MapComponent'
 import { router } from 'expo-router'
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useNoDriversAvailable } from '@/utils/driverAvailabilityStore'
 
 export default function Home() {
+    const noDrivers = useNoDriversAvailable()
+
     const handleRoute = () => {
         router.push('/(protected)/passenger/book')
     }
@@ -40,11 +43,13 @@ export default function Home() {
 
                 <TouchableOpacity
                     onPress={handleRoute}
+                    disabled={noDrivers}
                     activeOpacity={0.85}
                     className="bg-[#0F5A4A] py-4 rounded-full" 
+                    style={noDrivers ? { opacity: 0.5 } : undefined}
                 >
                     <Text className="text-white text-center text-lg font-medium">
-                        Book a Ride
+                        {noDrivers ? 'No drivers available' : 'Book a Ride'}
                     </Text>
                 </TouchableOpacity>
             </View>
