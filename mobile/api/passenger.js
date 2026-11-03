@@ -1,4 +1,4 @@
-import { getRequest, postRequest } from "../utils/requests";
+import { getRequest, postRequest, patchRequest } from "../utils/requests";
 
 export const passengerRegister = async (body) =>{
     const res = await postRequest('passenger/', body, false)
@@ -18,4 +18,10 @@ export const resendPassengerOtp = async () => {
 export const getPassengerProfile = async () => {
     const res = await getRequest('passenger/me/', {},true)
     return res.data
+}
+
+// body: { first_name, ..., passenger_profile: { address, ..., profile_picture } }.
+// With a photo the request goes as multipart ("passenger_profile.address", ...), which the backend expects.
+export const updatePassengerProfile = async (userId, body) => {
+    return await patchRequest(`passenger/${userId}/`, body, true)
 }

@@ -12,6 +12,7 @@ export default function FormTextField({
     keyboardType = "default",
     maxLength,
     autoCapitalize = "sentences",
+    multiline = false,
 }) {
     const [hidden, setHidden] = useState(secure);
 
@@ -32,6 +33,8 @@ export default function FormTextField({
                     maxLength={maxLength}
                     autoCapitalize={autoCapitalize}
                     secureTextEntry={secure && hidden}
+                    multiline={multiline}
+                    style={multiline ? { minHeight: 72, textAlignVertical: "top" } : undefined}
                 />
 
                 {secure && (

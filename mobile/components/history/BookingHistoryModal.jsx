@@ -6,6 +6,7 @@ import colors from '../../constants/colors'
 import MapComponent from '../map/MapComponent'
 import Messages from '../chat/Messages'
 import Avatar from '../Avatar'
+import { TappablePhoto } from '../PhotoViewer'
 import { getPerson } from '../../utils/person'
 import formatDateTime from '../../utils/formatDateTime'
 import { STATUS_STYLES } from './HistoryCard'
@@ -193,7 +194,9 @@ export default function BookingHistoryModal({ booking, visible, onClose, current
                     {person && (
                         <Section title={isDriver ? "Passenger" : "Driver"}>
                             <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 6 }}>
-                                <Avatar uri={person.photo} size={48} />
+                                <TappablePhoto uri={person.photo} accessibilityLabel={`View ${person.name}'s photo`}>
+                                    <Avatar uri={person.photo} size={48} />
+                                </TappablePhoto>
                                 <View style={{ marginLeft: 12, flex: 1 }}>
                                     <Text style={{ fontSize: 15, fontWeight: "700", color: colors.dark }}>{person.name}</Text>
                                     {person.rating != null && (

@@ -3,7 +3,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework.response import Response
 from rest_framework.decorators import api_view, throttle_classes, permission_classes
 from rest_framework.permissions import AllowAny
-from rest_framework.throttling import ScopedRateThrottle
+from rest_framework.throttling import SimpleRateThrottle
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
 
@@ -30,7 +30,9 @@ from ..utils.roles import get_user_role, get_admin_department
 User = get_user_model()
 
 
-class PasswordResetThrottle(ScopedRateThrottle):
+# SimpleRateThrottle, not ScopedRateThrottle: ScopedRateThrottle replaces `scope` with the view's
+# `throttle_scope` attribute (None on these function views), which silently disabled the limit.
+class PasswordResetThrottle(SimpleRateThrottle):
     """[SEC-C2] Per-IP limit for the password reset endpoints (rate: settings 'password_reset')."""
     scope = "password_reset"
 
@@ -173,9 +175,12 @@ def verify_reset_code(request):
     return Response({"message": "Code verified", 'is_permitted': True})
 
 
-class PasswordChangeThrottle(ScopedRateThrottle):
+class PasswordChangeThrottle(SimpleRateThrottle):
     """Per-user limit on change-password attempts (rate: settings 'password_change')."""
     scope = "password_change"
+
+    def get_cache_key(self, request, view):
+        return self.cache_format % {"scope": self.scope, "ident": request.user.pk}
 
 
 @api_view(["POST"])

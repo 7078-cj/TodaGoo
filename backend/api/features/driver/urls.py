@@ -3,6 +3,7 @@ from .views import (
     DriverListCreateView,
     DriverRetrieveUpdateDestroyView,
     get_profile,
+    get_earnings,
     verify_driver_otp,
     resend_driver_otp
 )
@@ -13,4 +14,5 @@ urlpatterns = [
     path("verify-otp/", verify_driver_otp, name="verify-driver-otp"),
     path("resend-otp/", resend_driver_otp, name="resend-driver-otp"),
     path("me/", get_profile, name="driver-profile"),
+    path("earnings/", get_earnings, name="driver-earnings"),
 ]

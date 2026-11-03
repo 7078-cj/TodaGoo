@@ -3,6 +3,7 @@ import React from 'react'
 import { Ionicons } from '@expo/vector-icons'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import colors from '../constants/colors'
+import { TappablePhoto } from './PhotoViewer'
 
 function InfoRow({ icon, label, value }) {
     if (!value) return null
@@ -21,11 +22,13 @@ function VehiclePhoto({ uri, label }) {
     if (!uri) return null
     return (
         <View style={{ flex: 1 }}>
-            <Image
-                source={{ uri }}
-                style={{ width: "100%", height: 110, borderRadius: 12, backgroundColor: "#E5E7EB" }}
-                resizeMode="cover"
-            />
+            <TappablePhoto uri={uri} accessibilityLabel={`View ${label.toLowerCase()} vehicle photo`}>
+                <Image
+                    source={{ uri }}
+                    style={{ width: "100%", height: 110, borderRadius: 12, backgroundColor: "#E5E7EB" }}
+                    resizeMode="cover"
+                />
+            </TappablePhoto>
             <Text style={{ fontSize: 11, color: "#6B7280", textAlign: "center", marginTop: 4 }}>
                 {label}
             </Text>
@@ -79,10 +82,12 @@ export default function PersonDetailsModal({ visible, onClose, person, onMessage
                         {/* Identity */}
                         <View style={{ alignItems: "center" }}>
                             {person.photo ? (
-                                <Image
-                                    source={{ uri: person.photo }}
-                                    style={{ width: 96, height: 96, borderRadius: 48, backgroundColor: "#E5E7EB" }}
-                                />
+                                <TappablePhoto uri={person.photo} accessibilityLabel={`View ${person.name}'s photo`}>
+                                    <Image
+                                        source={{ uri: person.photo }}
+                                        style={{ width: 96, height: 96, borderRadius: 48, backgroundColor: "#E5E7EB" }}
+                                    />
+                                </TappablePhoto>
                             ) : (
                                 <View
                                     style={{

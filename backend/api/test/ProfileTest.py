@@ -1,6 +1,7 @@
 """What the mobile Profile screen relies on: `me/` (incl. rating), profile updates sent the way the
 app sends them (multipart with flat 'passenger_profile.x' keys + photo), and change-password."""
 import io
+from datetime import datetime, timezone as dt_timezone
 from unittest import mock
 
 from django.core.cache import cache
@@ -14,9 +15,11 @@ from rest_framework.test import APITestCase
 from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from api.features.booking.models import Booking
 from api.features.utils import password_change
+from api.features.utils.distance import PH_TZ
 
-from .factories import PASSWORD, make_driver, make_passenger, make_station, make_toda
+from .factories import PASSWORD, make_booking, make_driver, make_passenger, make_station, make_toda
 
 NEW_PASSWORD = "Br4nd-New!Passw0rd"
 
@@ -212,3 +215,71 @@ class ChangePasswordTests(ProfileBase):
         self.assertEqual(bad.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("otp", bad.data)
         self.assertEqual(good.status_code, status.HTTP_200_OK, good.data)
+
+
+class PasswordResetThrottleTests(APITestCase):
+    """Regression: PasswordResetThrottle was a ScopedRateThrottle, whose scope came from the
+    (missing) view attribute, so the [SEC-C2] limit never applied."""
+
+    def setUp(self):
+        cache.clear()
+
+    def test_forgot_password_is_throttled_per_ip(self):
+        with mock.patch("api.features.user.views.PasswordResetThrottle.get_rate", return_value="2/hour"):
+            codes = [
+                self.client.post(reverse("request_password_reset"), {"email": "x@example.com"}).status_code
+                for _ in range(3)
+            ]
+        self.assertEqual(codes, [200, 200, 429])
+
+
+# ---------------------------------------------------------------------------
+# Driver earnings (Earnings tab)
+# ---------------------------------------------------------------------------
+class DriverEarningsTests(ProfileBase):
+    URL = "driver-earnings"
+    # Wednesday 2026-06-17 10:00 in the Philippines (02:00 UTC)
+    NOW = datetime(2026, 6, 17, 2, 0, tzinfo=dt_timezone.utc)
+
+    def ride(self, ph_time, price, status_=None, driver=None):
+        booking = make_booking(self.passenger, driver or self.driver, status=status_ or Booking.Status.COMPLETED)
+        booking.price = price
+        booking.save()
+        # updated_at is auto_now, so set the completion time directly
+        Booking.objects.filter(id=booking.id).update(updated_at=ph_time.astimezone(dt_timezone.utc))
+        return booking
+
+    def earnings(self, user=None):
+        self.client.force_authenticate(user or self.driver.user)
+        with mock.patch("api.features.driver.views.timezone.now", return_value=self.NOW):
+            return self.client.get(reverse(self.URL))
+
+    def test_today_week_month_buckets(self):
+        ph = lambda *args: datetime(*args, tzinfo=PH_TZ)
+        self.ride(ph(2026, 6, 17, 8, 0), 45)       # today
+        self.ride(ph(2026, 6, 16, 23, 59), 40)     # yesterday (PH), still this week
+        self.ride(ph(2026, 6, 15, 9, 0), 35)       # Monday: this week
+        self.ride(ph(2026, 6, 2, 9, 0), 30)        # this month only
+        self.ride(ph(2026, 5, 31, 23, 0), 50)      # last month
+        self.ride(ph(2026, 6, 17, 9, 0), 99, status_=Booking.Status.CANCELLED)
+        self.ride(ph(2026, 6, 17, 9, 0), 99, status_=Booking.Status.IN_PROGRESS)
+        toda = self.driver.toda_boundary
+        self.ride(ph(2026, 6, 17, 9, 0), 99, driver=make_driver(toda, self.driver.toda_station))
+
+        res = self.earnings()
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(res.data["today"], {"total": 45, "trips": 1})
+        self.assertEqual(res.data["week"], {"total": 120, "trips": 3})
+        self.assertEqual(res.data["month"], {"total": 150, "trips": 4})
+
+    def test_no_rides_is_zero(self):
+        res = self.earnings()
+        zero = {"total": 0, "trips": 0}
+        self.assertEqual(res.data, {"today": zero, "week": zero, "month": zero})
+
+    def test_passenger_is_rejected(self):
+        self.assertEqual(self.earnings(self.passenger.user).status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_anonymous_is_rejected(self):
+        self.assertEqual(self.client.get(reverse(self.URL)).status_code, status.HTTP_401_UNAUTHORIZED)

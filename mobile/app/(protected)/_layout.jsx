@@ -31,7 +31,7 @@ export default function ProtectedLayout() {
     const path = segments.join("/");
     const isOtpRoute = segments.includes("otp");
     // screens that render their own PageHeader instead of the "Hello" Header
-    const hasOwnHeader = segments.includes("history");
+    const hasOwnHeader = ["history", "profile", "edit_profile"].some((s) => segments.includes(s));
 
     useEffect(() => {
         let cancelled = false;

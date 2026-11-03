@@ -1,3 +1,5 @@
+import { Platform } from "react-native";
+import { File } from "expo-file-system";
 import { getStoredToken } from "./tokenStorage";
 
 const API = process.env.EXPO_PUBLIC_API_URL ?? "";
@@ -56,15 +58,27 @@ const containsFile = (value) => {
     return false;
 };
 
+// A picked image as a multipart part.
+// Expo replaces the global fetch with its own (expo/winter), which builds multipart bodies itself and
+// only accepts strings, Blobs or objects with bytes(): React Native's { uri, name, type } parts throw
+// "Unsupported FormDataPart implementation". expo-file-system's File reads the image's bytes and
+// carries its name and MIME type. Web keeps the old shape (browser FormData, no local file paths).
+const toUploadPart = (key, value) => {
+    if (Platform.OS === "web") {
+        return {
+            uri: value.uri,
+            name: value.fileName || value.name || `${key}.jpg`,
+            type: value.mimeType || value.type || "image/jpeg",
+        };
+    }
+    return new File(value.uri);
+};
+
 const appendToFormData = (formData, key, value) => {
     if (value === undefined || value === null) return;
 
     if (isFileObject(value)) {
-        formData.append(key, {
-            uri: value.uri,
-            name: value.fileName || value.name || `${key}.jpg`,
-            type: value.mimeType || value.type || "image/jpeg",
-        });
+        formData.append(key, toUploadPart(key, value));
         return;
     }
 

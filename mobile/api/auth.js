@@ -47,3 +47,18 @@ export const updateToken = async (setToken, setUser, logoutUser) => {
         JSON.stringify(user)
     );
 };
+
+// Store a new token pair the same way login / refresh do
+export async function saveTokens(tokens, setToken, setUser) {
+    const user = jwtDecode(tokens.access);
+    setToken(tokens);
+    setUser(user);
+    await setStoredToken(JSON.stringify(tokens)); // [SEC-L4]
+    await AsyncStorage.setItem("user", JSON.stringify(user));
+}
+
+// body: the verification fields (see constants/passwordChange.js) + new_password.
+// Other sessions are signed out; the response carries a fresh token pair for this device.
+export const changePassword = async (body) => {
+    return await postRequest("user/change-password/", body, true);
+};

@@ -20,6 +20,11 @@ from ..utils.otp import (
 from ..user.models import Driver
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework import status
+from datetime import timedelta
+from django.db.models import Count, Sum
+from django.utils import timezone
+from ..booking.models import Booking
+from ..utils.distance import PH_TZ
 
 
 class DriverListCreateView(ListCreateAPIView):
@@ -121,3 +126,34 @@ def verify_driver_otp(request):
 def resend_driver_otp(request):
     """POST (no body) -> replaces the driver's OTP and sends it again."""
     return _resend_otp(request, Driver, ROLE_DRIVER)
+
+
+def _completed_since(driver, start):
+    """Total fare and number of the driver's completed rides finished at/after `start`."""
+    totals = Booking.objects.filter(
+        driver=driver,
+        status=Booking.Status.COMPLETED,
+        updated_at__gte=start,  # updated_at = when the ride was marked completed
+    ).aggregate(total=Sum("price"), trips=Count("id"))
+    return {"total": totals["total"] or 0, "trips": totals["trips"]}
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def get_earnings(request):
+    """GET -> the driver's earnings for today, this week (from Monday) and this month, in PH time."""
+    driver = getattr(request.user, "driver_profile", None)
+    if driver is None:
+        return Response({"detail": "Driver profile not found."}, status=status.HTTP_403_FORBIDDEN)
+
+    now = timezone.now().astimezone(PH_TZ)
+    today = now.replace(hour=0, minute=0, second=0, microsecond=0)
+
+    return Response(
+        {
+            "today": _completed_since(driver, today),
+            "week": _completed_since(driver, today - timedelta(days=today.weekday())),
+            "month": _completed_since(driver, today.replace(day=1)),
+        },
+        status=status.HTTP_200_OK,
+    )
