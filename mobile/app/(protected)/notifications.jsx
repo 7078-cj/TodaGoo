@@ -1,11 +1,11 @@
 import React from "react";
 import { View, Text, FlatList, TouchableOpacity, RefreshControl } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
+import { useRootNavigationState } from "expo-router";
 import { useNotifications } from "../../contexts/NotificationContext";
 import { useProfile } from "../../contexts/ProfileContext";
 import useNotificationsScreen from "../../hooks/useNotificationsScreen";
-import { getNotificationRedirect } from "../../constants/notificationRedirects";
+import { followNotification } from "../../constants/notificationRedirects";
 import colors from "../../constants/colors";
 import timeAgo from "../../utils/timeAgo";
 
@@ -53,13 +53,13 @@ export default function Notifications() {
     const { notifications, unreadCount, loading, refresh, markRead, markAllRead } = useNotifications();
 
     const { role } = useProfile();
+    const rootState = useRootNavigationState();
 
     // configured per type in constants/notificationRedirects.js
     const handlePress = (item) => {
         if (!item.read) markRead(item.id);
 
-        const href = getNotificationRedirect(item, role);
-        if (href) router.push(href);
+        followNotification(item, role, rootState);
     };
 
     // same close as tapping the header bell again

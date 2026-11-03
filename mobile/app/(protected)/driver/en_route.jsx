@@ -39,7 +39,7 @@ export default function booking() {
 
     useChatPresence(sendMessage, connected, chatVisible)
     // a tapped message notification opens the chat (see constants/notificationRedirects.js)
-    useOpenChatParam(setChatVisible)
+    const closeChat = useOpenChatParam(acceptedBooking?.id, setChatVisible)
 
     useEffect(() => {
         broadcastDriverLocation(sendMessage);
@@ -111,7 +111,7 @@ export default function booking() {
             />
             <ChatModal
                 visible={chatVisible}
-                onClose={() => setChatVisible(false)}
+                onClose={closeChat}
                 bookingId={acceptedBooking?.id}
                 currentUserId={acceptedBooking?.driver?.id}
                 messages={messages}
