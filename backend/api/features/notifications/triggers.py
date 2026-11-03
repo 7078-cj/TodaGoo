@@ -2,6 +2,7 @@ from django.core.cache import cache
 
 from ..booking.helpers.pickup_proximity import is_near_pickup
 from ..booking.models import Booking
+from ..user.models import Notification
 from ..user.utils import create_notification
 from .chat_presence import is_chat_open
 
@@ -12,6 +13,8 @@ def notify_booking_accepted(booking):
     create_notification(
         booking.passenger.user,
         f"Your booking #{booking.id} was accepted by {booking.driver.user.username}.",
+        type=Notification.Type.BOOKING_ACCEPTED,
+        booking=booking,
     )
 
 
@@ -40,6 +43,8 @@ def notify_if_driver_nearby(booking_id, lat, lng):
     create_notification(
         booking.passenger.user,
         "Your driver is near your pickup location.",
+        type=Notification.Type.DRIVER_NEARBY,
+        booking=booking,
     )
     return True
 
@@ -63,6 +68,8 @@ def notify_reported_user(report):
     create_notification(
         reported,
         f"You were reported for {report.get_incident_types_display().lower()} on booking #{booking.id}.",
+        type=Notification.Type.REPORTED,
+        booking=booking,
     )
 
 
@@ -73,4 +80,6 @@ def notify_new_message(message):
     create_notification(
         message.receiver,
         f"New message from {message.sender.username}: {message.message[:80]}",
+        type=Notification.Type.NEW_MESSAGE,
+        booking=message.booking,
     )

@@ -320,3 +320,77 @@ class DriverAvailabilityTests(APITestCase):
             DriverQueue.objects.filter(driver=driver).delete()
 
         broadcast.assert_called_once_with(PASSENGERS_ONLINE_GROUP, "driver_availability", {"ready_drivers": 0})
+
+
+# ---------------------------------------------------------------------------
+# Notification type + booking (used by the app to pick a redirect)
+# ---------------------------------------------------------------------------
+class NotificationTypeTests(LayerMixin, APITestCase):
+    def setUp(self):
+        super().setUp()
+        self.toda = make_toda()
+        self.station = make_station(self.toda)
+        self.passenger = make_passenger()
+        self.driver = make_driver(self.toda, self.station)
+        self.booking = make_booking(self.passenger, self.driver)
+
+    def only(self, user):
+        return Notification.objects.get(user=user)
+
+    def test_each_trigger_sets_its_type_and_booking(self):
+        notify_booking_accepted(self.booking)
+        self.assertEqual(
+            (self.only(self.passenger.user).type, self.only(self.passenger.user).booking_id),
+            (Notification.Type.BOOKING_ACCEPTED, self.booking.id),
+        )
+        Notification.objects.all().delete()
+
+        notify_if_driver_nearby(self.booking.id, PICKUP["lat"], PICKUP["lng"])
+        self.assertEqual(self.only(self.passenger.user).type, Notification.Type.DRIVER_NEARBY)
+        self.assertEqual(self.only(self.passenger.user).booking_id, self.booking.id)
+        Notification.objects.all().delete()
+
+        with mock.patch("api.features.chat.signals.broadcast"):
+            Message.objects.create(booking=self.booking, sender=self.passenger.user, receiver=self.driver.user, message="hi")
+        self.assertEqual(self.only(self.driver.user).type, Notification.Type.NEW_MESSAGE)
+        self.assertEqual(self.only(self.driver.user).booking_id, self.booking.id)
+        Notification.objects.all().delete()
+
+        with mock.patch("api.features.reports.signals.get_channel_layer", return_value=None):
+            IncidentReport.objects.create(booking=self.booking, reported_by=self.passenger.user, location=point(PICKUP))
+        self.assertEqual(self.only(self.driver.user).type, Notification.Type.REPORTED)
+
+    def test_default_type_is_general(self):
+        notification = create_notification(self.passenger.user, "Welcome")
+        self.assertEqual(notification.type, Notification.Type.GENERAL)
+        self.assertIsNone(notification.booking_id)
+
+    def test_socket_payload_has_type_and_booking_status(self):
+        with self.captureOnCommitCallbacks(execute=True):
+            notify_booking_accepted(self.booking)
+        payload = self.layer.sent[0][1]["notification"]
+        self.assertEqual(payload["type"], "booking_accepted")
+        self.assertEqual(payload["booking_id"], self.booking.id)
+        self.assertEqual(payload["booking_status"], "accepted")
+
+    def test_rest_list_has_type_and_current_booking_status(self):
+        notify_booking_accepted(self.booking)
+        create_notification(self.passenger.user, "No booking")
+        Booking.objects.filter(id=self.booking.id).update(status=Booking.Status.COMPLETED)
+        self.client.force_authenticate(self.passenger.user)
+
+        res = self.client.get(reverse("get_user_notification"))
+
+        by_type = {n["type"]: n for n in res.data}
+        self.assertEqual(by_type["booking_accepted"]["booking_id"], self.booking.id)
+        self.assertEqual(by_type["booking_accepted"]["booking_status"], "completed")
+        self.assertIsNone(by_type["general"]["booking_id"])
+        self.assertIsNone(by_type["general"]["booking_status"])
+
+    def test_deleting_the_booking_keeps_the_notification(self):
+        notify_booking_accepted(self.booking)
+        # IncidentReport protects bookings, but none exist here
+        self.booking.delete()
+        notification = self.only(self.passenger.user)
+        self.assertIsNone(notification.booking_id)
+        self.assertEqual(notification.type, Notification.Type.BOOKING_ACCEPTED)

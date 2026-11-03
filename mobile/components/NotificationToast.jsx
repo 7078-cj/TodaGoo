@@ -3,13 +3,16 @@ import { Text, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router, usePathname } from "expo-router";
 import { useNotifications } from "../contexts/NotificationContext";
+import { useProfile } from "../contexts/ProfileContext";
 import colors from "../constants/colors";
+import { getNotificationRedirect } from "../constants/notificationRedirects";
 
 const TOAST_DURATION_MS = 4000;
 
 // Pops up when a notification arrives over the socket, anywhere in the protected app
 export default function NotificationToast() {
-    const { incoming, clearIncoming } = useNotifications();
+    const { incoming, clearIncoming, markRead } = useNotifications();
+    const { role } = useProfile();
     const pathname = usePathname();
     const onNotificationsScreen = pathname === "/notifications";
 
@@ -27,7 +30,19 @@ export default function NotificationToast() {
             activeOpacity={0.9}
             onPress={() => {
                 clearIncoming();
-                router.push("/notifications");
+
+                // same redirect as tapping it in the list; otherwise open the list
+                const href = getNotificationRedirect(incoming, role);
+                if (!href) {
+                    router.push("/notifications");
+                    return;
+                }
+
+                markRead(incoming.id);
+                // pathname has no route groups. Already on that screen: just pass the params
+                // (e.g. open the chat) instead of stacking a second copy of it.
+                if (href.pathname.replace("/(protected)", "") === pathname) router.setParams(href.params);
+                else router.push(href);
             }}
             className="absolute left-4 right-4 flex-row items-center gap-3 rounded-2xl px-4 py-3"
             style={{

@@ -61,7 +61,18 @@ class Passenger(models.Model):
         return self.user.username
 
 class Notification(models.Model):
+    # The mobile app picks the redirect for a tapped notification by this type
+    class Type(models.TextChoices):
+        GENERAL = "general", "General"
+        BOOKING_ACCEPTED = "booking_accepted", "Booking accepted"
+        DRIVER_NEARBY = "driver_nearby", "Driver nearby"
+        NEW_MESSAGE = "new_message", "New message"
+        REPORTED = "reported", "Reported"
+
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications')
+    type = models.CharField(max_length=30, choices=Type.choices, default=Type.GENERAL)
+    # string reference: booking.models imports this module
+    booking = models.ForeignKey('api.Booking', on_delete=models.SET_NULL, null=True, blank=True, related_name='notifications')
     message = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
     read = models.BooleanField(default=False)

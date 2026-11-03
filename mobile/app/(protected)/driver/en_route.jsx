@@ -7,6 +7,7 @@ import MapComponent from '../../../components/map/MapComponent'
 import BottomDetails from '../../../components/BottomDetails';
 import ChatModal from '../../../components/chat/ChatModal';
 import useChatPresence from '../../../hooks/useChatPresence';
+import useOpenChatParam from '../../../hooks/useOpenChatParam';
 
 const broadcastDriverLocation = async (sendMessage) => {
     try {
@@ -37,6 +38,8 @@ export default function booking() {
         )
 
     useChatPresence(sendMessage, connected, chatVisible)
+    // a tapped message notification opens the chat (see constants/notificationRedirects.js)
+    useOpenChatParam(setChatVisible)
 
     useEffect(() => {
         broadcastDriverLocation(sendMessage);

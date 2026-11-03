@@ -34,19 +34,6 @@ export default function ChatInput({ onSend, onAttach, sending }) {
                 borderTopColor: colors.border,
             }}
         >
-            <TouchableOpacity
-                onPress={onAttach}
-                style={{
-                    width: 44,
-                    height: 44,
-                    borderRadius: 10,
-                    backgroundColor: FIELD_BG,
-                    alignItems: "center",
-                    justifyContent: "center",
-                }}
-            >
-                <Feather name="paperclip" size={20} color={colors.dark} />
-            </TouchableOpacity>
 
             <TextInput
                 value={text}

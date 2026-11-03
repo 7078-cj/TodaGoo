@@ -27,12 +27,17 @@ def broadcast_notification(notification, action):
         return
 
     def _send():
+        booking = notification.booking
         payload = {
             "type": "notification_update",
             "action": action,
+            # same fields as NotificationSerializer, so the app handles socket and REST items alike
             "notification": {
                 "id": notification.id,
                 "user_id": notification.user_id,
+                "type": notification.type,
+                "booking_id": notification.booking_id,
+                "booking_status": booking.status if booking else None,
                 "message": notification.message,
                 "created_at": notification.created_at.isoformat(),
                 "read": notification.read,
@@ -43,7 +48,7 @@ def broadcast_notification(notification, action):
 
     transaction.on_commit(_send)
 
-def create_notification(user, message):
-    notification = Notification.objects.create(user=user, message=message)
+def create_notification(user, message, type=Notification.Type.GENERAL, booking=None):
+    notification = Notification.objects.create(user=user, message=message, type=type, booking=booking)
     broadcast_notification(notification, "created")
     return notification

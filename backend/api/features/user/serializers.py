@@ -32,6 +32,10 @@ class UserSerializer(UserValidationMixin, serializers.ModelSerializer):
         return instance
 
 class NotificationSerializer(serializers.ModelSerializer):
+    booking_id = serializers.IntegerField(read_only=True)
+    # lets the app skip redirects to rides that have already ended
+    booking_status = serializers.CharField(source='booking.status', read_only=True, default=None)
+
     class Meta:
         model = Notification
-        fields = ('id', 'user', 'message', 'created_at', 'read')
+        fields = ('id', 'user', 'type', 'booking_id', 'booking_status', 'message', 'created_at', 'read')

@@ -6,6 +6,7 @@ import MapComponent from '../../../components/map/MapComponent'
 import BottomDetails from '../../../components/BottomDetails'
 import ChatModal from '../../../components/chat/ChatModal'
 import useChatPresence from '../../../hooks/useChatPresence'
+import useOpenChatParam from '../../../hooks/useOpenChatParam'
 
 export default function booking() {
     const { pendingBooking } = useContext(PassengerContext)
@@ -14,13 +15,23 @@ export default function booking() {
     const [messages, setMessages] = useState([])
 
     const ws = bookingListener(
-        pendingBooking.id, 
+        pendingBooking?.id,
         () => console.log("refresh"), 
         setDriverLocation,
         setMessages
     )
 
     useChatPresence(ws.sendMessage, ws.connected, chatVisible)
+    // a tapped message notification opens the chat (see constants/notificationRedirects.js)
+    useOpenChatParam(setChatVisible)
+
+    if (!pendingBooking) {
+        return (
+            <View>
+                <Text>Loading booking...</Text>
+            </View>
+        )
+    }
 
     const markers = [
         {
@@ -51,14 +62,6 @@ export default function booking() {
                 }]
             : []),
     ];
-
-    if (!pendingBooking) {
-        return (
-            <View>
-                <Text>Loading booking...</Text>
-            </View>
-        )
-    }
 
     return (
         <View className="flex-1">

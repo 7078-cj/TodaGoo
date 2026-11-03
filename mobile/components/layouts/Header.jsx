@@ -3,12 +3,14 @@ import { View, Text, Image, TouchableOpacity } from "react-native";
 import { useProfile } from "../../contexts/ProfileContext";
 import colors from "../../constants/colors";
 import { Ionicons } from "@expo/vector-icons";
-import {router } from "expo-router";
 import { useNotifications } from "../../contexts/NotificationContext";
+import useNotificationsScreen from "../../hooks/useNotificationsScreen";
 
 export default function Header() {
     const { profile, details } = useProfile();
     const { unreadCount } = useNotifications();
+    // the bell opens notifications, and closes them when they're already open
+    const { isOpen: notificationsOpen, toggle: toggleNotifications } = useNotificationsScreen();
 
     const username = profile?.first_name ?? profile?.username ?? "User";
     const photo = details?.profile_picture;
@@ -48,15 +50,16 @@ export default function Header() {
             </View>
 
             <TouchableOpacity
-                onPress={() => router.push("/notifications")}
+                onPress={toggleNotifications}
                 activeOpacity={0.7}
                 className="h-11 w-11 items-center justify-center rounded-full"
-                style={{ backgroundColor: "rgba(255,255,255,0.18)" }}
+                style={{ backgroundColor: notificationsOpen ? "rgba(255,255,255,0.35)" : "rgba(255,255,255,0.18)" }}
                 accessibilityRole="button"
-                accessibilityLabel="Notifications"
+                accessibilityLabel={notificationsOpen ? "Close notifications" : "Notifications"}
+                accessibilityState={{ expanded: notificationsOpen }}
             >
                 <Ionicons
-                    name="notifications-outline"
+                    name={notificationsOpen ? "notifications" : "notifications-outline"}
                     size={25}
                     color={colors.onPrimary}
                 />
