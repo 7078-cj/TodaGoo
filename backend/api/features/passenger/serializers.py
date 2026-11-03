@@ -15,9 +15,11 @@ class PassengerProfileSerializer(PassengerValidationMixin, serializers.ModelSeri
             'contact_number',
             'emergency_contact_name',
             'emergency_contact_number',
-            'status'
+            'status',
+            'rating',
         )
-        read_only_fields = ('status',)
+        # rating is computed from Rate rows (booking signals); the profile screen only shows it
+        read_only_fields = ('status', 'rating')
         # [SEC-H9] size limit on the uploaded image
         extra_kwargs = {'profile_picture': {'validators': [validate_file_size]}}
 

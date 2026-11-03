@@ -557,3 +557,88 @@ class DriverAssignmentTests(TestCase):
         assign_driver_sync(999999)
         offer_broadcast.assert_not_called()
         error_broadcast.assert_not_called()
+
+
+# ---------------------------------------------------------------------------
+# Ride history
+# ---------------------------------------------------------------------------
+@mock.patch("api.features.chat.signals.broadcast")
+class BookingHistoryTests(BookingBase):
+    URL = "booking-history"
+
+    def setUp(self):
+        super().setUp()
+        self.completed = make_booking(self.passenger, self.driver, status=Booking.Status.COMPLETED)
+        self.cancelled = make_booking(self.passenger, self.driver, status=Booking.Status.CANCELLED)
+        self.active = make_booking(self.passenger, self.driver, status=Booking.Status.IN_PROGRESS)
+        make_booking(make_passenger(), make_driver(self.toda, self.station), status=Booking.Status.COMPLETED)
+
+    def history(self, user):
+        self.as_user(user)
+        return self.client.get(reverse(self.URL))
+
+    def test_passenger_sees_own_finished_rides_newest_first(self, _broadcast):
+        res = self.history(self.passenger.user)
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual([b["id"] for b in res.data], [self.cancelled.id, self.completed.id])
+
+    def test_driver_sees_rides_they_drove(self, _broadcast):
+        res = self.history(self.driver.user)
+        self.assertEqual({b["id"] for b in res.data}, {self.completed.id, self.cancelled.id})
+
+    def test_active_and_pending_rides_are_excluded(self, _broadcast):
+        make_booking(self.passenger, status=Booking.Status.PENDING)
+        ids = [b["id"] for b in self.history(self.passenger.user).data]
+        self.assertNotIn(self.active.id, ids)
+        self.assertEqual(len(ids), 2)
+
+    def test_detail_fields(self, _broadcast):
+        from api.features.chat.models import Message
+        Message.objects.create(booking=self.completed, sender=self.driver.user, receiver=self.passenger.user, message="Here")
+        Message.objects.create(booking=self.completed, sender=self.passenger.user, receiver=self.driver.user, message="Coming")
+        Rate.objects.create(user=self.driver.user, rater=self.passenger.user, booking=self.completed, score=5)
+
+        item = next(b for b in self.history(self.passenger.user).data if b["id"] == self.completed.id)
+
+        self.assertEqual(item["start"], PICKUP)
+        self.assertEqual(item["end"], DROPOFF)
+        self.assertEqual(item["status"], "completed")
+        self.assertEqual(item["type"], "regular")
+        self.assertEqual(item["driver"]["vehicle_plate"], self.driver.vehicle_plate)
+        self.assertEqual(item["passenger"]["username"], self.passenger.user.username)
+        self.assertEqual([m["message"] for m in item["messages"]], ["Here", "Coming"])
+        self.assertEqual(item["messages"][0]["sender_id"], self.driver.user.id)
+        self.assertEqual(item["ratings"][0]["score"], 5)
+        self.assertIsNone(item["routes"])
+
+    def test_saved_route_polyline_is_returned(self, _broadcast):
+        route = [{"lat": 14.55, "lng": 121.05}, {"lat": 14.555, "lng": 121.055}, DROPOFF]
+        Booking.objects.filter(id=self.completed.id).update(routes=route)
+        item = next(b for b in self.history(self.passenger.user).data if b["id"] == self.completed.id)
+        self.assertEqual(item["routes"], route)
+
+    def test_query_count_does_not_grow_with_rides(self, _broadcast):
+        from django.db import connection
+        from django.test.utils import CaptureQueriesContext
+
+        self.as_user(self.passenger.user)
+        with CaptureQueriesContext(connection) as few:
+            self.client.get(reverse(self.URL))
+        for _ in range(5):
+            make_booking(self.passenger, make_driver(self.toda, self.station), status=Booking.Status.COMPLETED)
+        with CaptureQueriesContext(connection) as many:
+            self.client.get(reverse(self.URL))
+
+        self.assertEqual(len(few), len(many))
+
+    def test_user_without_role(self, _broadcast):
+        res = self.history(make_admin("TODA"))
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_anonymous_rejected(self, _broadcast):
+        self.assertEqual(self.client.get(reverse(self.URL)).status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_history_is_read_only(self, _broadcast):
+        self.as_user(self.passenger.user)
+        res = self.client.post(reverse(self.URL), {}, format="json")
+        self.assertEqual(res.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)

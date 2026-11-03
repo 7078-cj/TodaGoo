@@ -137,6 +137,8 @@ REST_FRAMEWORK = {
         "user": "100/min",
         # [SEC-C2] Used by ScopedRateThrottle on the forgot/verify/reset/resend endpoints.
         "password_reset": "10/hour",
+        # per user: limits guessing the current password on user/change-password/
+        "password_change": "10/hour",
     },
     "UPLOADED_FILE_USER_URL": False
 }
@@ -375,6 +377,10 @@ EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 # [SEC-H8] WebSocket hardening
 WS_ORIGIN_CHECK = env.bool("WS_ORIGIN_CHECK", default=True)            # reject sockets from unknown Origins
 WS_ALLOW_QUERY_TOKEN = env.bool("WS_ALLOW_QUERY_TOKEN", default=False)  # legacy ?token= support (leaks into logs)
+
+# How a logged-in user proves it's them before changing their password
+# (see api/features/utils/password_change.py; e.g. "otp" once that verifier exists)
+PASSWORD_CHANGE_VERIFIER = env.str("PASSWORD_CHANGE_VERIFIER", default="current_password")
 
 # [SEC-H6] New drivers start as PENDING until a TODA admin approves them
 DRIVER_SIGNUP_REQUIRES_APPROVAL = env.bool("DRIVER_SIGNUP_REQUIRES_APPROVAL", default=True)

@@ -6,6 +6,14 @@ export const bookRide = async (body, idempotencyKey) => {
     return res.data;
 }
 
+// Finished rides (completed / cancelled) of the logged-in passenger or driver, newest first,
+// each with the other party, stops, ratings and the chat log
+export const getBookingHistory = async () => {
+    const res = await getRequest('booking/history/', {}, true)
+    if (!res.success) throw new Error(res.error || "Failed to load ride history")
+    return res.data;
+}
+
 export const getBooking = async (bookingId) => {
     const res = await getRequest(`booking/${bookingId}/`, true)
     if (!res.success) throw new Error(res.error || "Failed to fetch booking")

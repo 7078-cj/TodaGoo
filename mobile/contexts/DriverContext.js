@@ -2,6 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { createContext, useEffect, useRef, useState } from "react";
 import useDriverListener from "../listeners/driverListener";
 import {router } from "expo-router";
+import { setDriverActiveBooking } from "../utils/driverActiveBookingStore";
 
 const DriverContext = createContext(null);
 
@@ -41,6 +42,14 @@ export function DriverProvider({ children }) {
 
         router.push(`/(protected)/driver/${screen}`);
     }, [acceptedBooking]);
+
+    // the bottom nav's Booking tab is only enabled while a ride is active
+    useEffect(() => {
+        setDriverActiveBooking(acceptedBooking);
+    }, [acceptedBooking]);
+
+    // logging out / leaving the driver screens: no active ride for whoever uses the app next
+    useEffect(() => () => setDriverActiveBooking(null), []);
     
         
 

@@ -21,9 +21,11 @@ class DriverProfileSerializer(DriverValidationMixin, serializers.ModelSerializer
             'vehicle_plate',
             'vehicle_front_picture',
             'vehicle_back_picture',
-            "status"
+            "status",
+            'rating',
         )
-        read_only_fields = ('status',)
+        # rating is computed from Rate rows (booking signals); the profile screen only shows it
+        read_only_fields = ('status', 'rating')
         extra_kwargs = {
             'vehicle_plate': {'validators': []},
             # [SEC-H9] size limit on every uploaded image

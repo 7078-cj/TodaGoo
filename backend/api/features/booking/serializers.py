@@ -5,6 +5,7 @@ from ..driver.serializers import DriverReadSerializer
 from ..passenger.serializers import PassengerReadSerializer
 from rest_framework.exceptions import PermissionDenied
 from ..utils.fields import PointField
+from ..chat.models import Message
 
 
 class StopSerializer(serializers.ModelSerializer):
@@ -198,3 +199,51 @@ class RateCreateSerializer(serializers.Serializer):
         )
         rate.rated_role = validated_data["rated_role"]
         return rate
+
+class MessageSerializer(serializers.ModelSerializer):
+    sender_id = serializers.IntegerField(read_only=True)
+    receiver_id = serializers.IntegerField(read_only=True)
+
+    class Meta:
+        model = Message
+        fields = [
+            "id",
+            "message",
+            "sender_id",
+            "receiver_id",
+            "seen",
+            "created_at",
+        ]
+        read_only_fields = fields
+
+class BookingHistorySerializer(serializers.ModelSerializer):
+    # same {lat, lng} shape as BookingSerializer (a bare ModelSerializer gives "SRID=4326;POINT (...)")
+    start = PointField(read_only=True)
+    end = PointField(read_only=True)
+    driver = DriverReadSerializer(read_only=True)
+    passenger = PassengerReadSerializer(read_only=True)
+    stops = StopSerializer(many=True, read_only=True)
+    ratings = RateSerializer(many=True, read_only=True)
+    messages = MessageSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Booking
+        fields = [
+            "id",
+            "passenger",
+            "driver",
+            "start",
+            "start_address",
+            "end",
+            "end_address",
+            "status",
+            "type",
+            "price",
+            "created_at",
+            "updated_at",
+            "stops",
+            "routes",
+            "ratings",
+            "messages",
+        ]
+        read_only_fields = fields

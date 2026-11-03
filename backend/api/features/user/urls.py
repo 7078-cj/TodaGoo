@@ -14,7 +14,8 @@ from .views import (registerUser,
                     AdminMyTokenObtainPairView,
                     get_user_notification,
                     mark_notification_as_read,
-                    mark_all_unread_notifications_as_read)
+                    mark_all_unread_notifications_as_read,
+                    change_password)
 
 
 urlpatterns = [
@@ -26,6 +27,7 @@ urlpatterns = [
     path("verify-code/", verify_reset_code, name='verify_reset_code'),
     path("reset-password/", reset_password, name='reset_password'),
     path("resend-code/", resend_reset_code, name='resend_code'),
+    path("change-password/", change_password, name='change_password'),
     path("notifications/", get_user_notification, name='get_user_notification'),
     path("notifications/mark-as-read/<int:notification_id>/", mark_notification_as_read, name='mark_notification_as_read'),
     path("notifications/mark-all-as-read/", mark_all_unread_notifications_as_read, name='mark_all_unread_notifications_as_read'),

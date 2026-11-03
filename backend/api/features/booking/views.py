@@ -8,6 +8,8 @@ from .serializers import (
     DriverQueueSerializer,
     RateCreateSerializer,
     RateSerializer,
+    BookingHistorySerializer,
+    Message
 )
 from .models import Booking, DriverQueue, Rate
 from rest_framework.views import APIView
@@ -22,11 +24,14 @@ from rest_framework.exceptions import ValidationError
 from ..utils.roles import is_toda_admin
 from ..utils.security import validate_booking_payload, DRIVER_PENDING
 from .helpers.pickup_proximity import PICKUP_RADIUS_M, distance_to_pickup_m, get_driver_coords
+from django.db.models import Prefetch
 
 # [SEC-M12] statuses that count as "the passenger already has a booking"
 ACTIVE_BOOKING_STATUSES = ['pending', 'accepted', 'in_progress']
 # [SEC-M11] a passenger may only delete a booking that no driver has taken yet
 DELETABLE_BOOKING_STATUSES = ['pending']
+# statuses shown in the ride history screen
+HISTORY_BOOKING_STATUSES = ['completed', 'cancelled']
 
 def get_passenger(user):
     return getattr(user, "passenger_profile", None)
@@ -388,3 +393,28 @@ def get_fare_price(request):
     except ValueError as e:
         return Response({"error": str(e)}, status=400)
     return Response({"price": price}, status=200)
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def get_booking_history(request):
+    if hasattr(request.user, "passenger_profile"):
+        filter_kwargs = {"passenger": request.user.passenger_profile}
+    elif hasattr(request.user, "driver_profile"):
+        filter_kwargs = {"driver": request.user.driver_profile}
+    else:
+        return Response({"error": "User is neither a passenger nor a driver"}, status=400)
+
+    bookings = (
+        # history = finished rides only; active ones live on the trip screen
+        Booking.objects.filter(**filter_kwargs, status__in=HISTORY_BOOKING_STATUSES)
+        .select_related("driver__user", "passenger__user")
+        .prefetch_related(
+            "stops",
+            "ratings",
+            Prefetch("messages", queryset=Message.objects.order_by("created_at")),
+        )
+        .order_by("-created_at")
+    )
+
+    serializer = BookingHistorySerializer(bookings, many=True)
+    return Response(serializer.data, status=200)

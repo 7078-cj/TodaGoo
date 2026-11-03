@@ -79,9 +79,51 @@ function buildItems(messages, currentUserId) {
     return items;
 }
 
-export default function Messages({ messages = [], currentUserId, loading }) {
+function renderEntry(item) {
+    return item.type === "separator" ? (
+        <Text
+            style={{
+                textAlign: "center",
+                color: "#6B7280",
+                fontSize: 12,
+                marginTop: 18,
+                marginBottom: 4,
+            }}
+        >
+            {item.label}
+        </Text>
+    ) : (
+        <MessageBubble
+            text={item.text}
+            isMine={item.isMine}
+            groupedWithPrev={item.grouped}
+            showSeen={item.showSeen}
+        />
+    );
+}
+
+// inline: render as a plain View (for use inside a ScrollView, e.g. the ride history log)
+export default function Messages({
+    messages = [],
+    currentUserId,
+    loading,
+    inline = false,
+    emptyText = "No messages yet. Say hello!",
+}) {
     const listRef = useRef(null);
     const items = useMemo(() => buildItems(messages ?? [], currentUserId), [messages, currentUserId]);
+
+    if (inline) {
+        return (
+            <View style={{ paddingVertical: 4 }}>
+                {items.length === 0 ? (
+                    <Text style={{ color: "#6B7280", textAlign: "center", paddingVertical: 12 }}>{emptyText}</Text>
+                ) : (
+                    items.map((item) => <React.Fragment key={item.id}>{renderEntry(item)}</React.Fragment>)
+                )}
+            </View>
+        );
+    }
 
     if (loading && items.length === 0) {
         return (
@@ -96,31 +138,10 @@ export default function Messages({ messages = [], currentUserId, loading }) {
             ref={listRef}
             data={items}
             keyExtractor={(item) => item.id}
-            renderItem={({ item }) =>
-                item.type === "separator" ? (
-                    <Text
-                        style={{
-                            textAlign: "center",
-                            color: "#6B7280",
-                            fontSize: 12,
-                            marginTop: 18,
-                            marginBottom: 4,
-                        }}
-                    >
-                        {item.label}
-                    </Text>
-                ) : (
-                    <MessageBubble
-                        text={item.text}
-                        isMine={item.isMine}
-                        groupedWithPrev={item.grouped}
-                        showSeen={item.showSeen}
-                    />
-                )
-            }
+            renderItem={({ item }) => renderEntry(item)}
             ListEmptyComponent={
                 <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-                    <Text style={{ color: "#6B7280" }}>No messages yet. Say hello!</Text>
+                    <Text style={{ color: "#6B7280" }}>{emptyText}</Text>
                 </View>
             }
             contentContainerStyle={{ padding: 16, flexGrow: 1 }}

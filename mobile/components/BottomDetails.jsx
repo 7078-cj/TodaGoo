@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, Image, ActivityIndicator, Alert } from 'react-native'
+import { View, Text, TouchableOpacity, ActivityIndicator, Alert } from 'react-native'
 import React, { useState, useRef } from 'react'
 import newIdempotencyKey from '../utils/idempotencyKey'
 import { Ionicons } from '@expo/vector-icons'
@@ -7,69 +7,10 @@ import IncidentReportModal from './IncidentReportModal'
 import PersonDetailsModal from './PersonDetailsModal'
 import colors from '../constants/colors'
 import { PICKUP_RADIUS_M, distanceToPickupM } from '../utils/pickupProximity'
+import { getPerson } from '../utils/person'
+import Avatar from './Avatar'
 
 const FLAG_BG = "#D9A5A0"; // muted red from the design
-
-/* ---- Media files come back as relative paths like /media/driver_profiles/x.png ----
-   Set this to your server origin (no trailing slash, no /api), e.g.
-   EXPO_PUBLIC_API_URL=http://192.168.1.78:8000  */
-const API_ORIGIN = (process.env.EXPO_PUBLIC_API_URL || "")
-    .replace(/\/api\/?$/, "")
-    .replace(/\/$/, "");
-
-const mediaUrl = (path) => {
-    if (!path) return null;
-    if (/^https?:\/\//i.test(path)) return path;
-    return `${API_ORIGIN}${path.startsWith("/") ? "" : "/"}${path}`;
-};
-
-const cap = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : "");
-
-// Driver sees the passenger, passenger sees the driver
-function getPerson(booking, isDriver) {
-    const p = isDriver ? booking?.passenger : booking?.driver;
-    if (!p || typeof p !== "object") return null;
-
-    const name = [p.first_name, p.last_name].filter(Boolean).map(cap).join(" ") || p.username || "";
-
-    return {
-        role: isDriver ? "passenger" : "driver",
-        name,
-        phone: p.contact_number ?? "",
-        photo: mediaUrl(p.profile_picture),
-        rating: p.rating != null ? Number(p.rating) : null,
-        address: p.address ?? null,
-        todaNumber: p.toda_number ?? null,
-        plate: p.vehicle_plate ?? null,
-        vehicleFront: mediaUrl(p.vehicle_front_picture),
-        vehicleBack: mediaUrl(p.vehicle_back_picture),
-    };
-}
-
-function Avatar({ uri, size = 52 }) {
-    if (uri) {
-        return (
-            <Image
-                source={{ uri }}
-                style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: "#E5E7EB" }}
-            />
-        );
-    }
-    return (
-        <View
-            style={{
-                width: size,
-                height: size,
-                borderRadius: size / 2,
-                backgroundColor: "#E5E7EB",
-                alignItems: "center",
-                justifyContent: "center",
-            }}
-        >
-            <Ionicons name="person" size={size * 0.5} color="#9CA3AF" />
-        </View>
-    );
-}
 
 function Stop({ icon, color, label, address }) {
     return (

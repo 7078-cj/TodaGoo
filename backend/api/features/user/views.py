@@ -13,6 +13,8 @@ from ...rate_limit.TestThrottle import TestThrottle
 from rest_framework import status
 from .utils import send_reset_email
 from ..utils.security import get_user_by_email, blacklist_user_tokens
+from ..utils.password_change import change_password as apply_password_change
+from rest_framework.permissions import IsAuthenticated
 from ..utils.password_reset import (
     issue_reset_code,
     check_reset_code,
@@ -169,6 +171,28 @@ def verify_reset_code(request):
         return _reset_code_error(result)
 
     return Response({"message": "Code verified", 'is_permitted': True})
+
+
+class PasswordChangeThrottle(ScopedRateThrottle):
+    """Per-user limit on change-password attempts (rate: settings 'password_change')."""
+    scope = "password_change"
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+@throttle_classes([PasswordChangeThrottle])
+def change_password(request):
+    """
+    Logged-in password change. Body: the verifier's fields (today: current_password) + new_password.
+    Other sessions are signed out; this one gets a fresh token pair so the app stays logged in.
+    """
+    apply_password_change(request.user, request.data)
+
+    refresh = MyTokenObtainPairSerializer.get_token(request.user)
+    return Response(
+        {"message": "Password updated", "access": str(refresh.access_token), "refresh": str(refresh)},
+        status=status.HTTP_200_OK,
+    )
 
 
 @api_view(["POST"])

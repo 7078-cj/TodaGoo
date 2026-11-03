@@ -9,3 +9,4 @@ from .test.BookingFlowTest import *
 from .test.ChatAndReportsTest import *
 from .test.NotificationsTest import *
 from .test.WebsocketConsumersTest import *
+from .test.ProfileTest import *

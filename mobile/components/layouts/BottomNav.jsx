@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AuthContext from "@/contexts/AuthContext";
 import colors from "@/constants/colors";
 import { useNoDriversAvailable } from "@/utils/driverAvailabilityStore";
+import { useDriverHasActiveBooking } from "@/utils/driverActiveBookingStore";
 
 export default function BottomNav() {
     const router = useRouter();
@@ -15,11 +16,22 @@ export default function BottomNav() {
 
     const role = user?.role?.toLowerCase();
     const noDrivers = useNoDriversAvailable();
+    const driverHasActiveBooking = useDriverHasActiveBooking();
 
     const homeRoute =
         role === "passenger"
             ? "/(protected)/passenger/home"
             : "/(protected)/driver/home";
+
+    // passengers book a ride; drivers go to the ride they're on
+    const bookingRoute =
+        role === "passenger"
+            ? "/(protected)/passenger/book"
+            : "/(protected)/driver/en_route";
+
+    // Booking is locked for passengers when no driver is queued, and for drivers with no active ride
+    const bookingLocked =
+        role === "passenger" ? noDrivers : role === "driver" ? !driverHasActiveBooking : false;
 
     const tabs = [
         {
@@ -30,7 +42,7 @@ export default function BottomNav() {
         },
         {
             label: "Booking",
-            route: "/(protected)/passenger/book",
+            route: bookingRoute,
             icon: "location-outline",
             activeIcon: "location",
         },
@@ -58,13 +70,14 @@ export default function BottomNav() {
             }}
         >
             {tabs.map((tab) => {
+                // pathname has no route groups ("/passenger/book", not "/(protected)/passenger/book")
+                const tabPath = tab.route.replace("/(protected)", "");
                 const isActive =
                     tab.label === "Home"
                         ? pathname === `/${role}/home`
-                        : pathname === tab.route ||
-                        pathname.startsWith(`${tab.route}/`);
-                const isBookingLocked =
-                    tab.label === "Booking" && role === "passenger" && noDrivers;
+                        : pathname === tabPath ||
+                        pathname.startsWith(`${tabPath}/`);
+                const isBookingLocked = tab.label === "Booking" && bookingLocked;
 
                 return (
                     <TouchableOpacity

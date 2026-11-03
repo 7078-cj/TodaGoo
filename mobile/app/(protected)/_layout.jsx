@@ -30,6 +30,8 @@ export default function ProtectedLayout() {
     const segments = useSegments();
     const path = segments.join("/");
     const isOtpRoute = segments.includes("otp");
+    // screens that render their own PageHeader instead of the "Hello" Header
+    const hasOwnHeader = segments.includes("history");
 
     useEffect(() => {
         let cancelled = false;
@@ -101,7 +103,7 @@ export default function ProtectedLayout() {
     return (
         <ProfileProvider role={auth.status === "ok" ? auth.role : null}>
             <NotificationProvider>
-                {!isOtpRoute && <Header />}
+                {!isOtpRoute && !hasOwnHeader && <Header />}
 
                 <Stack
                     screenOptions={{
