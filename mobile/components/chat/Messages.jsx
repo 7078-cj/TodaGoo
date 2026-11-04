@@ -33,7 +33,8 @@ function formatFull(d) {
 
 const sameDay = (a, b) => a.toDateString() === b.toDateString();
 
-function buildItems(messages, currentUserId) {
+// senderNames (optional): { [userId]: name } → a name above the first bubble of each sender's run
+function buildItems(messages, currentUserId, senderNames) {
     const sorted = [...messages].sort((a, b) => (getTime(a) ?? 0) - (getTime(b) ?? 0));
 
     const items = [];
@@ -56,14 +57,16 @@ function buildItems(messages, currentUserId) {
             prevTime = time;
         }
 
+        const grouped = prevMine === isMine;
         items.push({
             type: "message",
             id: String(m.id ?? `msg-${i}`),
             text: getText(m),
             isMine,
-            grouped: prevMine === isMine,
+            grouped,
             seen: !!m.seen,
             showSeen: false,
+            senderLabel: senderNames && !grouped ? senderNames[senderId] ?? null : null,
         });
         prevMine = isMine;
     });
@@ -98,6 +101,7 @@ function renderEntry(item) {
             isMine={item.isMine}
             groupedWithPrev={item.grouped}
             showSeen={item.showSeen}
+            senderLabel={item.senderLabel}
         />
     );
 }
@@ -109,9 +113,13 @@ export default function Messages({
     loading,
     inline = false,
     emptyText = "No messages yet. Say hello!",
+    senderNames = null,
 }) {
     const listRef = useRef(null);
-    const items = useMemo(() => buildItems(messages ?? [], currentUserId), [messages, currentUserId]);
+    const items = useMemo(
+        () => buildItems(messages ?? [], currentUserId, senderNames),
+        [messages, currentUserId, senderNames]
+    );
 
     if (inline) {
         return (

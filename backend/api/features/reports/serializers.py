@@ -1,4 +1,5 @@
 from django.db import transaction
+from django.utils import timezone
 from rest_framework import serializers
 
 from .models import IncidentReport, IncidentEvidence
@@ -32,6 +33,8 @@ class IncidentReportSerializer(serializers.ModelSerializer):
             "injured_party",
             "details",
             "status",
+            "resolution",
+            "resolved_at",
             "created_at",
             "evidence",
         ]
@@ -99,7 +102,19 @@ class IncidentReportStatusUpdateSerializer(serializers.ModelSerializer):
     """Restricted update serializer — for MDRRMO/staff resolving reports.
     Passengers shouldn't be able to rewrite location/details after submission."""
 
+    CLOSED_STATUSES = {"resolved", "dismissed"}
+
     class Meta:
         model = IncidentReport
-        fields = ["id", "status"]
-        read_only_fields = ["id"]
+        fields = ["id", "status", "resolution", "resolved_at"]
+        read_only_fields = ["id", "resolved_at"]
+
+    def update(self, instance, validated_data):
+        new_status = validated_data.get("status", instance.status)
+        if new_status in self.CLOSED_STATUSES:
+            # stamp the first time it's closed; resolved -> dismissed keeps the original time
+            if instance.status not in self.CLOSED_STATUSES or instance.resolved_at is None:
+                validated_data["resolved_at"] = timezone.now()
+        else:
+            validated_data["resolved_at"] = None  # reopened
+        return super().update(instance, validated_data)

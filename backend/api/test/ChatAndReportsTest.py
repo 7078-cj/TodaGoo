@@ -219,3 +219,68 @@ class IncidentReportTests(ParticipantsBase):
         self.as_user(make_admin("MDRRMO"))
         res = self.client.patch(reverse(REPORT_DETAIL, args=[report_id]), {"status": "resolved"}, format="json", **idem())
         self.assertEqual(res.status_code, status.HTTP_404_NOT_FOUND)
+
+
+# ---------------------------------------------------------------------------
+# Resolution + resolved_at (shown in the app's report details)
+# ---------------------------------------------------------------------------
+@mock.patch("api.features.reports.signals.get_channel_layer", return_value=None)
+class IncidentReportResolutionTests(ParticipantsBase):
+    def setUp(self):
+        super().setUp()
+        self.as_user(self.passenger.user)
+        res = self.client.post(
+            reverse(REPORTS),
+            {"booking_id": self.booking.id, "location": PICKUP, "incident_types": "accident",
+             "injured_party": "others", "details": "Motorcycle crashed in front of 7Mart"},
+            format="json",
+            **idem(),
+        )
+        self.report_id = res.data["id"]
+        self.admin = make_admin("TODA")
+
+    def update(self, body, user=None):
+        self.as_user(user or self.admin)
+        return self.client.patch(reverse(REPORT_DETAIL, args=[self.report_id]), body, format="json", **idem())
+
+    def reporters_view(self):
+        self.as_user(self.passenger.user)
+        return next(r for r in self.client.get(reverse(REPORTS)).data["results"] if r["id"] == self.report_id)
+
+    def test_new_report_has_no_resolution(self, _layer):
+        report = self.reporters_view()
+        self.assertEqual(report["resolution"], "")
+        self.assertIsNone(report["resolved_at"])
+
+    def test_resolving_stamps_time_and_saves_note(self, _layer):
+        res = self.update({"status": "resolved", "resolution": "Rider fined; passenger checked by MDRRMO."})
+        self.assertEqual(res.status_code, status.HTTP_200_OK, res.data)
+
+        report = self.reporters_view()
+        self.assertEqual(report["status"], "resolved")
+        self.assertEqual(report["resolution"], "Rider fined; passenger checked by MDRRMO.")
+        self.assertIsNotNone(report["resolved_at"])
+
+    def test_resolution_note_is_optional(self, _layer):
+        self.assertEqual(self.update({"status": "resolved"}).status_code, status.HTTP_200_OK)
+        self.assertIsNotNone(self.reporters_view()["resolved_at"])
+
+    def test_reopening_clears_resolved_time(self, _layer):
+        self.update({"status": "resolved"})
+        self.update({"status": "open"})
+        self.assertIsNone(self.reporters_view()["resolved_at"])
+
+    def test_resolved_then_dismissed_keeps_first_time(self, _layer):
+        self.update({"status": "resolved"})
+        first = IncidentReport.objects.get(id=self.report_id).resolved_at
+        self.update({"status": "dismissed"})
+        self.assertEqual(IncidentReport.objects.get(id=self.report_id).resolved_at, first)
+
+    def test_reporter_cannot_write_resolution(self, _layer):
+        res = self.update({"resolution": "Self-resolved"}, user=self.passenger.user)
+        self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(IncidentReport.objects.get(id=self.report_id).resolution, "")
+
+    def test_resolved_at_cannot_be_set_directly(self, _layer):
+        res = self.update({"resolved_at": "2020-01-01T00:00:00Z"})
+        self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)

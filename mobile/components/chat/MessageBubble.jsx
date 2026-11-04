@@ -4,7 +4,7 @@ import colors from "../../constants/colors";
 
 const SENT_BG = "#C9EBE2"; // light mint from the design
 
-export default function MessageBubble({ text, isMine, groupedWithPrev, showSeen }) {
+export default function MessageBubble({ text, isMine, groupedWithPrev, showSeen, senderLabel }) {
     return (
         <View
             style={{
@@ -12,6 +12,12 @@ export default function MessageBubble({ text, isMine, groupedWithPrev, showSeen 
                 marginTop: groupedWithPrev ? 4 : 14,
             }}
         >
+            {/* who sent it (only when the parent passes senderNames, e.g. the ride history log) */}
+            {senderLabel ? (
+                <Text style={{ fontSize: 11, fontWeight: "600", color: "#6B7280", marginBottom: 2, marginHorizontal: 4 }}>
+                    {senderLabel}
+                </Text>
+            ) : null}
             <View
                 style={[
                     {

@@ -16,3 +16,11 @@ export default function formatDateTime(isoString) {
 
     return `${MONTHS[d.getMonth()]} ${String(d.getDate()).padStart(2, "0")}, ${d.getFullYear()}, ${String(h).padStart(2, "0")}:${min} ${ampm}`;
 }
+
+// "June 16, 2026"
+export function formatDate(isoString) {
+    if (!isoString) return "";
+    const d = new Date(isoString);
+    if (Number.isNaN(d.getTime())) return "";
+    return `${MONTHS[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
+}

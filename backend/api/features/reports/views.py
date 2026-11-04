@@ -145,7 +145,8 @@ class IncidentReportRetrieveUpdateView(IdempotentAPIView, RetrieveUpdateAPIView)
         .prefetch_related("evidence")
     )
 
-    ALLOWED_UPDATE_FIELDS = {"status"}
+    # resolution: the admin's note shown to the reporter in the app's report details
+    ALLOWED_UPDATE_FIELDS = {"status", "resolution"}
 
     def get_serializer_class(self):
         if self.request.method in ("PUT", "PATCH"):

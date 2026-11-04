@@ -8,6 +8,7 @@ import {
     REPORT_STATUSES, INCIDENT_TYPE_ICONS, INCIDENT_TYPE_LABELS, formatReportId,
 } from '../../constants/reports'
 import { HERO_GREEN } from './ProfileHero'
+import ReportDetailsModal from './ReportDetailsModal'
 
 const FILTERS = [{ key: "all", label: "All Reports" }, ...REPORT_STATUSES.map((s) => ({ key: s.status, label: s.label }))]
 
@@ -39,12 +40,16 @@ function FilterPills({ value, onChange }) {
     )
 }
 
-function ReportCard({ report }) {
+function ReportCard({ report, onPress }) {
     const status = REPORT_STATUSES.find((s) => s.status === report.status)
     const icon = INCIDENT_TYPE_ICONS[report.incident_types] ?? INCIDENT_TYPE_ICONS.default
 
     return (
-        <View
+        <TouchableOpacity
+            onPress={() => onPress(report)}
+            activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel={`Report ${formatReportId(report.id)} details`}
             style={{
                 flexDirection: "row",
                 alignItems: "center",
@@ -70,7 +75,7 @@ function ReportCard({ report }) {
                     <Text style={{ fontSize: 11, color: colors.onPrimary }}>{status.label}</Text>
                 </View>
             )}
-        </View>
+        </TouchableOpacity>
     )
 }
 
@@ -79,6 +84,7 @@ export default function ReportsTab() {
     const [reports, setReports] = useState(null)
     const [filter, setFilter] = useState("all")
     const [error, setError] = useState(null)
+    const [selected, setSelected] = useState(null)
 
     const load = useCallback(async () => {
         try {
@@ -116,8 +122,10 @@ export default function ReportsTab() {
             ) : visible.length === 0 ? (
                 <Text style={{ color: "#6B7280", textAlign: "center", marginTop: 16 }}>No reports here.</Text>
             ) : (
-                visible.map((report) => <ReportCard key={report.id} report={report} />)
+                visible.map((report) => <ReportCard key={report.id} report={report} onPress={setSelected} />)
             )}
+
+            {selected && <ReportDetailsModal report={selected} onClose={() => setSelected(null)} />}
         </View>
     )
 }

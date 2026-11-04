@@ -41,6 +41,10 @@ class IncidentReport(models.Model):
         choices=STATUS_CHOICES,
         default="open",
     )
+    # set by the admin when closing the report; shown to the reporter in the app
+    resolution = models.TextField(blank=True, default="")
+    # when the report was resolved / dismissed (cleared if it's reopened); set by the status update
+    resolved_at = models.DateTimeField(null=True, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
 

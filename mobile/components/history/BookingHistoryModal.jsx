@@ -107,6 +107,13 @@ export default function BookingHistoryModal({ booking, visible, onClose, current
     // Messages groups bubbles by `sender`; history messages carry sender_id
     const messages = (booking.messages ?? []).map((m) => ({ ...m, sender: m.sender_id, receiver: m.receiver_id }))
 
+    // who sent each message in the log: "You" or the other person (user ids, same as sender_id)
+    const otherUserId = isDriver ? booking.passenger?.id : booking.driver?.id
+    const senderNames = {
+        [currentUserId]: "You",
+        ...(otherUserId != null && person ? { [otherUserId]: `${person.name} (${isDriver ? "Passenger" : "Driver"})` } : {}),
+    }
+
     return (
         <Modal visible={visible} animationType="slide" onRequestClose={onClose} statusBarTranslucent>
             <View style={{ flex: 1, backgroundColor: colors.background }}>
@@ -236,7 +243,7 @@ export default function BookingHistoryModal({ booking, visible, onClose, current
                     )}
 
                     <Section title="Chat log" note="This ride has ended, so the chat is read-only.">
-                        <Messages messages={messages} currentUserId={currentUserId} inline emptyText="No messages were sent during this ride." />
+                        <Messages messages={messages} currentUserId={currentUserId} senderNames={senderNames} inline emptyText="No messages were sent during this ride." />
                     </Section>
                 </ScrollView>
             </View>

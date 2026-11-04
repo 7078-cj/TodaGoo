@@ -30,3 +30,11 @@ export const INCIDENT_TYPE_LABELS = {
 
 // "#IR-001"
 export const formatReportId = (id) => `#IR-${String(id).padStart(3, "0")}`;
+
+// "Who was involved" (backend INJURED_CHOICES)
+export const INJURED_PARTY_LABELS = {
+    passenger: "Passenger",
+    driver: "Driver",
+    others: "Others",
+    none: "None",
+};
