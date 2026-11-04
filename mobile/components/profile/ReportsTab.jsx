@@ -2,7 +2,7 @@ import { View, Text, TouchableOpacity } from 'react-native'
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { Ionicons } from '@expo/vector-icons'
 import { useFocusEffect } from 'expo-router'
-import { getMyReports, getReport, getReportAboutMe } from '../../api/report'
+import { getMyReports, getReport } from '../../api/report'
 import { useReportRequest, clearReportRequest } from '../../utils/reportRequestStore'
 import colors from '../../constants/colors'
 import {
@@ -91,16 +91,15 @@ export default function ReportsTab() {
     const [selected, setSelected] = useState(null)
     const reportRequest = useReportRequest()
 
-    // A tapped report notification: open that report. Your own report comes from the list (or is
-    // fetched if it's not on the first page); a report about you uses the limited "about me" view.
+    // A tapped report notification: open that report (always your own). It comes from the list,
+    // or is fetched if it's not on the first page.
     useEffect(() => {
         if (!reportRequest) return
         let cancelled = false
         ;(async () => {
             try {
-                const report = reportRequest.limited
-                    ? { ...(await getReportAboutMe(reportRequest.reportId)), limited: true }
-                    : (reports ?? []).find((r) => r.id === reportRequest.reportId) ?? (await getReport(reportRequest.reportId))
+                const report =
+                    (reports ?? []).find((r) => r.id === reportRequest.reportId) ?? (await getReport(reportRequest.reportId))
                 if (!cancelled) setSelected(report)
             } catch (err) {
                 if (!cancelled) {

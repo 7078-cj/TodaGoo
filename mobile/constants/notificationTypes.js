@@ -6,7 +6,6 @@ export const NOTIFICATION_TYPES = {
     booking_accepted: { title: "Booking Accepted", icon: "checkmark", color: "#16A34A" },
     driver_nearby: { title: "Driver Nearby", icon: "location-outline", color: "#3B82F6" },
     new_message: { title: "New Message", icon: "chatbubble-ellipses-outline", color: "#8B5CF6" },
-    reported: { title: "You Were Reported", icon: "alert", color: "#DC2626" },
     report_update: { title: "Report Update", icon: "document-text-outline", color: "#EAB308" },
     general: { title: "Notification", icon: "notifications-outline", color: "#DF6D26" },
 };

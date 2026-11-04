@@ -28,10 +28,3 @@ export const getReport = async (reportId) => {
     if (!res.success) throw new Error(res.error || "Failed to load the report");
     return res.data;
 };
-
-// A report filed ABOUT you: limited fields only (type, status, dates, resolution, route)
-export const getReportAboutMe = async (reportId) => {
-    const res = await getRequest(`reports/${reportId}/about-me/`, {}, true);
-    if (!res.success) throw new Error(res.error || "Failed to load the report");
-    return res.data;
-};

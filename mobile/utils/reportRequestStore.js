@@ -1,7 +1,7 @@
 import { useSyncExternalStore } from "react";
 
-// "Open report X in Profile → Reports", set by a tapped report notification.
-// { reportId, limited }: limited = the report was filed ABOUT the user (opens the "about me" view).
+// "Open report X in Profile → Reports", set by a tapped "report resolved / dismissed" notification
+// (always one of the user's own reports). { reportId }
 // Cleared when the report modal is closed.
 let request = null;
 const listeners = new Set();
@@ -10,8 +10,8 @@ function emit() {
     listeners.forEach((listener) => listener());
 }
 
-export function requestReport(reportId, limited) {
-    request = reportId != null ? { reportId, limited: !!limited } : null;
+export function requestReport(reportId) {
+    request = reportId != null ? { reportId } : null;
     emit();
 }
 

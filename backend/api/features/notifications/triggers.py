@@ -49,31 +49,6 @@ def notify_if_driver_nearby(booking_id, lat, lng):
     return True
 
 
-def notify_reported_user(report):
-    booking = report.booking
-    driver_user = booking.driver.user if booking.driver_id else None
-    passenger_user = booking.passenger.user
-
-    if report.reported_by_id == passenger_user.id:
-        reported = driver_user
-    elif driver_user is not None and report.reported_by_id == driver_user.id:
-        reported = passenger_user
-    else:
-        # filed by an admin: there is no single reported party
-        return
-
-    if reported is None:
-        return
-
-    create_notification(
-        reported,
-        f"You were reported for {report.get_incident_types_display().lower()} on booking #{booking.id}.",
-        type=Notification.Type.REPORTED,
-        booking=booking,
-        report=report,
-    )
-
-
 CLOSED_REPORT_STATUSES = {"resolved", "dismissed"}
 
 

@@ -29,8 +29,6 @@ export default function ReportDetailsModal({ report, onClose }) {
     if (!report) return null
 
     const booking = report.booking ?? {}
-    // opened from "You were reported": the limited "about me" shape (no reporter's account)
-    const limited = !!report.limited
     const tags = (report.tags ?? []).map((key) => REPORT_TAGS.find((t) => t.key === key)?.label ?? key)
     const evidence = report.evidence ?? []
     const status = REPORT_STATUSES.find((s) => s.status === report.status)
@@ -67,27 +65,14 @@ export default function ReportDetailsModal({ report, onClose }) {
                         showsVerticalScrollIndicator
                         nestedScrollEnabled
                     >
-                        {limited ? (
-                            // a report filed ABOUT the user: only what the backend's "about me" view returns
-                            <View style={{ backgroundColor: "#FEF3C7", borderRadius: 10, padding: 12 }}>
-                                <Text style={{ fontSize: 13, fontWeight: "600", color: colors.dark }}>This report was filed about you.</Text>
-                                <Text style={{ fontSize: 12, color: colors.dark, marginTop: 4 }}>
-                                    {"The reporter's account and evidence are kept private. A TODA admin reviews every report."}
-                                </Text>
-                            </View>
-                        ) : (
-                            <AutoAttachedInfo booking={booking} location={report.location} />
-                        )}
+                        <AutoAttachedInfo booking={booking} location={report.location} />
 
                         <SectionTitle>INCIDENT INFORMATION</SectionTitle>
                         <Row label="Incident Type:" value={INCIDENT_TYPE_LABELS[report.incident_types] ?? report.incident_types} />
-                        {limited && (
-                            <Row label="Ride:" value={report.route?.start_address && `${report.route.start_address} → ${report.route.end_address}`} last />
-                        )}
-                        {!limited && <Row label="Who was involved:" value={INJURED_PARTY_LABELS[report.injured_party] ?? report.injured_party} italic />}
-                        {!limited && <Row label="Tags:" value={tags.length ? tags.join(", ") : "None"} />}
-                        {!limited && <Row label="Evidence:" value={evidence.length ? `${evidence.length} photo${evidence.length === 1 ? "" : "s"}` : "None"} last={!evidence.length} />}
-                        {!limited && evidence.length > 0 && (
+                        <Row label="Who was involved:" value={INJURED_PARTY_LABELS[report.injured_party] ?? report.injured_party} italic />
+                        <Row label="Tags:" value={tags.length ? tags.join(", ") : "None"} />
+                        <Row label="Evidence:" value={evidence.length ? `${evidence.length} photo${evidence.length === 1 ? "" : "s"}` : "None"} last={!evidence.length} />
+                        {evidence.length > 0 && (
                             <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, paddingVertical: 10 }}>
                                 {evidence.map((item) => {
                                     const uri = mediaUrl(item.file)
@@ -108,15 +93,13 @@ export default function ReportDetailsModal({ report, onClose }) {
                             last
                         />
 
-                        {!limited && (
-                            <TextBox
-                                title="WHAT HAPPENED"
-                                text={report.details}
-                                placeholder="No details were given."
-                                backgroundColor="#F3F4F6"
-                                borderColor="#D1D5DB"
-                            />
-                        )}
+                        <TextBox
+                            title="WHAT HAPPENED"
+                            text={report.details}
+                            placeholder="No details were given."
+                            backgroundColor="#F3F4F6"
+                            borderColor="#D1D5DB"
+                        />
                         <TextBox
                             title="Resolution"
                             text={report.resolution}

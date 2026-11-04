@@ -3,7 +3,7 @@ from django.dispatch import receiver
 
 from ..chat.models import Message
 from ..reports.models import IncidentReport
-from .triggers import notify_new_message, notify_report_status_changed, notify_reported_user
+from .triggers import notify_new_message, notify_report_status_changed
 
 
 @receiver(post_save, sender=Message)
@@ -12,10 +12,8 @@ def notify_on_new_message(sender, instance, created, **kwargs):
         notify_new_message(instance)
 
 
-@receiver(post_save, sender=IncidentReport)
-def notify_on_incident_report(sender, instance, created, **kwargs):
-    if created:
-        notify_reported_user(instance)
+# Filing a report notifies nobody: the reported person is never told they were reported.
+# Only the reporter hears back, when an admin resolves / dismisses it (below).
 
 
 @receiver(pre_save, sender=IncidentReport)

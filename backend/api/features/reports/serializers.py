@@ -129,22 +129,3 @@ class IncidentReportStatusUpdateSerializer(serializers.ModelSerializer):
         else:
             validated_data["resolved_at"] = None  # reopened
         return super().update(instance, validated_data)
-
-
-class IncidentReportAboutMeSerializer(serializers.ModelSerializer):
-    """What the reported person may see about a report filed against them: no reporter's account,
-    evidence, tags, location or the other party's contact details."""
-
-    route = serializers.SerializerMethodField()
-
-    class Meta:
-        model = IncidentReport
-        fields = ["id", "incident_types", "status", "created_at", "resolved_at", "resolution", "route"]
-        read_only_fields = fields
-
-    def get_route(self, obj):
-        return {
-            "booking_id": obj.booking_id,
-            "start_address": obj.booking.start_address,
-            "end_address": obj.booking.end_address,
-        }

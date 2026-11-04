@@ -67,7 +67,6 @@ class Notification(models.Model):
         BOOKING_ACCEPTED = "booking_accepted", "Booking accepted"
         DRIVER_NEARBY = "driver_nearby", "Driver nearby"
         NEW_MESSAGE = "new_message", "New message"
-        REPORTED = "reported", "Reported"
         # to the reporter when their report is resolved / dismissed
         REPORT_UPDATE = "report_update", "Report update"
 

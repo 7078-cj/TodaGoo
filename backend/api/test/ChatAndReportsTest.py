@@ -374,9 +374,9 @@ class ReportNotificationLinkTests(ParticipantsBase):
         from api.features.user.models import Notification
         return list(Notification.objects.filter(user=user, type=type_))
 
-    def test_reported_notification_links_the_report(self, _layer):
-        (n,) = self.notifications(self.driver.user, "reported")
-        self.assertEqual(n.report_id, self.report_id)
+    def test_reported_person_is_not_notified(self, _layer):
+        from api.features.user.models import Notification
+        self.assertFalse(Notification.objects.filter(user=self.driver.user).exists())
 
     def test_resolving_notifies_the_reporter_once(self, _layer):
         self.set_status("resolved")
@@ -400,35 +400,24 @@ class ReportNotificationLinkTests(ParticipantsBase):
         self.assertEqual(self.notifications(self.driver.user, "report_update"), [])
 
     def test_notification_api_returns_report_id(self, _layer):
-        self.as_user(self.driver.user)
-        items = self.client.get(reverse("get_user_notification")).data
-        self.assertEqual(next(i for i in items if i["type"] == "reported")["report_id"], self.report_id)
-
-    # -- limited "about me" view for the reported person --------------------
-    def about_me(self, user):
-        self.as_user(user)
-        return self.client.get(reverse("incident-report-about-me", args=[self.report_id]))
-
-    def test_reported_person_gets_limited_view(self, _layer):
         self.set_status("resolved")
-        res = self.about_me(self.driver.user)
-        self.assertEqual(res.status_code, status.HTTP_200_OK, res.data)
-        self.assertEqual(
-            set(res.data), {"id", "incident_types", "status", "created_at", "resolved_at", "resolution", "route"}
-        )
-        self.assertEqual(res.data["status"], "resolved")
-        self.assertEqual(res.data["route"]["start_address"], self.booking.start_address)
-        # nothing of the reporter's account
-        for hidden in ("details", "evidence", "tags", "location", "reported_by", "booking", "injured_party"):
-            self.assertNotIn(hidden, res.data)
+        self.as_user(self.passenger.user)
+        items = self.client.get(reverse("get_user_notification")).data
+        self.assertEqual(next(i for i in items if i["type"] == "report_update")["report_id"], self.report_id)
 
-    def test_reporter_cannot_use_about_me(self, _layer):
-        self.assertEqual(self.about_me(self.passenger.user).status_code, status.HTTP_404_NOT_FOUND)
+    # -- the reported person can't look the report up ----------------------
+    def test_about_me_view_is_gone(self, _layer):
+        self.as_user(self.driver.user)
+        url = reverse(REPORT_DETAIL, args=[self.report_id]) + "about-me/"
+        self.assertEqual(self.client.get(url).status_code, status.HTTP_404_NOT_FOUND)
 
-    def test_outsider_cannot_use_about_me(self, _layer):
-        self.assertEqual(self.about_me(make_passenger().user).status_code, status.HTTP_404_NOT_FOUND)
+    def test_reported_person_cannot_open_the_report(self, _layer):
+        self.as_user(self.driver.user)
+        res = self.client.get(reverse(REPORT_DETAIL, args=[self.report_id]))
+        self.assertEqual(res.status_code, status.HTTP_404_NOT_FOUND)
 
-    def test_about_me_requires_login(self, _layer):
-        self.client.force_authenticate(None)
-        res = self.client.get(reverse("incident-report-about-me", args=[self.report_id]))
-        self.assertEqual(res.status_code, status.HTTP_401_UNAUTHORIZED)
+    def test_reported_person_does_not_see_it_in_their_reports(self, _layer):
+        self.as_user(self.driver.user)
+        res = self.client.get(reverse(REPORTS))
+        ids = [r["id"] for r in (res.data.get("results", res.data) if isinstance(res.data, dict) else res.data)]
+        self.assertNotIn(self.report_id, ids)

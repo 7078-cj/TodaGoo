@@ -35,16 +35,10 @@ export const NOTIFICATION_REDIRECTS = [
         activeRideOnly: true,
     },
     {
-        // "You were reported": a limited view of the report filed about you
-        type: "reported",
-        path: { passenger: "/(protected)/profile", driver: "/(protected)/profile" },
-        openReport: "limited",
-    },
-    {
         // "Your report was resolved / dismissed": your own report in full
         type: "report_update",
         path: { passenger: "/(protected)/profile", driver: "/(protected)/profile" },
-        openReport: "own",
+        openReport: true,
     },
     {
         type: "general",
@@ -65,7 +59,7 @@ export function getNotificationRedirect(notification, role) {
         return null;
     }
 
-    return { pathname: path, openChat: !!entry.openChat, openReport: entry.openReport ?? null };
+    return { pathname: path, openChat: !!entry.openChat, openReport: !!entry.openReport };
 }
 
 // Follow a tapped notification. Returns false when its type has no redirect.
@@ -76,7 +70,7 @@ export function followNotification(notification, role, rootState) {
     if (!redirect) return false;
 
     if (redirect.openChat) requestChat(notification.booking_id);
-    if (redirect.openReport) requestReport(notification.report_id, redirect.openReport === "limited");
+    if (redirect.openReport) requestReport(notification.report_id);
 
     goTo(redirect.pathname, rootState);
     return true;

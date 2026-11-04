@@ -17,7 +17,7 @@ from api.features.booking.models import Booking, DriverQueue
 from api.features.chat.models import Message
 from api.features.notifications import chat_presence
 from api.features.notifications.triggers import (
-    notify_booking_accepted, notify_if_driver_nearby, notify_new_message, notify_reported_user,
+    notify_booking_accepted, notify_if_driver_nearby, notify_new_message,
 )
 from api.features.reports.models import IncidentReport
 from api.features.user.models import Notification
@@ -152,16 +152,15 @@ class TriggerTests(LayerMixin, TestCase):
                 booking=self.booking, reported_by=reporter, location=point(PICKUP), incident_types=incident,
             )
 
-    def test_passenger_report_notifies_driver(self):
+    # the reported person is never told they were reported
+    def test_passenger_report_does_not_notify_driver(self):
         self.make_report(self.passenger.user, "overcharging")
-        (message,) = self.notifications_for(self.driver.user)
-        self.assertIn("reported for overcharging", message)
+        self.assertEqual(self.notifications_for(self.driver.user), [])
         self.assertEqual(self.notifications_for(self.passenger.user), [])
 
-    def test_driver_report_notifies_passenger(self):
+    def test_driver_report_does_not_notify_passenger(self):
         self.make_report(self.driver.user, "harassment")
-        (message,) = self.notifications_for(self.passenger.user)
-        self.assertIn("reported for harassment", message)
+        self.assertEqual(Notification.objects.count(), 0)
 
     def test_admin_report_notifies_nobody(self):
         self.make_report(make_admin("TODA"))
@@ -172,18 +171,12 @@ class TriggerTests(LayerMixin, TestCase):
         report.status = "resolved"
         with mock.patch("api.features.reports.signals.get_channel_layer", return_value=None):
             report.save()
-        # the reported driver isn't told again; the reporter now gets a "report_update"
-        self.assertEqual(Notification.objects.filter(user=self.driver.user).count(), 1)
+        # the reported driver is never told; only the reporter gets a "report_update"
+        self.assertEqual(Notification.objects.filter(user=self.driver.user).count(), 0)
         self.assertEqual(
             list(Notification.objects.filter(user=self.passenger.user).values_list("type", flat=True)),
             [Notification.Type.REPORT_UPDATE],
         )
-
-    def test_report_on_booking_without_driver(self):
-        report = IncidentReport(booking=make_booking(make_passenger(), status=Booking.Status.PENDING),
-                                reported_by_id=self.passenger.user.id, location=point(PICKUP))
-        notify_reported_user(report)  # passenger isn't on that booking and there is no driver
-        self.assertEqual(Notification.objects.count(), 0)
 
     # -- new message -------------------------------------------------------
     def send(self, sender, receiver, text="hi"):
@@ -363,7 +356,7 @@ class NotificationTypeTests(LayerMixin, APITestCase):
 
         with mock.patch("api.features.reports.signals.get_channel_layer", return_value=None):
             IncidentReport.objects.create(booking=self.booking, reported_by=self.passenger.user, location=point(PICKUP))
-        self.assertEqual(self.only(self.driver.user).type, Notification.Type.REPORTED)
+        self.assertFalse(Notification.objects.exists())  # reports notify nobody
 
     def test_default_type_is_general(self):
         notification = create_notification(self.passenger.user, "Welcome")

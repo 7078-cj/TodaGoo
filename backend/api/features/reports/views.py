@@ -1,5 +1,5 @@
 from rest_framework import permissions
-from rest_framework.generics import ListCreateAPIView, RetrieveUpdateAPIView, RetrieveAPIView
+from rest_framework.generics import ListCreateAPIView, RetrieveUpdateAPIView
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.response import Response
 from ..booking.models import Booking
@@ -10,9 +10,7 @@ from rest_framework import status
 from ...idempotency import IdempotentAPIView
 
 from .models import IncidentReport, MDRRMO_INCIDENT_TYPES
-from django.db.models import Q
 from .serializers import (
-    IncidentReportAboutMeSerializer,
     IncidentReportSerializer,
     IncidentReportCreateSerializer,
     IncidentReportStatusUpdateSerializer,
@@ -215,19 +213,3 @@ class IncidentReportRetrieveUpdateView(IdempotentAPIView, RetrieveUpdateAPIView)
         if not self._can_update(user, instance):
             raise PermissionDenied({"detail": "You do not have permission to update this report."})
         serializer.save()
-
-
-class IncidentReportAboutMeView(RetrieveAPIView):
-    """GET reports/<id>/about-me/ -> a limited view of a report filed AGAINST the logged-in user
-    (the other participant of the reported booking). Opened from the "You were reported" notification."""
-
-    permission_classes = [permissions.IsAuthenticated]
-    serializer_class = IncidentReportAboutMeSerializer
-
-    def get_queryset(self):
-        user = self.request.user
-        return (
-            IncidentReport.objects.select_related("booking")
-            .filter(Q(booking__passenger__user=user) | Q(booking__driver__user=user))
-            .exclude(reported_by=user)
-        )
