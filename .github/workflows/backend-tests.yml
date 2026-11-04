@@ -1,4 +1,9 @@
-# Runs every backend test on each pull request (and on pushes to main).
+# Backend tests.
+#   Pull requests          always the full suite (it's the check that guards merging)
+#   Push to main (merges)  always the full suite
+#   Push to other branches only when something under backend/ (or this file) changed; skipped otherwise
+#   Manual run             full suite (Actions → Backend tests → Run workflow)
+#
 # To block merging until it passes: GitHub → Settings → Branches (or Rulesets) → protect `main`
 # → "Require status checks to pass" → add "Backend tests".
 #
@@ -9,7 +14,6 @@ name: Backend tests
 on:
   pull_request:
   push:
-    branches: [main]
   workflow_dispatch:
 
 # a new push to the same PR cancels the run still going for the old commit
@@ -21,8 +25,50 @@ permissions:
   contents: read
 
 jobs:
+  # decides whether the tests run (see the table at the top)
+  changes:
+    name: Check for backend changes
+    runs-on: ubuntu-latest
+    outputs:
+      run: ${{ steps.check.outputs.run }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: check
+        env:
+          EVENT: ${{ github.event_name }}
+          REF: ${{ github.ref }}
+          BEFORE: ${{ github.event.before }}
+          SHA: ${{ github.sha }}
+        run: |
+          if [ "$EVENT" != "push" ] || [ "$REF" = "refs/heads/main" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            echo "Full suite: $EVENT on $REF" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          # a new branch has no "before" commit: compare with where it left main
+          if [ -z "$BEFORE" ] || [ "$BEFORE" = "0000000000000000000000000000000000000000" ] || ! git cat-file -e "$BEFORE" 2>/dev/null; then
+            BEFORE=$(git merge-base origin/main "$SHA" 2>/dev/null || echo "")
+          fi
+          if [ -z "$BEFORE" ]; then
+            CHANGED=$(git ls-files)  # nothing to compare with: treat everything as changed
+          else
+            CHANGED=$(git diff --name-only "$BEFORE" "$SHA")
+          fi
+          BACKEND=$(echo "$CHANGED" | grep -E '^(backend/|\.github/workflows/backend-tests\.yml$)' || true)
+          if [ -n "$BACKEND" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            { echo "Backend changed, running tests:"; echo '```'; echo "$BACKEND" | head -50; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "No backend changes in this push: tests skipped." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
   test:
     name: Backend tests
+    needs: changes
+    if: needs.changes.outputs.run == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 40
 
