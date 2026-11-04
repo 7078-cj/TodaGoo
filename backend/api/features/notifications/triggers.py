@@ -70,6 +70,26 @@ def notify_reported_user(report):
         f"You were reported for {report.get_incident_types_display().lower()} on booking #{booking.id}.",
         type=Notification.Type.REPORTED,
         booking=booking,
+        report=report,
+    )
+
+
+CLOSED_REPORT_STATUSES = {"resolved", "dismissed"}
+
+
+def notify_report_status_changed(report, previous_status):
+    """Tell the reporter when their report is resolved or dismissed."""
+    if report.status == previous_status or report.status not in CLOSED_REPORT_STATUSES:
+        return
+    if report.reported_by_id is None:
+        return
+
+    create_notification(
+        report.reported_by,
+        f"Your report #IR-{report.id:03d} ({report.get_incident_types_display().lower()}) was {report.status}.",
+        type=Notification.Type.REPORT_UPDATE,
+        booking=report.booking,
+        report=report,
     )
 
 

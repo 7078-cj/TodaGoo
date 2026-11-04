@@ -1,5 +1,6 @@
 import { goTo } from "../utils/navigation";
 import { requestChat } from "../utils/chatRequestStore";
+import { requestReport } from "../utils/reportRequestStore";
 
 // Where tapping a notification takes the user. One entry per notification `type`
 // (backend: Notification.Type in api/features/user/models.py).
@@ -9,6 +10,8 @@ import { requestChat } from "../utils/chatRequestStore";
 //                   null = never redirect.
 //   openChat      – (optional) also open the chat modal for the notification's booking on arrival
 //                   (see utils/chatRequestStore.js + hooks/useOpenChatParam.js)
+//   openReport    – (optional) open Profile → Reports with the notification's report in its modal
+//                   ("limited" = the report is about the user: limited view without the reporter's account)
 //   activeRideOnly – only redirect while the notification's booking is still active,
 //                   so old notifications don't open the trip screen of a finished ride.
 export const NOTIFICATION_REDIRECTS = [
@@ -32,9 +35,16 @@ export const NOTIFICATION_REDIRECTS = [
         activeRideOnly: true,
     },
     {
-        // reports: no redirect for now
+        // "You were reported": a limited view of the report filed about you
         type: "reported",
-        path: null,
+        path: { passenger: "/(protected)/profile", driver: "/(protected)/profile" },
+        openReport: "limited",
+    },
+    {
+        // "Your report was resolved / dismissed": your own report in full
+        type: "report_update",
+        path: { passenger: "/(protected)/profile", driver: "/(protected)/profile" },
+        openReport: "own",
     },
     {
         type: "general",
@@ -55,7 +65,7 @@ export function getNotificationRedirect(notification, role) {
         return null;
     }
 
-    return { pathname: path, openChat: !!entry.openChat };
+    return { pathname: path, openChat: !!entry.openChat, openReport: entry.openReport ?? null };
 }
 
 // Follow a tapped notification. Returns false when its type has no redirect.
@@ -66,6 +76,7 @@ export function followNotification(notification, role, rootState) {
     if (!redirect) return false;
 
     if (redirect.openChat) requestChat(notification.booking_id);
+    if (redirect.openReport) requestReport(notification.report_id, redirect.openReport === "limited");
 
     goTo(redirect.pathname, rootState);
     return true;

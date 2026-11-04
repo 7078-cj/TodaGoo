@@ -38,6 +38,7 @@ def broadcast_notification(notification, action):
                 "type": notification.type,
                 "booking_id": notification.booking_id,
                 "booking_status": booking.status if booking else None,
+                "report_id": notification.report_id,
                 "message": notification.message,
                 "created_at": notification.created_at.isoformat(),
                 "read": notification.read,
@@ -48,7 +49,7 @@ def broadcast_notification(notification, action):
 
     transaction.on_commit(_send)
 
-def create_notification(user, message, type=Notification.Type.GENERAL, booking=None):
-    notification = Notification.objects.create(user=user, message=message, type=type, booking=booking)
+def create_notification(user, message, type=Notification.Type.GENERAL, booking=None, report=None):
+    notification = Notification.objects.create(user=user, message=message, type=type, booking=booking, report=report)
     broadcast_notification(notification, "created")
     return notification

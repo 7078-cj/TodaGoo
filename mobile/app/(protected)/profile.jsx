@@ -12,6 +12,7 @@ import EarningsTab from "../../components/profile/EarningsTab";
 import ReportsTab from "../../components/profile/ReportsTab";
 import HotlinesTab from "../../components/profile/HotlinesTab";
 import ChangePasswordModal from "../../components/profile/ChangePasswordModal";
+import { useReportRequest } from "../../utils/reportRequestStore";
 
 // Tabs per role, in order. Add / reorder here.
 const PROFILE_TABS = {
@@ -37,6 +38,14 @@ export default function Profile() {
 
     const [activeTab, setActiveTab] = useState("details");
     const [passwordVisible, setPasswordVisible] = useState(false);
+
+    // a tapped report notification: switch to Reports once per request (ReportsTab opens the report)
+    const reportRequest = useReportRequest();
+    const [handledRequest, setHandledRequest] = useState(null);
+    if (reportRequest && reportRequest !== handledRequest) {
+        setHandledRequest(reportRequest);
+        setActiveTab("reports");
+    }
 
     const name =
         [profile?.first_name, profile?.last_name].filter(Boolean).map(cap).join(" ") || profile?.username || "";

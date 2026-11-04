@@ -7,10 +7,12 @@ import { useProfile } from "../../contexts/ProfileContext";
 import NotificationBell from "./NotificationBell";
 
 // Titled header for inner screens (back · title · bell), used in place of the "Hello" Header.
-export default function PageHeader({ title }) {
+// onBack (optional): replaces the default back, e.g. a multi-step screen going to its previous step
+export default function PageHeader({ title, onBack }) {
     const { role } = useProfile();
 
     const goBack = () => {
+        if (onBack) return onBack();
         if (router.canGoBack()) router.back();
         else router.replace(`/(protected)/${role === "driver" ? "driver" : "passenger"}/home`);
     };

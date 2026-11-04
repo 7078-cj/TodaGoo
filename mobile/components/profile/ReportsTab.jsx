@@ -1,8 +1,9 @@
 import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native'
-import React, { useCallback, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { Ionicons } from '@expo/vector-icons'
 import { useFocusEffect } from 'expo-router'
-import { getMyReports } from '../../api/report'
+import { getMyReports, getReport, getReportAboutMe } from '../../api/report'
+import { useReportRequest, clearReportRequest } from '../../utils/reportRequestStore'
 import colors from '../../constants/colors'
 import {
     REPORT_STATUSES, INCIDENT_TYPE_ICONS, INCIDENT_TYPE_LABELS, formatReportId,
@@ -85,6 +86,35 @@ export default function ReportsTab() {
     const [filter, setFilter] = useState("all")
     const [error, setError] = useState(null)
     const [selected, setSelected] = useState(null)
+    const reportRequest = useReportRequest()
+
+    // A tapped report notification: open that report. Your own report comes from the list (or is
+    // fetched if it's not on the first page); a report about you uses the limited "about me" view.
+    useEffect(() => {
+        if (!reportRequest) return
+        let cancelled = false
+        ;(async () => {
+            try {
+                const report = reportRequest.limited
+                    ? { ...(await getReportAboutMe(reportRequest.reportId)), limited: true }
+                    : (reports ?? []).find((r) => r.id === reportRequest.reportId) ?? (await getReport(reportRequest.reportId))
+                if (!cancelled) setSelected(report)
+            } catch (err) {
+                if (!cancelled) {
+                    setError(err.message)
+                    clearReportRequest()
+                }
+            }
+        })()
+        return () => {
+            cancelled = true
+        }
+    }, [reportRequest, reports])
+
+    const closeReport = () => {
+        setSelected(null)
+        clearReportRequest()
+    }
 
     const load = useCallback(async () => {
         try {
@@ -125,7 +155,7 @@ export default function ReportsTab() {
                 visible.map((report) => <ReportCard key={report.id} report={report} onPress={setSelected} />)
             )}
 
-            {selected && <ReportDetailsModal report={selected} onClose={() => setSelected(null)} />}
+            {selected && <ReportDetailsModal report={selected} onClose={closeReport} />}
         </View>
     )
 }

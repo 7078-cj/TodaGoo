@@ -1,120 +1,146 @@
-import { View, Text, TouchableOpacity, ActivityIndicator, Alert } from 'react-native'
+import { View, Text, TouchableOpacity, ActivityIndicator, TextInput, ScrollView } from 'react-native'
 import React, { useState } from 'react'
 import { Ionicons } from '@expo/vector-icons'
 import { createRate } from '../api/rate'
-import FormTextField from './inputs/FormTextField'
-import { router } from "expo-router";
+import Avatar from './Avatar'
+import colors from '../constants/colors'
 
-export default function RateUser({ role, bookingId, ratedUserId, ratedUserName, handleRatingSaved = null }) {
+const GREEN = "#0F5A4A"
+const STAR_ON = "#F59E0B"
+const STAR_OFF = "#D1D5DB"
 
+const firstError = (value) => (Array.isArray(value) ? value[0] : value)
+
+// Rate the other person after a ride: a driver rates the passenger, a passenger rates the driver.
+// person: { name, photo, rating } (utils/person getPerson). onDone runs after Submit or Skip.
+export default function RateUser({ bookingId, ratedUserId, person, onDone }) {
     const [score, setScore] = useState(0)
     const [feedback, setFeedback] = useState('')
     const [submitting, setSubmitting] = useState(false)
     const [errors, setErrors] = useState({})
 
-    const validate = () => {
-        const newErrors = {}
-
-        if (!score || score < 1 || score > 5) {
-            newErrors.score = 'Please select a rating from 1 to 5 stars'
-        }
-
-        setErrors(newErrors)
-        return Object.keys(newErrors).length === 0
-    }
-
     const handleSubmit = async () => {
-        if (!validate()) return
+        if (score < 1) {
+            setErrors({ score: 'Tap a star to rate from 1 to 5.' })
+            return
+        }
 
         setSubmitting(true)
         setErrors({})
-
         try {
-            const res = await createRate({
+            await createRate({
                 booking_id: bookingId,
                 user_id: ratedUserId,
                 score,
                 feedback: feedback.trim() || null,
             })
-
-
-            if (res?.booking_id) {
-                handleRatingSaved && handleRatingSaved()
-                router.replace(`/(protected)/${role}/home`)
-            }
+            onDone?.()
         } catch (err) {
-            console.error('Error submitting rating:', err)
-
-            const apiErrors = err?.response?.data
-            if (apiErrors && typeof apiErrors === 'object') {
-                setErrors(apiErrors)
+            const data = err?.data
+            if (data && typeof data === 'object' && Object.keys(data).length) {
+                const mapped = Object.fromEntries(Object.entries(data).map(([k, v]) => [k, firstError(v)]))
+                // e.g. "You have already rated this booking" comes back as non_field_errors / a list
+                setErrors({ ...mapped, general: mapped.non_field_errors ?? mapped.detail ?? (Array.isArray(data) ? firstError(data) : undefined) })
             } else {
-                setErrors({ general: 'Failed to submit rating. Please try again.' })
+                setErrors({ general: err?.message || 'Failed to submit rating. Please try again.' })
             }
         } finally {
             setSubmitting(false)
         }
     }
 
-    const ratedRole = role === 'passenger' ? 'driver' : 'passenger'
-
     return (
-        <View className="p-5 bg-white flex-1">
-            <Text className="text-2xl font-bold mb-2 text-center">
-                Rate {ratedRole === 'driver' ? 'your Driver' : 'your Passenger'}
-            </Text>
-
-            {ratedUserName && (
-                <Text className="text-gray-500 mb-6 text-center">
-                    {ratedUserName}
-                </Text>
+        <ScrollView contentContainerStyle={{ padding: 20 }} keyboardShouldPersistTaps="handled">
+            {/* who you're rating */}
+            {person && (
+                <View
+                    style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        backgroundColor: colors.surface,
+                        borderRadius: 12,
+                        borderWidth: 1,
+                        borderColor: colors.border,
+                        padding: 12,
+                    }}
+                >
+                    <Avatar uri={person.photo} size={48} />
+                    <View style={{ marginLeft: 12, flex: 1 }}>
+                        <Text style={{ fontSize: 15, fontWeight: "600", color: colors.dark }}>{person.name}</Text>
+                        {person.rating != null && (
+                            <View style={{ flexDirection: "row", alignItems: "center", marginTop: 2 }}>
+                                <Ionicons name="star" size={13} color={STAR_ON} />
+                                <Text style={{ marginLeft: 4, fontSize: 12, color: colors.dark }}>{Number(person.rating).toFixed(1)}/5</Text>
+                            </View>
+                        )}
+                    </View>
+                </View>
             )}
 
-            <View className="flex-row justify-center mb-2">
+            {/* stars */}
+            <View style={{ flexDirection: "row", justifyContent: "center", marginTop: 24 }}>
                 {[1, 2, 3, 4, 5].map((value) => (
                     <TouchableOpacity
                         key={value}
                         onPress={() => setScore(value)}
-                        className="mx-1"
+                        accessibilityRole="button"
+                        accessibilityLabel={`${value} star${value === 1 ? "" : "s"}`}
+                        accessibilityState={{ selected: value <= score }}
+                        style={{ marginHorizontal: 4 }}
                     >
-                        <Ionicons
-                            name={value <= score ? 'star' : 'star-outline'}
-                            size={40}
-                            color={value <= score ? '#facc15' : '#d1d5db'}
-                        />
+                        <Ionicons name="star" size={40} color={value <= score ? STAR_ON : STAR_OFF} />
                     </TouchableOpacity>
                 ))}
             </View>
+            {errors.score ? <Text style={{ color: colors.error, textAlign: "center", marginTop: 6 }}>{errors.score}</Text> : null}
 
-            {errors.score && (
-                <Text className="text-red-500 mb-2 text-center">{errors.score}</Text>
-            )}
-
-            <FormTextField
-                label="Feedback (optional)"
+            {/* feedback */}
+            <Text style={{ marginTop: 20, marginBottom: 6, fontSize: 13, color: colors.dark }}>Feedback</Text>
+            <TextInput
                 value={feedback}
                 onChangeText={setFeedback}
-                placeholder="Share your experience..."
-                error={errors.feedback}
+                placeholder="Tell us about your experience"
+                placeholderTextColor="#9CA3AF"
+                multiline
+                maxLength={500}
+                style={{
+                    minHeight: 96,
+                    textAlignVertical: "top",
+                    backgroundColor: colors.surface,
+                    borderWidth: 1,
+                    borderColor: errors.feedback ? colors.error : "#9CA3AF",
+                    borderRadius: 8,
+                    padding: 12,
+                    fontSize: 14,
+                    color: colors.dark,
+                }}
             />
+            {errors.feedback ? <Text style={{ color: colors.error, fontSize: 12, marginTop: 4 }}>{errors.feedback}</Text> : null}
+            {errors.general ? <Text style={{ color: colors.error, textAlign: "center", marginTop: 10 }}>{errors.general}</Text> : null}
 
-            {errors.general && (
-                <Text className="text-red-500 mb-2 text-center">{errors.general}</Text>
-            )}
-
-            <TouchableOpacity
-                onPress={handleSubmit}
-                disabled={submitting}
-                className={`p-4 rounded-xl mt-3 ${submitting ? 'bg-gray-400' : 'bg-black'}`}
-            >
-                {submitting ? (
-                    <ActivityIndicator color="#fff" />
-                ) : (
-                    <Text className="text-white text-center font-semibold">
-                        Submit Rating
-                    </Text>
-                )}
-            </TouchableOpacity>
-        </View>
+            {/* actions */}
+            <View style={{ flexDirection: "row", gap: 12, marginTop: 24 }}>
+                <TouchableOpacity
+                    onPress={() => onDone?.()}
+                    disabled={submitting}
+                    accessibilityRole="button"
+                    style={{ flex: 1, alignItems: "center", paddingVertical: 14, borderRadius: 999, borderWidth: 1, borderColor: colors.dark }}
+                >
+                    <Text style={{ fontSize: 16, fontWeight: "600", color: colors.dark }}>Skip</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                    onPress={handleSubmit}
+                    disabled={submitting}
+                    accessibilityRole="button"
+                    style={{ flex: 1, alignItems: "center", paddingVertical: 14, borderRadius: 999, backgroundColor: GREEN, opacity: submitting ? 0.7 : 1 }}
+                >
+                    {submitting ? (
+                        <ActivityIndicator color={colors.onPrimary} />
+                    ) : (
+                        <Text style={{ fontSize: 16, fontWeight: "600", color: colors.onPrimary }}>Submit</Text>
+                    )}
+                </TouchableOpacity>
+            </View>
+        </ScrollView>
     )
 }

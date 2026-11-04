@@ -172,7 +172,12 @@ class TriggerTests(LayerMixin, TestCase):
         report.status = "resolved"
         with mock.patch("api.features.reports.signals.get_channel_layer", return_value=None):
             report.save()
-        self.assertEqual(Notification.objects.count(), 1)
+        # the reported driver isn't told again; the reporter now gets a "report_update"
+        self.assertEqual(Notification.objects.filter(user=self.driver.user).count(), 1)
+        self.assertEqual(
+            list(Notification.objects.filter(user=self.passenger.user).values_list("type", flat=True)),
+            [Notification.Type.REPORT_UPDATE],
+        )
 
     def test_report_on_booking_without_driver(self):
         report = IncidentReport(booking=make_booking(make_passenger(), status=Booking.Status.PENDING),

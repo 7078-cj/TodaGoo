@@ -21,3 +21,17 @@ export const getMyReports = async () => {
     if (!res.success) throw new Error(res.error || "Failed to load reports");
     return res.data?.results ?? [];
 };
+
+// One of your own reports, in full (e.g. opened from a "report resolved" notification)
+export const getReport = async (reportId) => {
+    const res = await getRequest(`reports/${reportId}/`, {}, true);
+    if (!res.success) throw new Error(res.error || "Failed to load the report");
+    return res.data;
+};
+
+// A report filed ABOUT you: limited fields only (type, status, dates, resolution, route)
+export const getReportAboutMe = async (reportId) => {
+    const res = await getRequest(`reports/${reportId}/about-me/`, {}, true);
+    if (!res.success) throw new Error(res.error || "Failed to load the report");
+    return res.data;
+};
