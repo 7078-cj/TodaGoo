@@ -218,6 +218,9 @@ TEMPLATES = [
 ASGI_APPLICATION = 'backend.asgi.application'
 WSGI_APPLICATION = 'backend.wsgi.application'
 
+# every `manage.py test` also writes an Excel test log to test_log/ (see backend/test_runner.py)
+TEST_RUNNER = 'backend.test_runner.TestLogRunner'
+
 # =========================
 # DATABASE CONFIG (PostGIS → PostgreSQL → SQLite fallback)
 # =========================
