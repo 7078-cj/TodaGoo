@@ -3,7 +3,7 @@ import React, { createContext, useEffect, useRef, useState } from "react";
 import useDriverListener from "../listeners/driverListener";
 import { useNavigationContainerRef } from "expo-router";
 import { goTo } from "../utils/navigation";
-import { setDriverActiveBooking } from "../utils/driverActiveBookingStore";
+import { setActiveBooking } from "../utils/activeBookingStore";
 
 const DriverContext = createContext(null);
 
@@ -48,11 +48,11 @@ export function DriverProvider({ children }) {
 
     // the bottom nav's Booking tab is only enabled while a ride is active
     useEffect(() => {
-        setDriverActiveBooking(acceptedBooking);
+        setActiveBooking(acceptedBooking);
     }, [acceptedBooking]);
 
     // logging out / leaving the driver screens: no active ride for whoever uses the app next
-    useEffect(() => () => setDriverActiveBooking(null), []);
+    useEffect(() => () => setActiveBooking(null), []);
     
         
 

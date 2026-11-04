@@ -3,6 +3,7 @@ import React, { createContext, useEffect, useRef, useState } from "react";
 import passengerListener from "../listeners/passengerListener";
 import { useNavigationContainerRef } from "expo-router";
 import { goTo } from "../utils/navigation";
+import { setActiveBooking } from "../utils/activeBookingStore";
 
 const PassengerContext = createContext(null);
 
@@ -35,6 +36,14 @@ export function PassengerProvider({ children }) {
         // goTo: from History / Profile a push would stack a second passenger layout
         goTo(`/(protected)/passenger/${screen}`, navigationRef.getRootState());
     }, [pendingBooking, navigationRef]);
+
+    // while a ride is active the bottom nav's Booking tab opens the trip instead of a new booking
+    useEffect(() => {
+        setActiveBooking(pendingBooking);
+    }, [pendingBooking]);
+
+    // logging out / leaving the passenger screens: no active ride for whoever uses the app next
+    useEffect(() => () => setActiveBooking(null), []);
     
     
     const ws = passengerListener(userId, () => console.log("refresh"), setPendingBooking);

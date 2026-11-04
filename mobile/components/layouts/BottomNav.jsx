@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AuthContext from "@/contexts/AuthContext";
 import colors from "@/constants/colors";
 import { useNoDriversAvailable } from "@/utils/driverAvailabilityStore";
-import { useDriverHasActiveBooking } from "@/utils/driverActiveBookingStore";
+import { useHasActiveBooking } from "@/utils/activeBookingStore";
 import { goTo } from "@/utils/navigation";
 
 export default function BottomNav() {
@@ -17,22 +17,26 @@ export default function BottomNav() {
 
     const role = user?.role?.toLowerCase();
     const noDrivers = useNoDriversAvailable();
-    const driverHasActiveBooking = useDriverHasActiveBooking();
+    const hasActiveBooking = useHasActiveBooking();
 
     const homeRoute =
         role === "passenger"
             ? "/(protected)/passenger/home"
             : "/(protected)/driver/home";
 
-    // passengers book a ride; drivers go to the ride they're on
-    const bookingRoute =
-        role === "passenger"
+    // During a ride (either role) Booking opens that ride's trip screen. Otherwise passengers book
+    // a new ride, and drivers have nothing to open.
+    const bookingRoute = hasActiveBooking
+        ? `/(protected)/${role === "passenger" ? "passenger" : "driver"}/en_route`
+        : role === "passenger"
             ? "/(protected)/passenger/book"
             : "/(protected)/driver/en_route";
 
-    // Booking is locked for passengers when no driver is queued, and for drivers with no active ride
-    const bookingLocked =
-        role === "passenger" ? noDrivers : role === "driver" ? !driverHasActiveBooking : false;
+    // Never locked during a ride (the passenger's driver isn't in the queue then, so "no drivers"
+    // used to lock it). Without a ride: passengers need a queued driver, drivers have nothing to open.
+    const bookingLocked = hasActiveBooking
+        ? false
+        : role === "passenger" ? noDrivers : role === "driver";
 
     const tabs = [
         {
