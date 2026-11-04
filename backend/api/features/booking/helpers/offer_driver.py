@@ -2,6 +2,7 @@ import time
 from django.core.cache import cache
 from django.db import transaction as db_transaction
 from ....broadcast import broadcast
+from .offer_guard import reset_offer_claim
 
 
 def offer_driver(nearest, transaction=None, data=None):
@@ -19,6 +20,8 @@ def offer_driver(nearest, transaction=None, data=None):
         data_with_expiry = {**(data or {}), "expires_at": expires_at}
 
         cache.set(f"driver_{driver_id}_location", location, timeout=40)
+        # a new offer can be ended once again (accept / decline / timeout)
+        reset_offer_claim(driver_id, data_with_expiry.get("id"))
         cache.set(f"driver_{driver_id}_booking", data_with_expiry, timeout=30)
         broadcast(f"driver_{driver_user_id}", "new_booking", data_with_expiry)
 

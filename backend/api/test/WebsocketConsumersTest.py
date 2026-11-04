@@ -284,6 +284,16 @@ class DriverConsumerTests(ConsumerBase):
         self.assertEqual(reply["data"], {"success": False, "message": "Booking already taken."})
         await self.close_all()
 
+    async def test_offer_expired_reaches_the_driver_app(self):
+        from api.broadcast import broadcast
+        communicator = await self.open()
+
+        await sync_to_async(broadcast)(f"driver_{self.driver.user.id}", "offer_expired", {"booking_id": self.booking.id})
+
+        message = await self.receive_type(communicator, "offer_expired")
+        self.assertEqual(message["data"], {"booking_id": self.booking.id})
+        await self.close_all()
+
     async def test_passenger_cannot_open_driver_socket(self):
         _, connected, code = await self.connect(f"/ws/driver/{self.passenger.user.id}", self.passenger.user)
         self.assertFalse(connected)

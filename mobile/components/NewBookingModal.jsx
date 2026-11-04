@@ -11,6 +11,8 @@ export default function NewBookingModal() {
     const [location, setLocation] = useState(null);
     const [errorMsg, setErrorMsg] = useState(null);
     const intervalRef = useRef(null);
+    // one decline per offer (button + the 0 s auto-decline could both fire)
+    const declinedIdRef = useRef(null);
 
     const visible = !!pendingBooking;
 
@@ -43,11 +45,13 @@ export default function NewBookingModal() {
 
     const handleDecline = async () => {
         const bookingId = pendingBooking?.id;
-        if (!bookingId) return;
+        if (!bookingId || declinedIdRef.current === bookingId) return;
+        declinedIdRef.current = bookingId;
 
         const loc = await getLocation({ setLocation, setErrorMsg });
         if (!loc) {
             console.error(errorMsg || "No location available, cannot decline booking");
+            declinedIdRef.current = null; // let the driver try again
             return;
         }
 
@@ -89,7 +93,7 @@ export default function NewBookingModal() {
                             Pickup: {pendingBooking?.start_address ?? "N/A"}
                         </Text>
                         <Text className="text-gray-700">
-                            Dropoff: {pendingBooking?.destination_address ?? "N/A"}
+                            Dropoff: {pendingBooking?.end_address ?? "N/A"}
                         </Text>
                         <Text className="text-gray-700">
                             Fare: {pendingBooking?.price ?? "N/A"}

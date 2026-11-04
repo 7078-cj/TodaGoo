@@ -1,7 +1,8 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { createContext, useEffect, useRef, useState } from "react";
 import useDriverListener from "../listeners/driverListener";
-import {router } from "expo-router";
+import { useNavigationContainerRef } from "expo-router";
+import { goTo } from "../utils/navigation";
 import { setDriverActiveBooking } from "../utils/driverActiveBookingStore";
 
 const DriverContext = createContext(null);
@@ -13,6 +14,7 @@ export function DriverProvider({ children }) {
     const [pendingBooking, setPendingBooking] = useState(null);
     const [acceptedBooking, setAcceptedBooking] = useState(null);
     const lastScreenRef = useRef(null);
+    const navigationRef = useNavigationContainerRef();
     
 
     useEffect(() => {
@@ -40,8 +42,9 @@ export function DriverProvider({ children }) {
         if (lastScreenRef.current === key) return;
         lastScreenRef.current = key;
 
-        router.push(`/(protected)/driver/${screen}`);
-    }, [acceptedBooking]);
+        // goTo: from History / Profile a push would stack a second driver layout
+        goTo(`/(protected)/driver/${screen}`, navigationRef.getRootState());
+    }, [acceptedBooking, navigationRef]);
 
     // the bottom nav's Booking tab is only enabled while a ride is active
     useEffect(() => {

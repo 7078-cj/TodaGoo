@@ -1,4 +1,4 @@
-import { router } from "expo-router";
+import { goTo } from "../utils/navigation";
 import { requestChat } from "../utils/chatRequestStore";
 
 // Where tapping a notification takes the user. One entry per notification `type`
@@ -58,30 +58,15 @@ export function getNotificationRedirect(notification, role) {
     return { pathname: path, openChat: !!entry.openChat };
 }
 
-// Whether `pathname` (e.g. "/(protected)/driver/en_route") is anywhere in the navigation stack.
-// Walks the nested navigators segment by segment: "(protected)" → "driver" → "en_route".
-function isInStack(state, pathname) {
-    const segments = pathname.split("/").filter(Boolean);
-    let routes = state?.routes;
-
-    for (const segment of segments) {
-        const route = routes?.find((r) => r.name === segment);
-        if (!route) return false;
-        routes = route.state?.routes;
-    }
-    return true;
-}
-
 // Follow a tapped notification. Returns false when its type has no redirect.
-// `rootState` comes from useRootNavigationState(). If the screen is already in the stack we go
-// back to it (dismissTo) instead of pushing a second copy on top. Otherwise we push it.
+// `rootState` comes from useRootNavigationState(); goTo() never stacks a second copy of the screen
+// or of its driver / passenger layout.
 export function followNotification(notification, role, rootState) {
     const redirect = getNotificationRedirect(notification, role);
     if (!redirect) return false;
 
     if (redirect.openChat) requestChat(notification.booking_id);
 
-    if (isInStack(rootState, redirect.pathname)) router.dismissTo(redirect.pathname);
-    else router.push(redirect.pathname);
+    goTo(redirect.pathname, rootState);
     return true;
 }

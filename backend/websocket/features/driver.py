@@ -14,7 +14,8 @@ from api.features.booking.models import DriverQueue
 from django.contrib.gis.geos import Point
 import asyncio
 from api.features.booking.serializers import BookingSerializer
-from api.features.booking.helpers.offer_guard import is_booking_offered_to
+from api.features.booking.helpers.offer_guard import claim_offer
+from api.broadcast import broadcast
 from api.features.utils.security import parse_lat_lng
 from api.features.notifications.triggers import notify_booking_accepted
 
@@ -147,6 +148,19 @@ class DriverConsumer(SubprotocolAcceptMixin, AsyncWebsocketConsumer):  # [SEC-H8
 
     @database_sync_to_async
     def booking_expired(self, booking_id):
+        driver = self.driver
+
+        # read before claim_offer ends the offer; offer_driver() cached it for this offer
+        cached_location = cache.get(f"driver_{driver.id}_location")
+
+        # Accepted / declined already, or another of this driver's sockets expired it first:
+        # its follow-up already ran, so doing it again would offer the booking twice.
+        if not claim_offer(driver.id, booking_id):
+            return
+
+        # close the offer on every socket of this driver (the app's countdown may lag)
+        broadcast(f"driver_{driver.user_id}", "offer_expired", {"booking_id": booking_id})
+
         try:
             booking = Booking.objects.get(id=booking_id)
         except Booking.DoesNotExist:
@@ -155,13 +169,11 @@ class DriverConsumer(SubprotocolAcceptMixin, AsyncWebsocketConsumer):  # [SEC-H8
         if booking.status != Booking.Status.PENDING or booking.driver_id is not None:
             return
 
-        driver = self.driver
-
-        cached_location = cache.get(f"driver_{driver.id}_location")
         if cached_location:
             location = Point(cached_location["lng"], cached_location["lat"], srid=4326)
         else:
-            location = driver.current_location
+            # Driver has no current_location field (this used to raise and kill the timer)
+            location = driver.toda_station.location if driver.toda_station_id else booking.start
 
         DriverQueue.objects.get_or_create(
             driver=driver,
@@ -186,9 +198,10 @@ class DriverConsumer(SubprotocolAcceptMixin, AsyncWebsocketConsumer):  # [SEC-H8
                 "message": "Your booking offer has expired."
             }
 
-        # [SEC-C4] only the booking currently offered to this driver can be accepted
-        if not is_booking_offered_to(driver.id, booking_id):
-            return {"success": False, "message": "This booking was not offered to you."}
+        # [SEC-C4] only the booking currently offered to this driver can be accepted,
+        # and only once: the timer or a decline may have ended the offer already
+        if not claim_offer(driver.id, booking_id):
+            return {"success": False, "message": "This booking offer has expired."}
 
         with transaction.atomic():
             try:
@@ -217,14 +230,15 @@ class DriverConsumer(SubprotocolAcceptMixin, AsyncWebsocketConsumer):  # [SEC-H8
     def decline_booking(self, booking_id, location):
         driver = self.driver
 
-        # [SEC-C4] only the offered booking can be declined, and the location must be valid
-        if not is_booking_offered_to(driver.id, booking_id):
-            return False
-
+        # [SEC-C4] the location must be valid; checked first so a bad payload leaves the offer open
         coords = parse_lat_lng(location, lat_key="latitude", lng_key="longitude")
         if coords is None:
             return False
         lat, lng = coords
+
+        # only the offered booking, and only once (the timer may have ended it already)
+        if not claim_offer(driver.id, booking_id):
+            return False
 
         with transaction.atomic():
             DriverQueue.objects.get_or_create(
@@ -243,6 +257,12 @@ class DriverConsumer(SubprotocolAcceptMixin, AsyncWebsocketConsumer):  # [SEC-H8
             )
 
         return True
+
+    async def offer_expired(self, event):
+        await self.send(text_data=json.dumps({
+            "type": "offer_expired",
+            "data": event["data"],
+        }))
 
     async def booking_update(self, event):
             await self.send(text_data=json.dumps({

@@ -1,3 +1,4 @@
+import { Alert } from "react-native";
 import useWebSocket from "../hooks/useWebsocket";
 
 function handleDriverMessage(data, setPendingBooking, setAcceptedBooking) {
@@ -8,7 +9,17 @@ function handleDriverMessage(data, setPendingBooking, setAcceptedBooking) {
 
         case "accept_booking":
             setPendingBooking(null)
-            setAcceptedBooking(data.data)
+            // a failed accept replies { success: false, message } (offer expired / already taken):
+            // that isn't a booking, so don't treat it as the accepted ride
+            if (data.data?.id) setAcceptedBooking(data.data)
+            else Alert.alert("Booking unavailable", data.data?.message ?? "This booking is no longer available.")
+            break
+
+        // the server ended the offer (30 s timeout): close it if it's the one on screen
+        case "offer_expired":
+            setPendingBooking((current) =>
+                current && String(current.id) === String(data.data?.booking_id) ? null : current
+            )
             break
 
         case "decline_booking":

@@ -10,3 +10,4 @@ from .test.ChatAndReportsTest import *
 from .test.NotificationsTest import *
 from .test.WebsocketConsumersTest import *
 from .test.ProfileTest import *
+from .test.OfferFlowTest import *

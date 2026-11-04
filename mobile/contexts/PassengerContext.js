@@ -1,7 +1,8 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { createContext, useEffect, useRef, useState } from "react";
 import passengerListener from "../listeners/passengerListener";
-import {router } from "expo-router";
+import { useNavigationContainerRef } from "expo-router";
+import { goTo } from "../utils/navigation";
 
 const PassengerContext = createContext(null);
 
@@ -11,6 +12,7 @@ export function PassengerProvider({ children }) {
     const [userId, setUserId] = useState(null);
     const [pendingBooking, setPendingBooking] = useState(null);
     const lastScreenRef = useRef(null);
+    const navigationRef = useNavigationContainerRef();
     
     useEffect(() => {
         (async () => {
@@ -30,8 +32,9 @@ export function PassengerProvider({ children }) {
         if (lastScreenRef.current === key) return;
         lastScreenRef.current = key;
 
-        router.push(`/(protected)/passenger/${screen}`);
-    }, [pendingBooking]);
+        // goTo: from History / Profile a push would stack a second passenger layout
+        goTo(`/(protected)/passenger/${screen}`, navigationRef.getRootState());
+    }, [pendingBooking, navigationRef]);
     
     
     const ws = passengerListener(userId, () => console.log("refresh"), setPendingBooking);

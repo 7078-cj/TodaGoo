@@ -1,15 +1,16 @@
 import React, { useContext } from "react";
 import { View, Text, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { usePathname, useRouter } from "expo-router";
+import { usePathname, useNavigationContainerRef } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AuthContext from "@/contexts/AuthContext";
 import colors from "@/constants/colors";
 import { useNoDriversAvailable } from "@/utils/driverAvailabilityStore";
 import { useDriverHasActiveBooking } from "@/utils/driverActiveBookingStore";
+import { goTo } from "@/utils/navigation";
 
 export default function BottomNav() {
-    const router = useRouter();
+    const navigationRef = useNavigationContainerRef();
     const pathname = usePathname();
     const insets = useSafeAreaInsets();
     const { user } = useContext(AuthContext);
@@ -48,13 +49,13 @@ export default function BottomNav() {
         },
         {
             label: "History",
-            route: "/history",
+            route: "/(protected)/history",
             icon: "time-outline",
             activeIcon: "time",
         },
         {
             label: "Profile",
-            route: "/profile",
+            route: "/(protected)/profile",
             icon: "person-circle-outline",
             activeIcon: "person-circle",
         },
@@ -85,7 +86,9 @@ export default function BottomNav() {
                         disabled={isActive || isBookingLocked}
                         activeOpacity={0.7}
                         onPress={() => {
-                            if (!isActive) router.push(tab.route);
+                            // goTo, not push: pushing a driver/passenger route from History or Profile
+                            // stacked a second copy of that layout (duplicate sockets and booking offers)
+                            if (!isActive) goTo(tab.route, navigationRef.getRootState());
                         }}
                         className="flex-1 items-center justify-center rounded-xl py-2 mx-0.5"
                         style={{
