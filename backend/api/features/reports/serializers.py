@@ -2,7 +2,7 @@ from django.db import transaction
 from django.utils import timezone
 from rest_framework import serializers
 
-from .models import IncidentReport, IncidentEvidence
+from .models import IncidentReport, IncidentEvidence, REPORT_TAGS
 from ..utils.fields import PointField
 from ..booking.serializers import BookingSerializer
 from ..utils.uploads import validate_file_size, validate_file_count
@@ -32,6 +32,7 @@ class IncidentReportSerializer(serializers.ModelSerializer):
             "incident_types",
             "injured_party",
             "details",
+            "tags",
             "status",
             "resolution",
             "resolved_at",
@@ -56,6 +57,12 @@ class IncidentReportCreateSerializer(serializers.ModelSerializer):
         required=False,
         allow_empty=True,
     )
+    tags = serializers.ListField(
+        child=serializers.ChoiceField(choices=REPORT_TAGS),
+        required=False,
+        allow_empty=True,
+        max_length=len(REPORT_TAGS),
+    )
 
     class Meta:
         model = IncidentReport
@@ -67,6 +74,7 @@ class IncidentReportCreateSerializer(serializers.ModelSerializer):
             "incident_types",
             "injured_party",
             "details",
+            "tags",
             "status",
             "created_at",
             "evidence",
@@ -77,6 +85,9 @@ class IncidentReportCreateSerializer(serializers.ModelSerializer):
 
     def validate_evidence_files(self, value):
         return validate_file_count(value)
+
+    def validate_tags(self, value):
+        return list(dict.fromkeys(value))  # drop duplicates, keep order
 
     def create(self, validated_data):
         validated_data.pop("booking_id", None)

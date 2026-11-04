@@ -3,9 +3,21 @@ import { View, Text, Image } from "react-native";
 import { useProfile } from "../../contexts/ProfileContext";
 import colors from "../../constants/colors";
 import NotificationBell from "./NotificationBell";
+import { useDriverOnline } from "../../utils/driverOnlineStore";
+import { useHasActiveBooking } from "../../utils/activeBookingStore";
 
 export default function Header() {
-    const { profile, details } = useProfile();
+    const { role, profile, details } = useProfile();
+    const driverOnline = useDriverOnline();
+    const onTrip = useHasActiveBooking();
+
+    // drivers see their availability under the greeting (hidden until it's known)
+    const status =
+        role !== "driver" ? null
+            : onTrip ? "On a trip"
+            : driverOnline === true ? "Online"
+            : driverOnline === false ? "Offline"
+            : null;
 
     const username = profile?.first_name ?? profile?.username ?? "User";
     const photo = details?.profile_picture;
@@ -36,12 +48,17 @@ export default function Header() {
                     </View>
                 )}
 
-                <Text
-                    className="text-xl font-semibold"
-                    style={{ color: colors.onPrimary }}
-                >
-                    Hello, {username}!
-                </Text>
+                <View>
+                    <Text
+                        className="text-xl font-semibold"
+                        style={{ color: colors.onPrimary }}
+                    >
+                        Hello, {username}!
+                    </Text>
+                    {status ? (
+                        <Text style={{ color: colors.onPrimary, fontSize: 12, marginTop: 2 }}>Status: {status}</Text>
+                    ) : null}
+                </View>
             </View>
 
             <NotificationBell />

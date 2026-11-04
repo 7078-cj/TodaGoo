@@ -7,6 +7,7 @@ export const submitIncidentReport = async (reportData, idempotent_key) => {
         details: reportData.details, 
         location:{lat: reportData.location.lat, lng: reportData.location.lng},
         evidence_files: reportData.evidence_files,
+        tags: reportData.tags ?? [],
         booking_id: reportData.booking_id
 
     }, true, idempotent_key);

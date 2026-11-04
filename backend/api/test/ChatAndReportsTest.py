@@ -284,3 +284,65 @@ class IncidentReportResolutionTests(ParticipantsBase):
     def test_resolved_at_cannot_be_set_directly(self, _layer):
         res = self.update({"resolved_at": "2020-01-01T00:00:00Z"})
         self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
+
+
+# ---------------------------------------------------------------------------
+# Multipart lists from the app (evidence photos, tags)
+# ---------------------------------------------------------------------------
+def _png(name="evidence.png"):
+    import io
+    from django.core.files.uploadedfile import SimpleUploadedFile
+    from PIL import Image
+
+    buffer = io.BytesIO()
+    Image.new("RGB", (4, 4), "red").save(buffer, format="PNG")
+    return SimpleUploadedFile(name, buffer.getvalue(), content_type="image/png")
+
+
+@mock.patch("api.features.reports.signals.get_channel_layer", return_value=None)
+class IncidentReportFromAppTests(ParticipantsBase):
+    """utils/requests.js buildFormData sends lists as evidence_files[0], tags[0], ..."""
+
+    def post(self, extra, fmt="multipart"):
+        self.as_user(self.passenger.user)
+        body = {
+            "booking_id": str(self.booking.id),
+            "incident_types": "accident",
+            "injured_party": "others",
+            "details": "Motorcycle crashed in front of 7Mart",
+            **({"location.lat": "14.55", "location.lng": "121.05"} if fmt == "multipart" else {"location": PICKUP}),
+            **extra,
+        }
+        return self.client.post(reverse(REPORTS), body, format=fmt, **idem())
+
+    def test_evidence_photos_are_saved(self, _layer):
+        """Regression: indexed evidence keys were dropped, so no photo was ever stored."""
+        res = self.post({"evidence_files[0]": _png("a.png"), "evidence_files[1]": _png("b.png")})
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED, res.data)
+        self.assertEqual(IncidentReport.objects.get(id=res.data["id"]).evidence.count(), 2)
+
+    def test_tags_are_saved_in_order_without_duplicates(self, _layer):
+        res = self.post({"tags[1]": "threatening", "tags[0]": "unsafe", "tags[2]": "unsafe"})
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED, res.data)
+        self.assertEqual(IncidentReport.objects.get(id=res.data["id"]).tags, ["unsafe", "threatening"])
+
+    def test_unknown_tag_is_rejected(self, _layer):
+        res = self.post({"tags[0]": "rude"})
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("tags", res.data)
+
+    def test_tags_are_optional(self, _layer):
+        res = self.post({})
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED, res.data)
+        self.assertEqual(IncidentReport.objects.get(id=res.data["id"]).tags, [])
+
+    def test_tags_over_json(self, _layer):
+        res = self.post({"tags": ["disrespectful"]}, fmt="json")
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED, res.data)
+        self.assertEqual(res.data["tags"], ["disrespectful"])
+
+    def test_reporter_sees_tags_and_evidence_in_list(self, _layer):
+        self.post({"tags[0]": "unsafe", "evidence_files[0]": _png()})
+        report = self.client.get(reverse(REPORTS)).data["results"][0]
+        self.assertEqual(report["tags"], ["unsafe"])
+        self.assertEqual(len(report["evidence"]), 1)

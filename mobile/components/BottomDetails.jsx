@@ -36,7 +36,6 @@ export default function BottomDetails({
     const [loading, setLoading] = useState(false)
     const [visible, setVisible] = useState(false)
     const [detailsVisible, setDetailsVisible] = useState(false)
-    const [reporting, setReporting] = useState(false)
 
     const inProgressKeyRef = useRef(null)
     const completeKeyRef = useRef(null)
@@ -240,8 +239,8 @@ export default function BottomDetails({
             <IncidentReportModal
                 visible={visible}
                 onClose={() => setVisible(false)}
-                submitting={reporting}
-                bookingId={booking.id}
+                booking={booking}
+                isDriver={isDriver}
             />
         </View>
     )

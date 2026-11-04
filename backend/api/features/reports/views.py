@@ -5,7 +5,7 @@ from rest_framework.response import Response
 from ..booking.models import Booking
 from rest_framework.exceptions import PermissionDenied, NotFound, ValidationError
 from ...pagination import StandardPagination
-from ..utils.reconstruction import reconstruct_nested
+from ..utils.reconstruction import reconstruct_nested, collect_indexed_lists
 from rest_framework import status
 from ...idempotency import IdempotentAPIView
 
@@ -122,7 +122,8 @@ class IncidentReportListCreateView(IdempotentAPIView, ListCreateAPIView):
         return IncidentReportSerializer
 
     def create(self, request, *args, **kwargs):
-        data = reconstruct_nested(request.data, "location.")
+        # multipart lists arrive as evidence_files[0], tags[0], ... (see collect_indexed_lists)
+        data = collect_indexed_lists(reconstruct_nested(request.data, "location."))
 
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)

@@ -38,3 +38,10 @@ export const INJURED_PARTY_LABELS = {
     others: "Others",
     none: "None",
 };
+
+// Optional report tags (backend REPORT_TAGS); shown as chips on the report form and in Report Details
+export const REPORT_TAGS = [
+    { key: "unsafe", label: "Unsafe" },
+    { key: "disrespectful", label: "Disrespectful" },
+    { key: "threatening", label: "Threatening" },
+];

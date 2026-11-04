@@ -5,6 +5,13 @@ from django.contrib.gis.db import models as geomodels
 
 MDRRMO_INCIDENT_TYPES = {"accident", "reckless_driving", "others", "harassment"}
 
+# Optional tags the reporter can add in the app ("Tags" on the report form)
+REPORT_TAGS = [
+    ("unsafe", "Unsafe"),
+    ("disrespectful", "Disrespectful"),
+    ("threatening", "Threatening"),
+]
+
 
 class IncidentReport(models.Model):
     INCIDENT_TYPES = [
@@ -35,6 +42,8 @@ class IncidentReport(models.Model):
     incident_types = models.CharField(max_length=20, choices=INCIDENT_TYPES, default="none")
     injured_party = models.CharField(max_length=20, choices=INJURED_CHOICES, default="none")
     details = models.TextField(blank=True)
+    # list of REPORT_TAGS keys, e.g. ["unsafe", "threatening"]
+    tags = models.JSONField(default=list, blank=True)
 
     status = models.CharField(
         max_length=20,

@@ -10,13 +10,17 @@ export const driverQueueStatus = async () => {
     return res.data
 }
 
+// Join the queue ("Ready"). Throws with the server's message on failure (e.g. not verified / already queued)
 export const driverQueue = async (location) => {
     const res = await postRequest('booking/driver/queue', location, true)
+    if (!res.success) throw new Error(res.error || "Failed to go online")
     return res.data
 }
 
+// Leave the queue ("Go Offline"). Throws with the server's message on failure
 export const driverDequeue = async () => {
     const res = await deleteRequest('booking/driver/dequeue', true)
+    if (!res.success) throw new Error(res.error || "Failed to go offline")
     return res.data
 }
 
