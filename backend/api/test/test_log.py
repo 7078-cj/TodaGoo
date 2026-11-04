@@ -19,6 +19,10 @@ For each test it records:
 Sheets: "Summary" (totals), "Test Cases" (one row per test), "Requests" (one row per call).
 """
 import functools
+
+# unittest leaves this module's frames (the assert wrappers) out of failure tracebacks,
+# so a failure points at the test's own line, as without the test log
+__unittest = True
 import json
 import re
 import time
@@ -117,7 +121,8 @@ class TestRecord:
         self.expected = []
         self.actual = []
         self.result = "Passed"
-        self.error = ""
+        self.error = ""  # the cause: exception type + message
+        self.traceback = ""  # the full log of the failure
         self.started = time.perf_counter()
         self.duration = 0.0
 
@@ -145,7 +150,7 @@ class TestLogRecorder:
             record.duration = time.perf_counter() - record.started
         self.current = None
 
-    def set_result(self, test, result, err=None):
+    def set_result(self, test, result, err=None, tb=None):
         record = self._record_for(test) or self._standalone(test)
         # a failed subTest / error after a pass wins; Skipped never overrides a failure
         if result in ("Failed", "Error") or record.result == "Passed":
@@ -153,6 +158,8 @@ class TestLogRecorder:
         if err:
             message = err if isinstance(err, str) else "".join(traceback.format_exception_only(err[0], err[1])).strip()
             record.error = (record.error + "\n" if record.error else "") + message
+        if tb:
+            record.traceback = (record.traceback + "\n" if record.traceback else "") + tb.strip()
 
     def _record_for(self, test):
         if self.current and self.current.test_id == test.id():
@@ -342,13 +349,20 @@ def make_result_class(base, recorder):
         def addSuccess(self, test):
             super().addSuccess(test)
 
+        def _traceback(self, err, test):
+            # unittest's own formatting: the trimmed traceback printed in the console
+            try:
+                return self._exc_info_to_string(err, test)
+            except Exception:
+                return "".join(traceback.format_exception(*err))
+
         def addFailure(self, test, err):
             super().addFailure(test, err)
-            recorder.set_result(test, "Failed", err)
+            recorder.set_result(test, "Failed", err, self._traceback(err, test))
 
         def addError(self, test, err):
             super().addError(test, err)
-            recorder.set_result(test, "Error", err)
+            recorder.set_result(test, "Error", err, self._traceback(err, test))
 
         def addSkip(self, test, reason):
             super().addSkip(test, reason)
@@ -365,7 +379,7 @@ def make_result_class(base, recorder):
             super().addSubTest(test, subtest, err)
             if err is not None:
                 failed = issubclass(err[0], test.failureException)
-                recorder.set_result(test, "Failed" if failed else "Error", err)
+                recorder.set_result(test, "Failed" if failed else "Error", err, self._traceback(err, test))
 
     return TestLogResult
 
@@ -512,12 +526,14 @@ def write_excel(recorder, test_labels, out_dir):
             output,
             r.result,
             round(r.duration, 3),
+            r.error,
+            r.traceback,
         ])
     table(
         wb.create_sheet("Test Cases"),
-        ["#", "Module", "Class", "Test", "URL", "Payload", "Expected", "Output", "Passed", "Time (s)"],
+        ["#", "Module", "Class", "Test", "URL", "Payload", "Expected", "Output", "Passed", "Time (s)", "Failure cause", "Traceback"],
         rows,
-        [6, 22, 28, 40, 45, 50, 45, 70, 10, 9],
+        [6, 22, 28, 40, 45, 50, 45, 70, 10, 9, 50, 90],
         result_col=9,
     )
 
