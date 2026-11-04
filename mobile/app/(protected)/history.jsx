@@ -100,7 +100,8 @@ export default function History() {
                 booking={selected}
                 visible={!!selected}
                 onClose={() => setSelected(null)}
-                currentUserId={user?.user_id}
+                // the JWT's user_id claim is a string ("10"); messages and ratings use numeric ids
+                currentUserId={user?.user_id != null ? Number(user.user_id) : undefined}
                 isDriver={isDriver}
             />
         </View>

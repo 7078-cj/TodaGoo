@@ -44,7 +44,9 @@ function buildItems(messages, currentUserId, senderNames) {
     sorted.forEach((m, i) => {
         const time = getTime(m);
         const senderId = getSenderId(m);
-        const isMine = senderId != null ? senderId === currentUserId : m.receiver !== currentUserId;
+        // compare as strings: ids can arrive as numbers (API) or strings (JWT claims)
+        const sameUser = (a, b) => a != null && b != null && String(a) === String(b);
+        const isMine = senderId != null ? sameUser(senderId, currentUserId) : !sameUser(m.receiver, currentUserId);
 
         if (time != null) {
             if (prevTime == null || time - prevTime > GAP_MS) {
