@@ -7,8 +7,9 @@
 # To block merging until it passes: GitHub → Settings → Branches (or Rulesets) → protect `main`
 # → "Require status checks to pass" → add "Backend tests".
 #
-# Each run uploads the Excel test log (backend/test_log/*.xlsx, see backend/test_runner.py)
-# as the "test-log" artifact and writes the totals to the run's summary page.
+# Each run's summary page shows how many passed and, for every failed test, what caused it, the calls
+# it made and the full traceback (api/test/ci_summary.py); failures are also marked on the test lines.
+# The "test-log" artifact has the Excel test log (backend/test_log/*.xlsx) and console.log.
 name: Backend tests
 
 on:
@@ -133,41 +134,24 @@ jobs:
         run: python manage.py makemigrations --check --dry-run
 
       - name: Run tests
-        run: python manage.py test --noinput
+        # the console output is also saved as test_log/console.log (uploaded below)
+        run: |
+          mkdir -p test_log
+          set -o pipefail
+          python manage.py test --noinput 2>&1 | tee test_log/console.log
 
-      - name: Upload Excel test log
+      # passed / failed counts, what failed, why, and the log -> run summary + annotations
+      - name: Test summary
+        if: always()
+        run: python api/test/ci_summary.py test_log
+
+      - name: Upload test log (Excel + console.log)
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: test-log
-          path: backend/test_log/*.xlsx
+          path: |
+            backend/test_log/*.xlsx
+            backend/test_log/console.log
           if-no-files-found: warn
           retention-days: 30
-
-      - name: Test summary
-        if: always()
-        run: |
-          python - <<'EOF' >> "$GITHUB_STEP_SUMMARY"
-          import glob
-          files = sorted(glob.glob("test_log/*.xlsx"))
-          if not files:
-              print("### Backend tests\nNo test log was written (the run stopped before the tests finished).")
-              raise SystemExit
-          from openpyxl import load_workbook
-          wb = load_workbook(files[-1], read_only=True)
-          rows = [r for r in wb["Summary"].iter_rows(values_only=True) if any(v is not None for v in r)]
-          info = {r[0]: r[1] for r in rows[:9]}
-          print(f"### Backend tests: {info.get('Overall')}")
-          print(f"**{info.get('Total tests')} tests** in {info.get('Duration')}: "
-                f"{info.get('Passed')} passed, {info.get('Failed')} failed, "
-                f"{info.get('Error')} errors, {info.get('Skipped')} skipped\n")
-          print("| Module | Tests | Passed | Failed | Error | Skipped |\n|---|---|---|---|---|---|")
-          for r in rows[10:]:
-              print("| " + " | ".join(str(v) for v in r[:6]) + " |")
-          bad = [r for r in wb["Test Cases"].iter_rows(min_row=2, values_only=True) if r[8] in ("Failed", "Error")]
-          if bad:
-              print("\n#### Failed tests")
-              for r in bad[:50]:
-                  print(f"- `{r[1]}.{r[2]}.{r[3]}`: {r[8]}")
-          print("\nFull details: download the **test-log** artifact (Excel).")
-          EOF
