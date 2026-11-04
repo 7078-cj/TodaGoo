@@ -1,6 +1,8 @@
-import { forwardRef, useImperativeHandle, useEffect, useRef } from "react";
+import { forwardRef, useImperativeHandle, useEffect, useRef, useState } from "react";
 import { View } from "react-native";
 import { WebView } from "react-native-webview";
+import { LoadingScreen } from "../loading";
+import { LOADING_MESSAGES } from "../../constants/loading";
 
 
 function safeJSONStringify(value) {
@@ -695,6 +697,8 @@ export const LeafletMapView = forwardRef(function LeafletMapView(
 
     const webViewRef = useRef(null);
     const readyRef = useRef(false);
+    // the WebView is blank until Leaflet reports "mapReady": show a loader over it until then
+    const [mapLoaded, setMapLoaded] = useState(false);
     const pendingActionsRef = useRef([]);
 
     const centerRef = useRef(center);
@@ -807,6 +811,7 @@ export const LeafletMapView = forwardRef(function LeafletMapView(
 
                         if (data.type === "mapReady") {
                             readyRef.current = true;
+                            setMapLoaded(true);
                             inject(`window.setMarkers(${safeJSONStringify(markers)})`);
                             inject(`window.setRoute(${safeJSONStringify(route)}, ${route.length > 1})`);
                             inject(`window.setAreas(${safeJSONStringify(areas)})`);
@@ -834,6 +839,12 @@ export const LeafletMapView = forwardRef(function LeafletMapView(
 
                 }}
             />
+
+            {!mapLoaded && (
+                <View pointerEvents="none" style={{ position: "absolute", top: 0, right: 0, bottom: 0, left: 0 }}>
+                    <LoadingScreen message={LOADING_MESSAGES.map} />
+                </View>
+            )}
 
         </View>
     );

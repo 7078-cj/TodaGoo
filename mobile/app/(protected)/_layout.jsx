@@ -1,10 +1,11 @@
 import { Stack, Redirect, router, useSegments } from "expo-router";
 import { useEffect, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Text, View } from "react-native";
 import BottomNav from "../../components/layouts/BottomNav";
 import Header from "../../components/layouts/Header";
 import { ProfileProvider } from "../../contexts/ProfileContext";
+import { LoadingScreen } from "../../components/loading";
+import { LOADING_MESSAGES } from "../../constants/loading";
 import { NotificationProvider } from "../../contexts/NotificationContext";
 import NotificationToast from "../../components/NotificationToast";
 
@@ -31,7 +32,7 @@ export default function ProtectedLayout() {
     const path = segments.join("/");
     const isOtpRoute = segments.includes("otp");
     // screens that render their own PageHeader instead of the "Hello" Header
-    const hasOwnHeader = ["history", "profile", "edit_profile", "complete"].some((s) => segments.includes(s));
+    const hasOwnHeader = ["history", "profile", "edit_profile", "complete", "notifications"].some((s) => segments.includes(s));
 
     useEffect(() => {
         let cancelled = false;
@@ -77,13 +78,7 @@ export default function ProtectedLayout() {
     }, [auth.status, isOtpRoute]);
 
     if (auth.status === "checking") {
-        return (
-            <View className="flex-1 items-center justify-center bg-background">
-                <Text className="text-dark">
-                    Checking authentication...
-                </Text>
-            </View>
-        );
+        return <LoadingScreen message={LOADING_MESSAGES.auth} />;
     }
 
     if (auth.status === "unauthenticated") {
@@ -91,13 +86,7 @@ export default function ProtectedLayout() {
     }
 
     if (auth.status === "unverified" && !isOtpRoute) {
-        return (
-            <View className="flex-1 items-center justify-center bg-background">
-                <Text className="text-dark">
-                    Redirecting to verification...
-                </Text>
-            </View>
-        );
+        return <LoadingScreen message={LOADING_MESSAGES.redirect} />;
     }
 
     return (

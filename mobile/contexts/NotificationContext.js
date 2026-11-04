@@ -1,10 +1,12 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import useNotificationListener from "../listeners/notificationListener";
 import {
     getNotifications,
     markNotificationRead,
     markAllNotificationsRead,
+    deleteNotification,
+    deleteNotifications,
 } from "../api/notifications";
 
 const NotificationContext = createContext(null);
@@ -41,6 +43,11 @@ export function NotificationProvider({ children }) {
     }, []);
 
     const handleNotification = useCallback((action, notification) => {
+        if (action === "deleted") {
+            const gone = new Set(notification ?? []); // ids
+            setNotifications((prev) => prev.filter((n) => !gone.has(n.id)));
+            return;
+        }
         setNotifications((prev) => {
             const rest = prev.filter((n) => n.id !== notification.id);
             return action === "created"
@@ -73,6 +80,31 @@ export function NotificationProvider({ children }) {
         }
     }, []);
 
+    // latest list, so deleteMany knows what it removed (to put it back if the server refuses)
+    const notificationsRef = useRef(notifications);
+    useEffect(() => {
+        notificationsRef.current = notifications;
+    }, [notifications]);
+
+    // Removes them right away; if the server refuses, puts them back and throws (the screen shows it)
+    const deleteMany = useCallback(async (ids) => {
+        const gone = new Set(ids);
+        const removed = notificationsRef.current.filter((n) => gone.has(n.id));
+        setNotifications((prev) => prev.filter((n) => !gone.has(n.id)));
+        try {
+            if (ids.length === 1) await deleteNotification(ids[0]);
+            else await deleteNotifications(ids);
+        } catch (err) {
+            setNotifications((prev) => {
+                const present = new Set(prev.map((n) => n.id));
+                return [...prev, ...removed.filter((n) => !present.has(n.id))].sort(
+                    (a, b) => new Date(b.created_at) - new Date(a.created_at)
+                );
+            });
+            throw err;
+        }
+    }, []);
+
     const clearIncoming = useCallback(() => setIncoming(null), []);
 
     const value = useMemo(
@@ -84,10 +116,11 @@ export function NotificationProvider({ children }) {
             refresh,
             markRead,
             markAllRead,
+            deleteMany,
             incoming,
             clearIncoming,
         }),
-        [notifications, loading, connected, refresh, markRead, markAllRead, incoming, clearIncoming]
+        [notifications, loading, connected, refresh, markRead, markAllRead, deleteMany, incoming, clearIncoming]
     );
 
     return (

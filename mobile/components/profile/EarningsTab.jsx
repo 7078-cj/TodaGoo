@@ -1,9 +1,12 @@
-import { View, Text, ActivityIndicator, TouchableOpacity } from 'react-native'
+import { View, Text } from 'react-native'
 import React, { useCallback, useState } from 'react'
 import { useFocusEffect } from 'expo-router'
 import { getDriverEarnings } from '../../api/driver'
 import colors from '../../constants/colors'
 import { HERO_GREEN } from './ProfileHero'
+import { ErrorState } from '../feedback'
+import { LoadingScreen } from '../../components/loading';
+import { LOADING_MESSAGES } from '../../constants/loading';
 
 const peso = (amount) => `₱${Number(amount || 0).toLocaleString("en-PH")}`
 
@@ -55,17 +58,10 @@ export default function EarningsTab() {
     )
 
     if (error && !earnings) {
-        return (
-            <View style={{ padding: 24, alignItems: "center" }}>
-                <Text style={{ color: "#6B7280" }}>{error}</Text>
-                <TouchableOpacity onPress={load} style={{ marginTop: 8 }}>
-                    <Text style={{ color: colors.primary, fontWeight: "600" }}>Try again</Text>
-                </TouchableOpacity>
-            </View>
-        )
+        return <ErrorState fill={false} message={error} onRetry={load} />
     }
 
-    if (!earnings) return <ActivityIndicator color={colors.primary} style={{ marginTop: 32 }} />
+    if (!earnings) return <LoadingScreen fill={false} message={LOADING_MESSAGES.earnings} style={{ marginTop: 16 }} />
 
     return (
         <View style={{ padding: 16 }}>

@@ -9,6 +9,8 @@ import { pickPhotoFromLibrary } from "../../utils/imagePicker";
 import { updatePassengerProfile } from "../../api/passenger";
 import { updateDriverProfile } from "../../api/driver";
 import PageHeader from "../../components/layouts/PageHeader";
+import { LoadingScreen } from "../../components/loading";
+import { LOADING_MESSAGES } from "../../constants/loading";
 import FormTextField from "../../components/inputs/FormTextField";
 import Avatar from "../../components/Avatar";
 import { HERO_GREEN } from "../../components/profile/ProfileHero";
@@ -114,7 +116,7 @@ export default function EditProfile() {
         return (
             <View className="flex-1" style={{ backgroundColor: colors.background }}>
                 <PageHeader title="Edit Profile" />
-                <ActivityIndicator color={colors.primary} style={{ marginTop: 32 }} />
+                <LoadingScreen message={LOADING_MESSAGES.profile} />
             </View>
         );
     }

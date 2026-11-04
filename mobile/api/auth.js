@@ -26,7 +26,9 @@ export const updateToken = async (setToken, setUser, logoutUser) => {
 
 
     if (!response.success) {
-        logoutUser();
+        // only a rejected refresh token ends the session; offline / timeout / server errors keep the
+        // user logged in (the next refresh tries again)
+        if (response.kind === "auth" || response.kind === "validation") logoutUser();
         return;
     }
 

@@ -12,6 +12,8 @@ export default PassengerContext;
 export function PassengerProvider({ children }) {
     const [userId, setUserId] = useState(null);
     const [pendingBooking, setPendingBooking] = useState(null);
+    // { booking_id, message } when the server dropped a new booking (no driver found); Book a Ride shows it
+    const [bookingUnavailable, setBookingUnavailable] = useState(null);
     const lastScreenRef = useRef(null);
     const navigationRef = useNavigationContainerRef();
     
@@ -46,12 +48,14 @@ export function PassengerProvider({ children }) {
     useEffect(() => () => setActiveBooking(null), []);
     
     
-    const ws = passengerListener(userId, () => console.log("refresh"), setPendingBooking);
+    const ws = passengerListener(userId, () => console.log("refresh"), setPendingBooking, setBookingUnavailable);
 
     return (
         <PassengerContext.Provider value={{ 
             pendingBooking,
-            setPendingBooking
+            setPendingBooking,
+            bookingUnavailable,
+            setBookingUnavailable,
         }}>
             {children}
         </PassengerContext.Provider>

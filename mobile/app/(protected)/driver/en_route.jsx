@@ -1,10 +1,12 @@
-import { View, Text } from 'react-native'
+import { View } from 'react-native'
 import React, { useContext, useEffect, useState } from 'react'
 import DriverContext from "../../../contexts/DriverContext";
 import bookingListener from "../../../listeners/bookingListener"
 import { getLocation } from "../../../utils/location"
 import MapComponent from '../../../components/map/MapComponent'
 import BottomDetails from '../../../components/BottomDetails';
+import { LoadingScreen } from '../../../components/loading';
+import { LOADING_MESSAGES } from '../../../constants/loading';
 import ChatModal from '../../../components/chat/ChatModal';
 import useChatPresence from '../../../hooks/useChatPresence';
 import useOpenChatParam from '../../../hooks/useOpenChatParam';
@@ -56,11 +58,7 @@ export default function booking() {
     }, [connected]);
 
     if (!acceptedBooking) {
-        return (
-            <View>
-                <Text>Loading booking...</Text>
-            </View>
-        )
+        return <LoadingScreen message={LOADING_MESSAGES.booking} />
     }
 
     const markers = [

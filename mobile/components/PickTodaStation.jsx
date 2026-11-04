@@ -1,6 +1,7 @@
-import { View, Text, ActivityIndicator, TouchableOpacity } from 'react-native'
+import { View, Text, TouchableOpacity } from 'react-native'
 import React, { useState, useEffect, useRef } from 'react'
 import MapComponent from './map/MapComponent';
+import { InlineLoader } from "./loading";
 
 export default function PickTodaStation({ stations, loading, error, onSelect }) {
     const [markers, setMarkers] = useState([]);
@@ -60,14 +61,7 @@ export default function PickTodaStation({ stations, loading, error, onSelect }) 
                 </View>
             )}
 
-            {loading && (
-                <View className="flex-row items-center gap-2 py-2">
-                    <ActivityIndicator size="small" />
-                    <Text className="text-gray-500 text-sm">
-                        Loading stations...
-                    </Text>
-                </View>
-            )}
+            {loading && <InlineLoader message="Loading stations..." style={{ justifyContent: "flex-start" }} />}
 
             {error && (
                 <Text className={errorText}>{error}</Text>

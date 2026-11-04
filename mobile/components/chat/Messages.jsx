@@ -1,7 +1,7 @@
-import { View, Text, FlatList, ActivityIndicator } from "react-native";
+import { View, Text, FlatList } from "react-native";
 import React, { useMemo, useRef } from "react";
 import MessageBubble from "./MessageBubble";
-import colors from "../../constants/colors";
+import { LoadingScreen } from "../loading";
 
 /* ---- Adjust these three getters if your API uses different field names ---- */
 const getText = (m) => m.message ?? m.text ?? m.content ?? "";
@@ -136,11 +136,7 @@ export default function Messages({
     }
 
     if (loading && items.length === 0) {
-        return (
-            <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-                <ActivityIndicator color={colors.primary} />
-            </View>
-        );
+        return <LoadingScreen message="Loading messages..." />;
     }
 
     return (

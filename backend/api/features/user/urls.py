@@ -15,6 +15,8 @@ from .views import (registerUser,
                     get_user_notification,
                     mark_notification_as_read,
                     mark_all_unread_notifications_as_read,
+                    delete_notification,
+                    delete_notifications_bulk,
                     change_password)
 
 
@@ -31,6 +33,8 @@ urlpatterns = [
     path("notifications/", get_user_notification, name='get_user_notification'),
     path("notifications/mark-as-read/<int:notification_id>/", mark_notification_as_read, name='mark_notification_as_read'),
     path("notifications/mark-all-as-read/", mark_all_unread_notifications_as_read, name='mark_all_unread_notifications_as_read'),
+    path("notifications/<int:notification_id>/", delete_notification, name='delete_notification'),
+    path("notifications/delete/", delete_notifications_bulk, name='delete_notifications'),
     
 ]
 

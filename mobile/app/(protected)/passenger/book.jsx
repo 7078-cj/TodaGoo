@@ -1,5 +1,5 @@
 import { View, Text, ScrollView, useWindowDimensions } from 'react-native'
-import React, { useState, useRef, useMemo, useEffect } from 'react'
+import React, { useState, useRef, useMemo, useEffect, useContext } from 'react'
 import newIdempotencyKey from '../../../utils/idempotencyKey'
 import MapComponent from '@/components/map/MapComponent' 
 import SetLocationMapModal from '@/components/SetLocationMapModal';
@@ -7,7 +7,10 @@ import RouteCard from '@/components/booking/RouteCard'
 import FareFooter from '@/components/booking/FareFooter'
 import useFareEstimate from '@/hooks/useFareEstimate'
 import colors from '@/constants/colors'
-import { bookRide } from '../../../api/book' 
+import { bookRide, cancelBooking } from '../../../api/book'
+import PassengerContext from '../../../contexts/PassengerContext'
+import { LoadingOverlay } from '@/components/loading'
+import { LOADING_MESSAGES } from '@/constants/loading'
 
 // Every booking is a special booking
 const BOOKING_TYPE = "special";
@@ -33,6 +36,42 @@ export default function Book() {
     const [routes, setRoutes] = useState([]);
 
     const idempotencyKeyRef = useRef(newIdempotencyKey());
+
+    // After booking: "Finding you a driver..." until a driver accepts (PassengerContext then opens the
+    // trip screen) or the server drops the booking (booking_unavailable, shown below). Cancel deletes it.
+    const { pendingBooking, bookingUnavailable, setBookingUnavailable } = useContext(PassengerContext);
+    const [searchingId, setSearchingId] = useState(null);
+    const [cancelling, setCancelling] = useState(false);
+    const searchFailed = searchingId != null && bookingUnavailable?.booking_id === searchingId;
+    const searching = searchingId != null && !pendingBooking && !searchFailed;
+    // a driver accepted: the search is over (otherwise the overlay would reappear when the ride ends)
+    if (searchingId != null && pendingBooking) {
+        setSearchingId(null);
+    }
+    const [handledFailure, setHandledFailure] = useState(null);
+    if (searchFailed && handledFailure !== searchingId) {
+        // stop searching and show the server's reason
+        setHandledFailure(searchingId);
+        setSearchingId(null);
+        setBookingStatus(bookingUnavailable.message || "No driver is available right now. Please try again.");
+        setBookingUnavailable(null);
+    }
+
+    const cancelSearch = async () => {
+        if (!searchingId || cancelling) return;
+        setCancelling(true);
+        try {
+            await cancelBooking(searchingId);
+            setSearchingId(null);
+            setBookingStatus("Booking cancelled.");
+        } catch (err) {
+            // e.g. a driver accepted it a moment ago: the trip screen opens on its own
+            setBookingStatus(err.message);
+            setSearchingId(null);
+        } finally {
+            setCancelling(false);
+        }
+    };
 
     const { price, loading: fareLoading, error: fareError } = useFareEstimate(
         startLocation,
@@ -169,17 +208,20 @@ export default function Book() {
         };
 
         try {
-            await bookRide(formData, idempotencyKeyRef.current);
-            setBookingStatus("Booking successful!");
+            const booking = await bookRide(formData, idempotencyKeyRef.current);
+            setSearchingId(booking?.id ?? null);
         } catch (error) {
             console.error("Booking failed:", error);
-            setBookingStatus("Booking failed. Please try again.");
+            // the server's reason when there is one (e.g. "You already have an ongoing or pending booking.")
+            setBookingStatus(error?.message || "Booking failed. Please try again.");
         } finally {
             setSubmitting(false);
+            // a new key for the next attempt; reusing it would replay this (cached) response
+            idempotencyKeyRef.current = newIdempotencyKey();
         }
     };
 
-    const bookingOk = bookingStatus?.startsWith("Booking successful");
+    const bookingOk = bookingStatus === "Booking cancelled.";
 
     return (
         <View className="flex-1" style={{ backgroundColor: colors.background }}>
@@ -244,6 +286,15 @@ export default function Book() {
                     onBook={handleBooking}
                 />
             </View>
+
+            <LoadingOverlay
+                visible={searching}
+                message={LOADING_MESSAGES.findingDriver}
+                subMessage="We'll take you to your trip as soon as a driver accepts."
+                actionLabel={cancelling ? "Cancelling..." : "Cancel"}
+                onAction={cancelSearch}
+                actionDisabled={cancelling}
+            />
 
             <SetLocationMapModal
                 selectedLocation={selectedLocation}

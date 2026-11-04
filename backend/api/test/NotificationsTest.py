@@ -67,7 +67,7 @@ class CreateNotificationTests(LayerMixin, TestCase):
 
         self.assertEqual(Notification.objects.get().message, "Hello")
         group, payload = self.layer.sent[0]
-        self.assertEqual(group, f"user_{self.user.id}")
+        self.assertEqual(group, f"notifications_{self.user.id}")
         self.assertEqual(payload["type"], "notification_update")
         self.assertEqual(payload["action"], "created")
         self.assertEqual(payload["notification"]["id"], notification.id)
@@ -399,3 +399,66 @@ class NotificationTypeTests(LayerMixin, APITestCase):
         notification = self.only(self.passenger.user)
         self.assertIsNone(notification.booking_id)
         self.assertEqual(notification.type, Notification.Type.BOOKING_ACCEPTED)
+
+
+# ---------------------------------------------------------------------------
+# Deleting notifications (one / several)
+# ---------------------------------------------------------------------------
+class NotificationDeleteTests(LayerMixin, APITestCase):
+    def setUp(self):
+        super().setUp()
+        self.user = make_passenger().user
+        self.other = make_passenger().user
+        self.mine = [create_notification(self.user, f"n{i}") for i in range(3)]
+        self.theirs = create_notification(self.other, "not yours")
+        self.client.force_authenticate(self.user)
+        self.layer.sent.clear()
+
+    def remaining(self, user=None):
+        return set(Notification.objects.filter(user=user or self.user).values_list("id", flat=True))
+
+    def test_delete_one(self):
+        with self.captureOnCommitCallbacks(execute=True):
+            res = self.client.delete(reverse("delete_notification", args=[self.mine[0].id]))
+        self.assertEqual(res.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(self.remaining(), {self.mine[1].id, self.mine[2].id})
+        # the user's other devices are told
+        (group, payload), = self.layer.sent
+        self.assertEqual(group, f"notifications_{self.user.id}")
+        self.assertEqual(payload, {"type": "notification_update", "action": "deleted", "ids": [self.mine[0].id]})
+
+    def test_cannot_delete_someone_elses(self):
+        res = self.client.delete(reverse("delete_notification", args=[self.theirs.id]))
+        self.assertEqual(res.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertIn(self.theirs.id, self.remaining(self.other))
+
+    def test_delete_missing(self):
+        self.assertEqual(self.client.delete(reverse("delete_notification", args=[999999])).status_code, 404)
+
+    def test_bulk_delete_only_own(self):
+        ids = [self.mine[0].id, self.mine[2].id, self.theirs.id, 999999]
+        with self.captureOnCommitCallbacks(execute=True):
+            res = self.client.post(reverse("delete_notifications"), {"ids": ids}, format="json")
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(sorted(res.data["deleted"]), sorted([self.mine[0].id, self.mine[2].id]))
+        self.assertEqual(self.remaining(), {self.mine[1].id})
+        self.assertIn(self.theirs.id, self.remaining(self.other))
+        (_, payload), = self.layer.sent
+        self.assertEqual(sorted(payload["ids"]), sorted([self.mine[0].id, self.mine[2].id]))
+
+    def test_bulk_delete_validation(self):
+        for body in ({}, {"ids": []}, {"ids": "1,2"}, {"ids": ["x"]}, {"ids": list(range(1, 202))}):
+            res = self.client.post(reverse("delete_notifications"), body, format="json")
+            self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST, body)
+        self.assertEqual(len(self.remaining()), 3)
+
+    def test_bulk_delete_nothing_owned_sends_nothing(self):
+        with self.captureOnCommitCallbacks(execute=True):
+            res = self.client.post(reverse("delete_notifications"), {"ids": [self.theirs.id]}, format="json")
+        self.assertEqual(res.data["deleted"], [])
+        self.assertEqual(self.layer.sent, [])
+
+    def test_anonymous_rejected(self):
+        self.client.force_authenticate(None)
+        self.assertEqual(self.client.delete(reverse("delete_notification", args=[self.mine[0].id])).status_code, 401)
+        self.assertEqual(self.client.post(reverse("delete_notifications"), {"ids": [1]}, format="json").status_code, 401)

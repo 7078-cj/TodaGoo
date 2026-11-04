@@ -7,7 +7,8 @@ export default function useNotificationListener(userId, onRefresh, onNotificatio
             onRefresh,
             onMessage: (data) => {
                 if (data?.type === "notification_update") {
-                    onNotification(data.action, data.notification);
+                    // "deleted" carries ids (deleted on another device) instead of one notification
+                    onNotification(data.action, data.action === "deleted" ? data.ids : data.notification);
                 }
             },
         }

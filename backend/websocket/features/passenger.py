@@ -57,10 +57,6 @@ class PassengerConsumer(SubprotocolAcceptMixin, AsyncWebsocketConsumer):  # [SEC
             "data": event["data"],
         }))
 
-    # notifications are sent to user_<id>, the same group this consumer joins
-    async def notification_update(self, event):
-        await self.send(text_data=json.dumps(event))
-
     async def booking_unavailable(self, event):
         await self.send(text_data=json.dumps({
             "type": "booking_unavailable",

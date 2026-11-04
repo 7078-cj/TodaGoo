@@ -84,6 +84,23 @@ class NotificationConsumerTests(ConsumerBase):
         self.assertEqual(message["notification"]["message"], "Your driver is near")
         await self.close_all()
 
+    async def test_ride_events_do_not_crash_the_notification_socket(self):
+        """Regression: it shared user_<id> with ride events and crashed with
+        "No handler for message type booking_accepted" after a booking update."""
+        from api.broadcast import broadcast
+        user = self.passenger.user
+        communicator, connected, _ = await self.connect(f"/ws/notifications/{user.id}", user)
+        self.assertTrue(connected)
+
+        for event in ("booking_accepted", "booking_completed", "booking_unavailable"):
+            await sync_to_async(broadcast)(f"user_{user.id}", event, {"id": 1})
+
+        # the socket is still open and still delivers notifications
+        await sync_to_async(create_notification)(user, "Your driver is near")
+        message = await self.receive_type(communicator, "notification_update")
+        self.assertEqual(message["notification"]["message"], "Your driver is near")
+        await self.close_all()
+
     async def test_other_users_socket_is_rejected(self):
         _, connected, code = await self.connect(f"/ws/notifications/{self.driver.user.id}", self.passenger.user)
         self.assertFalse(connected)
@@ -125,13 +142,13 @@ class PassengerConsumerTests(ConsumerBase):
         self.assertEqual((await self.receive_type(communicator, "driver_availability"))["data"]["ready_drivers"], 0)
         await self.close_all()
 
-    async def test_notification_on_shared_group_does_not_close_socket(self):
-        """The passenger socket is in user_<id> too; without a handler Channels would close it."""
+    async def test_notifications_do_not_go_to_the_passenger_socket(self):
+        """Notifications have their own group; the passenger socket only gets ride events."""
         communicator = await self.open()
         await self.receive_type(communicator, "driver_availability")
 
         await sync_to_async(create_notification)(self.passenger.user, "hi")
-        await self.receive_type(communicator, "notification_update")
+        self.assertTrue(await communicator.receive_nothing(timeout=0.3))
 
         # still alive: a later broadcast still arrives
         await sync_to_async(queue_driver)(self.driver)

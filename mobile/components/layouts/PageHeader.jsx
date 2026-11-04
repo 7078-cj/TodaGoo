@@ -8,7 +8,8 @@ import NotificationBell from "./NotificationBell";
 
 // Titled header for inner screens (back · title · bell), used in place of the "Hello" Header.
 // onBack (optional): replaces the default back, e.g. a multi-step screen going to its previous step
-export default function PageHeader({ title, onBack }) {
+// right (optional): replaces the bell on the right, e.g. screen actions; pass null to show nothing
+export default function PageHeader({ title, onBack, right }) {
     const { role } = useProfile();
 
     const goBack = () => {
@@ -35,7 +36,7 @@ export default function PageHeader({ title, onBack }) {
                 {title}
             </Text>
 
-            <NotificationBell />
+            {right === undefined ? <NotificationBell /> : right}
         </View>
     );
 }

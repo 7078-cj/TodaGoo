@@ -1,11 +1,14 @@
 import React, { useCallback, useContext, useMemo, useState } from "react";
-import { View, Text, FlatList, RefreshControl, ActivityIndicator, TouchableOpacity } from "react-native";
+import { View, Text, FlatList, RefreshControl } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "expo-router";
 import AuthContext from "../../contexts/AuthContext";
 import { getBookingHistory } from "../../api/book";
 import colors from "../../constants/colors";
 import PageHeader from "../../components/layouts/PageHeader";
+import { ErrorState } from "../../components/feedback";
+import { LoadingScreen } from "../../components/loading";
+import { LOADING_MESSAGES } from "../../constants/loading";
 import HistoryFilterTabs, { HISTORY_FILTERS } from "../../components/history/HistoryFilterTabs";
 import HistoryCard from "../../components/history/HistoryCard";
 import BookingHistoryModal from "../../components/history/BookingHistoryModal";
@@ -59,7 +62,7 @@ export default function History() {
                 <HistoryFilterTabs value={filter} onChange={setFilter} />
 
                 {loading ? (
-                    <ActivityIndicator color={colors.primary} style={{ marginTop: 32 }} />
+                    <LoadingScreen message={LOADING_MESSAGES.history} />
                 ) : (
                     <FlatList
                         data={visible}
@@ -76,21 +79,14 @@ export default function History() {
                         }
                         contentContainerStyle={visible.length === 0 ? { flexGrow: 1 } : { paddingBottom: 16 }}
                         ListEmptyComponent={
-                            <View style={{ flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 24 }}>
-                                <Ionicons
-                                    name={error ? "cloud-offline-outline" : "time-outline"}
-                                    size={44}
-                                    color="#9CA3AF"
-                                />
-                                <Text style={{ marginTop: 10, color: "#6B7280", textAlign: "center" }}>
-                                    {error ?? emptyText}
-                                </Text>
-                                {error && (
-                                    <TouchableOpacity onPress={load} style={{ marginTop: 10 }}>
-                                        <Text style={{ color: colors.primary, fontWeight: "600" }}>Try again</Text>
-                                    </TouchableOpacity>
-                                )}
-                            </View>
+                            error ? (
+                                <ErrorState message={error} onRetry={load} />
+                            ) : (
+                                <View style={{ flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 24 }}>
+                                    <Ionicons name="time-outline" size={44} color="#9CA3AF" />
+                                    <Text style={{ marginTop: 10, color: "#6B7280", textAlign: "center" }}>{emptyText}</Text>
+                                </View>
+                            )
                         }
                     />
                 )}

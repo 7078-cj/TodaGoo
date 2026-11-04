@@ -1,6 +1,7 @@
 import { Platform } from "react-native";
 import { File } from "expo-file-system";
 import { getStoredToken } from "./tokenStorage";
+import { ERROR_MESSAGES, REQUEST_TIMEOUT_MS, UPLOAD_TIMEOUT_MS, firstErrorMessage } from "../constants/errors";
 
 const API = process.env.EXPO_PUBLIC_API_URL ?? "";
 
@@ -14,19 +15,37 @@ const getToken = async (isToken) => {
     return parsed?.access ?? null;
 };
 
+// Error result for a non-2xx response. `error` is always something a user can read:
+// the server's own message when it has one (validation, "already rated", ...), otherwise a
+// friendly one per status. `kind` lets screens react (e.g. "auth" -> log in again).
 const handleError = async (res, fallback) => {
-    const errorData = await res.json().catch(() => ({}));
+    const errorData = await res.json().catch(() => ({})); // HTML error pages aren't JSON
+    const serverMessage = firstErrorMessage(errorData);
+    const status = res.status;
 
-    return {
-        success: false,
-        status: res.status,
-        error:
-            errorData.detail ||
-            errorData.message ||
-            errorData.error ||
-            fallback,
-        data: errorData,
-    };
+    let kind = "http";
+    let error = serverMessage || fallback;
+    if (status >= 500) {
+        kind = "server";
+        error = ERROR_MESSAGES.server;
+    } else if (status === 401) {
+        kind = "auth";
+        // an expired / invalid token says so in technical terms; login failures keep their message
+        if (errorData?.code === "token_not_valid" || !serverMessage) error = ERROR_MESSAGES.auth;
+    } else if (status === 403) {
+        kind = "forbidden";
+        error = serverMessage || ERROR_MESSAGES.forbidden;
+    } else if (status === 404) {
+        kind = "not_found";
+        error = serverMessage && serverMessage !== "Not found." ? serverMessage : ERROR_MESSAGES.not_found;
+    } else if (status === 429) {
+        kind = "throttled";
+        error = ERROR_MESSAGES.throttled;
+    } else if (status === 400 || status === 409) {
+        kind = "validation";
+    }
+
+    return { success: false, status, kind, error, data: errorData };
 };
 
 const successResponse = async (res) => {
@@ -37,6 +56,29 @@ const successResponse = async (res) => {
         status: res.status,
         data,
     };
+};
+
+// fetch with a timeout and one error shape for "no answer": offline / server unreachable / too slow
+const send = async (url, options, { isForm = false, fallback = "Request failed" } = {}) => {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), isForm ? UPLOAD_TIMEOUT_MS : REQUEST_TIMEOUT_MS);
+    try {
+        const res = await fetch(url, { ...options, signal: controller.signal });
+        if (res.status === 204) return { success: true, status: 204 };
+        return res.ok ? await successResponse(res) : await handleError(res, fallback);
+    } catch (error) {
+        const timedOut = error?.name === "AbortError";
+        if (!timedOut) console.log("Request failed:", options?.method, url, error?.message);
+        return {
+            success: false,
+            status: 0,
+            kind: timedOut ? "timeout" : "network",
+            error: timedOut ? ERROR_MESSAGES.timeout : ERROR_MESSAGES.network,
+            data: null,
+        };
+    } finally {
+        clearTimeout(timer);
+    }
 };
 
 const isFileObject = (value) =>
@@ -136,36 +178,38 @@ const buildHeaders = (token, idempotencyKey) => ({
 });
 
 export const getRequest = async (endpoint, params = {}, isToken = false) => {
-    try {
-        const token = await getToken(isToken);
+    const token = await getToken(isToken);
 
-        const query = new URLSearchParams(
-            Object.entries(params).filter(([, v]) => v !== undefined && v !== null)
-        ).toString();
+    const query = new URLSearchParams(
+        Object.entries(params).filter(([, v]) => v !== undefined && v !== null)
+    ).toString();
 
-        const url = query ? `${API}${endpoint}?${query}` : `${API}${endpoint}`;
+    const url = query ? `${API}${endpoint}?${query}` : `${API}${endpoint}`;
 
-        const res = await fetch(url, {
-            method: "GET",
-            headers: {
-                "Content-Type": "application/json",
-                ...(token && {
-                    Authorization: `Bearer ${token}`,
-                }),
-            },
-        });
+    return send(url, {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json",
+            ...(token && {
+                Authorization: `Bearer ${token}`,
+            }),
+        },
+    });
+};
 
-        if (!res.ok) {
-            return await handleError(res, "Request failed");
-        }
+// POST / PUT / PATCH share this: JSON, or multipart when the data contains a picked file
+const sendWithBody = async (method, endpoint, data, isToken, idempotencyKey, fallback, extra = {}) => {
+    const token = await getToken(isToken);
 
-        return await successResponse(res);
-    } catch (error) {
-        return {
-            success: false,
-            error: error.message || "Network error",
-        };
+    const { body, isForm } = resolveBody(data);
+
+    const headers = buildHeaders(token, idempotencyKey);
+
+    if (!isForm) {
+        headers["Content-Type"] = "application/json";
     }
+
+    return send(`${API}${endpoint}`, { method, headers, body, ...extra }, { isForm, fallback });
 };
 
 export const postRequest = async (
@@ -173,142 +217,34 @@ export const postRequest = async (
     data = {},
     isToken = false,
     idempotencyKey = null
-) => {
-    try {
-        const token = await getToken(isToken);
-
-        const { body, isForm } = resolveBody(data);
-
-        const headers = buildHeaders(token, idempotencyKey);
-
-        if (!isForm) {
-            headers["Content-Type"] = "application/json";
-        }
-
-        const res = await fetch(`${API}${endpoint}`, {
-            method: "POST",
-            headers,
-            credentials: "include",
-            body,
-        });
-
-        if (!res.ok) {
-            return await handleError(res, "Request failed");
-        }
-
-        return await successResponse(res);
-    } catch (error) {
-        return {
-            success: false,
-            error: error.message || "Network error",
-        };
-    }
-};
+) => sendWithBody("POST", endpoint, data, isToken, idempotencyKey, "Request failed", { credentials: "include" });
 
 export const putRequest = async (
     endpoint,
     data = {},
     isToken = false,
     idempotencyKey = null
-) => {
-    try {
-        const token = await getToken(isToken);
-
-        const { body, isForm } = resolveBody(data);
-
-        const headers = buildHeaders(token, idempotencyKey);
-
-        if (!isForm) {
-            headers["Content-Type"] = "application/json";
-        }
-
-        const res = await fetch(`${API}${endpoint}`, {
-            method: "PUT",
-            headers,
-            body,
-        });
-
-        if (!res.ok) {
-            return await handleError(res, "Update failed");
-        }
-
-        return await successResponse(res);
-    } catch (error) {
-        return {
-            success: false,
-            error: error.message || "Network error",
-        };
-    }
-};
+) => sendWithBody("PUT", endpoint, data, isToken, idempotencyKey, "Update failed");
 
 export const patchRequest = async (
     endpoint,
     data = {},
     isToken = false,
     idempotencyKey = null
-) => {
-    try {
-        const token = await getToken(isToken);
-
-        const { body, isForm } = resolveBody(data);
-
-        const headers = buildHeaders(token, idempotencyKey);
-
-        if (!isForm) {
-            headers["Content-Type"] = "application/json";
-        }
-
-        const res = await fetch(`${API}${endpoint}`, {
-            method: "PATCH",
-            headers,
-            body,
-        });
-
-        if (!res.ok) {
-            return await handleError(res, "Update failed");
-        }
-
-        return await successResponse(res);
-    } catch (error) {
-        return {
-            success: false,
-            error: error.message || "Network error",
-        };
-    }
-};
+) => sendWithBody("PATCH", endpoint, data, isToken, idempotencyKey, "Update failed");
 
 export const deleteRequest = async (
     endpoint,
     isToken = false,
     idempotencyKey = null
 ) => {
-    try {
-        const token = await getToken(isToken);
+    const token = await getToken(isToken);
 
-        const headers = buildHeaders(token, idempotencyKey);
+    const headers = buildHeaders(token, idempotencyKey);
 
-        const res = await fetch(`${API}${endpoint}`, {
-            method: "DELETE",
-            headers,
-            credentials: "include",
-        });
-
-        if (res.status === 204) {
-            return {
-                success: true,
-                status: 204,
-            };
-        }
-
-        if (!res.ok) {
-            return await handleError(res, "Delete failed");
-        }
-
-        return await successResponse(res);
-    } catch (error) {
-        return {
-            success: false,
-            error: error.message || "Network error",
-        };
-    }
+    return send(`${API}${endpoint}`, {
+        method: "DELETE",
+        headers,
+        credentials: "include",
+    }, { fallback: "Delete failed" });
 };

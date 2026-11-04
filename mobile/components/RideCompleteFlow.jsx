@@ -1,9 +1,11 @@
-import { View, Text, ActivityIndicator } from 'react-native'
+import { View, Text } from 'react-native'
 import React, { useState } from 'react'
 import { router } from 'expo-router'
 import PageHeader from './layouts/PageHeader'
 import RideReceiptScreen from './RideReceiptScreen'
 import RateUser from './RateUser'
+import { LoadingScreen } from './loading';
+import { LOADING_MESSAGES } from '../constants/loading';
 import { getPerson } from '../utils/person'
 import colors from '../constants/colors'
 
@@ -17,7 +19,7 @@ export default function RideCompleteFlow({ booking, role, onFinish }) {
         return (
             <View style={{ flex: 1, backgroundColor: colors.background }}>
                 <PageHeader title="Ride Completed" />
-                <ActivityIndicator color={colors.primary} style={{ marginTop: 32 }} />
+                <LoadingScreen message={LOADING_MESSAGES.booking} />
             </View>
         )
     }

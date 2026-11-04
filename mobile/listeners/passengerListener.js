@@ -1,7 +1,7 @@
 import useWebSocket from "../hooks/useWebsocket";
 import { setReadyDrivers } from "../utils/driverAvailabilityStore";
 
-function handlePassengerMessage(data, setPendingBooking) {
+function handlePassengerMessage(data, setPendingBooking, setBookingUnavailable) {
     switch (data.type) {
         case "booking_accepted":
             setPendingBooking(data.data);
@@ -9,6 +9,11 @@ function handlePassengerMessage(data, setPendingBooking) {
 
         case "booking_updated":
             setPendingBooking(data.data);
+            break;
+
+        // no driver took the booking (none queued / outside a TODA area ...): { booking_id, message }
+        case "booking_unavailable":
+            setBookingUnavailable?.(data.data);
             break;
 
         case "driver_availability":
@@ -24,7 +29,7 @@ function handlePassengerMessage(data, setPendingBooking) {
     }
 }
 
-export default function passengerListener(userId, onRefresh, setPendingBooking){
+export default function passengerListener(userId, onRefresh, setPendingBooking, setBookingUnavailable){
     const  { sendMessage, connected, connectionStatus } = useWebSocket(
         `ws/passenger/${userId}`,
         {
@@ -32,7 +37,7 @@ export default function passengerListener(userId, onRefresh, setPendingBooking){
             onRefresh,
             onClose: () => console.log("Disconnected"),
             onMessage: (data) => {
-                handlePassengerMessage(data, setPendingBooking)
+                handlePassengerMessage(data, setPendingBooking, setBookingUnavailable)
             }
         }
     )

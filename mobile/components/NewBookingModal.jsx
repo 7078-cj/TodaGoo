@@ -6,6 +6,7 @@ import { getLocation } from "../utils/location";
 import { mediaUrl } from "../utils/person";
 import colors from "../constants/colors";
 import Avatar from "./Avatar";
+import { Spinner } from "./loading";
 
 const OFFER_SECONDS = 30;
 const OFFER_GREEN = "#16A34A";  // card border + countdown (red in the last 10 s)
@@ -21,6 +22,14 @@ export default function NewBookingModal() {
     const intervalRef = useRef(null);
     // one decline per offer (button + the 0 s auto-decline could both fire)
     const declinedIdRef = useRef(null);
+    // "accept" | "decline" while waiting for the server's answer to that offer
+    const [responding, setResponding] = useState(null);
+    const [respondingFor, setRespondingFor] = useState(null);
+    if (respondingFor !== (pendingBooking?.id ?? null)) {
+        // new offer (or the offer closed): buttons are usable again
+        setRespondingFor(pendingBooking?.id ?? null);
+        setResponding(null);
+    }
 
     const visible = !!pendingBooking;
 
@@ -53,27 +62,37 @@ export default function NewBookingModal() {
 
     const handleDecline = async () => {
         const bookingId = pendingBooking?.id;
-        if (!bookingId || declinedIdRef.current === bookingId) return;
+        if (!bookingId || declinedIdRef.current === bookingId) return false;
         declinedIdRef.current = bookingId;
 
         const loc = await getLocation({ setLocation, setErrorMsg });
         if (!loc) {
             console.error(errorMsg || "No location available, cannot decline booking");
             declinedIdRef.current = null; // let the driver try again
-            return;
+            return false;
         }
 
-        if (!pendingBooking?.id) return;
+        if (!pendingBooking?.id) return false;
 
         declineBooking(bookingId, {
             latitude: loc.coords.latitude,
             longitude: loc.coords.longitude,
         });
+        return true;
+    };
+
+    // the button shows a spinner; the 0 s auto-decline (in an effect) doesn't need one
+    const onDeclinePress = async () => {
+        if (responding) return;
+        setResponding("decline");
+        // not sent (e.g. no location): the driver can try again
+        if (!(await handleDecline())) setResponding(null);
     };
 
     const handleAccept = () => {
         const bookingId = pendingBooking?.id;
-        if (!bookingId) return;
+        if (!bookingId || responding) return;
+        setResponding("accept");
         acceptBooking(bookingId);
     };
 
@@ -163,18 +182,28 @@ export default function NewBookingModal() {
                     {/* actions */}
                     <View style={{ flexDirection: "row", gap: 12, marginTop: 16 }}>
                         <TouchableOpacity
-                            onPress={handleDecline}
+                            onPress={onDeclinePress}
+                            disabled={!!responding}
                             accessibilityRole="button"
                             style={{ flex: 1, alignItems: "center", paddingVertical: 14, borderRadius: 999, borderWidth: 1, borderColor: colors.dark }}
                         >
-                            <Text style={{ fontSize: 16, fontWeight: "600", color: colors.dark }}>Decline</Text>
+                            {responding === "decline" ? (
+                                <Spinner size="small" color={colors.dark} />
+                            ) : (
+                                <Text style={{ fontSize: 16, fontWeight: "600", color: colors.dark, opacity: responding ? 0.5 : 1 }}>Decline</Text>
+                            )}
                         </TouchableOpacity>
                         <TouchableOpacity
                             onPress={handleAccept}
+                            disabled={!!responding}
                             accessibilityRole="button"
                             style={{ flex: 1, alignItems: "center", paddingVertical: 14, borderRadius: 999, backgroundColor: ACCEPT_GREEN }}
                         >
-                            <Text style={{ fontSize: 16, fontWeight: "600", color: colors.onPrimary }}>Accept</Text>
+                            {responding === "accept" ? (
+                                <Spinner size="small" color={colors.onPrimary} />
+                            ) : (
+                                <Text style={{ fontSize: 16, fontWeight: "600", color: colors.onPrimary, opacity: responding ? 0.5 : 1 }}>Accept</Text>
+                            )}
                         </TouchableOpacity>
                     </View>
                 </View>

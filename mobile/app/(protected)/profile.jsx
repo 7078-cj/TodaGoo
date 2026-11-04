@@ -6,6 +6,8 @@ import { useProfile } from "../../contexts/ProfileContext";
 import colors from "../../constants/colors";
 import { mediaUrl } from "../../utils/person";
 import PageHeader from "../../components/layouts/PageHeader";
+import { LoadingScreen } from "../../components/loading";
+import { LOADING_MESSAGES } from "../../constants/loading";
 import ProfileHero from "../../components/profile/ProfileHero";
 import DetailsTab from "../../components/profile/DetailsTab";
 import EarningsTab from "../../components/profile/EarningsTab";
@@ -67,6 +69,8 @@ export default function Profile() {
     return (
         <View className="flex-1" style={{ backgroundColor: colors.background }}>
             <PageHeader title="Profile" />
+
+            {!profile && loading ? <LoadingScreen message={LOADING_MESSAGES.profile} /> : null}
 
             <ScrollView refreshControl={<RefreshControl refreshing={loading} onRefresh={refresh} />}>
                 <ProfileHero

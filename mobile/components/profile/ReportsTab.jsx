@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native'
+import { View, Text, TouchableOpacity } from 'react-native'
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { Ionicons } from '@expo/vector-icons'
 import { useFocusEffect } from 'expo-router'
@@ -10,6 +10,9 @@ import {
 } from '../../constants/reports'
 import { HERO_GREEN } from './ProfileHero'
 import ReportDetailsModal from './ReportDetailsModal'
+import { ErrorState } from '../feedback'
+import { LoadingScreen } from '../../components/loading';
+import { LOADING_MESSAGES } from '../../constants/loading';
 
 const FILTERS = [{ key: "all", label: "All Reports" }, ...REPORT_STATUSES.map((s) => ({ key: s.status, label: s.label }))]
 
@@ -141,14 +144,9 @@ export default function ReportsTab() {
             <FilterPills value={filter} onChange={setFilter} />
 
             {reports === null && !error ? (
-                <ActivityIndicator color={colors.primary} style={{ marginTop: 24 }} />
+                <LoadingScreen fill={false} message={LOADING_MESSAGES.reports} style={{ marginTop: 8 }} />
             ) : error && reports === null ? (
-                <View style={{ alignItems: "center", marginTop: 16 }}>
-                    <Text style={{ color: "#6B7280" }}>{error}</Text>
-                    <TouchableOpacity onPress={load} style={{ marginTop: 8 }}>
-                        <Text style={{ color: colors.primary, fontWeight: "600" }}>Try again</Text>
-                    </TouchableOpacity>
-                </View>
+                <ErrorState fill={false} message={error} onRetry={load} />
             ) : visible.length === 0 ? (
                 <Text style={{ color: "#6B7280", textAlign: "center", marginTop: 16 }}>No reports here.</Text>
             ) : (

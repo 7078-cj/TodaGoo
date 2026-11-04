@@ -6,6 +6,8 @@ import MapComponent from '@/components/map/MapComponent'
 import { driverQueue, driverDequeue, driverQueueStatus } from '@/api/driver'
 import { getLocation } from "@/utils/location"
 import { setDriverOnline } from "@/utils/driverOnlineStore"
+import { LoadingScreen } from '@/components/loading';
+import { LOADING_MESSAGES } from '@/constants/loading';
 
 // Adjust to your driver trip screen
 const TRIP_ROUTE = "/(protected)/driver/en_route"
@@ -143,7 +145,7 @@ export default function DriverHome() {
             {/* Bottom card */}
             <View className="flex bg-[#FBF8EC] px-6 pt-6 pb-8 justify-center">
                 {loading ? (
-                    <ActivityIndicator color={GREEN} style={{ marginVertical: 40 }} />
+                    <LoadingScreen fill={false} message={LOADING_MESSAGES.driverStatus} style={{ paddingVertical: 40 }} />
                 ) : (
                     <>
                         <View className="flex-row items-center justify-between mb-5">

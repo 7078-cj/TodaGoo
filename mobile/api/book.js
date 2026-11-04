@@ -1,4 +1,4 @@
-import { postRequest, getRequest, putRequest } from "../utils/requests";
+import { postRequest, getRequest, putRequest, deleteRequest } from "../utils/requests";
 
 export const bookRide = async (body, idempotencyKey) => {
     const res = await postRequest('booking/', body, true, idempotencyKey)
@@ -75,3 +75,10 @@ export const getFarePrice = async (start, end, stops = []) => {
 
     return price;
 };
+
+// Cancel a booking that no driver has taken yet (the backend only deletes pending bookings)
+export const cancelBooking = async (bookingId) => {
+    const res = await deleteRequest(`booking/${bookingId}/`, true)
+    if (!res.success) throw new Error(res.error || "Failed to cancel the booking")
+    return true;
+}

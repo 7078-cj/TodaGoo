@@ -11,7 +11,7 @@ from .models import Notification
 from .serializers import UserSerializer, NotificationSerializer
 from ...rate_limit.TestThrottle import TestThrottle
 from rest_framework import status
-from .utils import send_reset_email
+from .utils import send_reset_email, delete_notifications
 from ..utils.security import get_user_by_email, blacklist_user_tokens
 from ..utils.password_change import change_password as apply_password_change
 from rest_framework.permissions import IsAuthenticated
@@ -118,6 +118,31 @@ def mark_notification_as_read(request, notification_id):
     notification.read = True
     notification.save()
     return Response({"message": "Notification marked as read"})
+
+@api_view(['DELETE'])
+def delete_notification(request, notification_id):
+    """DELETE user/notifications/<id>/ -> 204; 404 if it isn't yours."""
+    if not delete_notifications(request.user, [notification_id]):
+        return Response({"error": "Notification not found"}, status=status.HTTP_404_NOT_FOUND)
+    return Response(status=status.HTTP_204_NO_CONTENT)
+
+MAX_BULK_DELETE = 200
+
+@api_view(['POST'])
+def delete_notifications_bulk(request):
+    """POST user/notifications/delete/ {"ids": [1, 2, ...]} -> {"deleted": [ids actually deleted]}.
+    Only your own notifications are deleted; other ids are ignored."""
+    ids = request.data.get("ids")
+    if not isinstance(ids, list) or not ids:
+        return Response({"ids": "A non-empty list of notification ids is required."}, status=status.HTTP_400_BAD_REQUEST)
+    if len(ids) > MAX_BULK_DELETE:
+        return Response({"ids": f"At most {MAX_BULK_DELETE} notifications at a time."}, status=status.HTTP_400_BAD_REQUEST)
+    try:
+        ids = [int(i) for i in ids]
+    except (TypeError, ValueError):
+        return Response({"ids": "Notification ids must be numbers."}, status=status.HTTP_400_BAD_REQUEST)
+
+    return Response({"deleted": delete_notifications(request.user, ids)})
 
 @api_view(['PATCH'])
 def mark_all_unread_notifications_as_read(request):
