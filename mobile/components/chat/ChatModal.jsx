@@ -1,4 +1,5 @@
-import { Modal, KeyboardAvoidingView, Platform } from "react-native";
+import { Modal } from "react-native";
+import KeyboardAvoider from "../layouts/KeyboardAvoider";
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import ChatHeader from "./ChatHeader";
 import Messages from "./Messages";
@@ -90,10 +91,7 @@ export default function ChatModal({
             onRequestClose={onClose}
             statusBarTranslucent
         >
-            <KeyboardAvoidingView
-                style={{ flex: 1, backgroundColor: colors.background }}
-                behavior={Platform.OS === "ios" ? "padding" : undefined}
-            >
+            <KeyboardAvoider style={{ backgroundColor: colors.background }}>
                 <ChatHeader title={title} onBack={onClose} onNotifPress={onNotifPress} />
 
                 <Messages
@@ -103,7 +101,7 @@ export default function ChatModal({
                 />
 
                 <ChatInput onSend={handleSend} onAttach={onAttach} sending={sending} />
-            </KeyboardAvoidingView>
+            </KeyboardAvoider>
         </Modal>
     );
 }

@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
-import { View, Text, ScrollView, TouchableOpacity, Image, ActivityIndicator, KeyboardAvoidingView, Platform, Alert } from "react-native";
+import { View, Text, TouchableOpacity, Image, ActivityIndicator, Alert } from "react-native";
+import KeyboardAvoider from "../../components/layouts/KeyboardAvoider";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useProfile } from "../../contexts/ProfileContext";
@@ -214,8 +215,7 @@ function EditProfileForm({ role, profile, details, setProfile }) {
         <View className="flex-1" style={{ backgroundColor: colors.background }}>
             <PageHeader title="Edit Profile" />
 
-            <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-                <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
+            <KeyboardAvoider scroll contentContainerStyle={{ padding: 20, paddingBottom: 40 }}>
                     <View style={{ alignItems: "center", marginBottom: 12 }}>
                         <PhotoPicker label="Change Photo" value={form.profile_picture} onPick={pick("profile_picture")} />
                         {errors.profile_picture ? <Text style={{ color: colors.error, fontSize: 12 }}>{errors.profile_picture}</Text> : null}
@@ -272,8 +272,7 @@ function EditProfileForm({ role, profile, details, setProfile }) {
                     >
                         <Text style={{ color: "#6B7280" }}>Cancel</Text>
                     </TouchableOpacity>
-                </ScrollView>
-            </KeyboardAvoidingView>
+            </KeyboardAvoider>
         </View>
     );
 }

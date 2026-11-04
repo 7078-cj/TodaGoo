@@ -1,8 +1,9 @@
-import { Modal, View, Text, TouchableOpacity, ScrollView, ActivityIndicator } from "react-native";
+import { Modal, View, Text, TouchableOpacity, ActivityIndicator } from "react-native";
 import React, { useState, useEffect } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import FormTextField from "./inputs/FormTextField";
+import KeyboardAvoider from "./layouts/KeyboardAvoider";
 import PickImageComponent from "./inputs/PickImageComponent";
 import AutoAttachedInfo from "./reports/AutoAttachedInfo";
 import { getLocation } from "../utils/location";
@@ -143,7 +144,7 @@ export default function IncidentReportModal({ visible, onClose, onSubmit = null,
                     <Text style={{ marginLeft: 12, fontSize: 20, fontWeight: "600", color: colors.onPrimary }}>Report an Incident</Text>
                 </View>
 
-                <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: insets.bottom + 32 }} keyboardShouldPersistTaps="handled">
+                <KeyboardAvoider scroll contentContainerStyle={{ padding: 20, paddingBottom: insets.bottom + 32 }}>
                     <AutoAttachedInfo booking={booking} location={location} />
 
                     <SectionTitle>Type of Incident</SectionTitle>
@@ -219,7 +220,7 @@ export default function IncidentReportModal({ visible, onClose, onSubmit = null,
                             <Text style={{ color: colors.onPrimary, fontWeight: "600", fontSize: 16 }}>Submit Report</Text>
                         )}
                     </TouchableOpacity>
-                </ScrollView>
+                </KeyboardAvoider>
             </View>
         </Modal>
     );

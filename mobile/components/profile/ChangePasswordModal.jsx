@@ -1,4 +1,5 @@
-import { Modal, Text, TouchableOpacity, Pressable, ActivityIndicator, Alert, KeyboardAvoidingView, Platform } from 'react-native'
+import { Modal, Text, TouchableOpacity, Pressable, ActivityIndicator, Alert } from 'react-native'
+import KeyboardAvoider from '../layouts/KeyboardAvoider'
 import React, { useContext, useEffect, useMemo, useState } from 'react'
 import FormTextField from '../inputs/FormTextField'
 import colors from '../../constants/colors'
@@ -67,7 +68,7 @@ export default function ChangePasswordModal({ onClose }) {
     return (
         <Modal visible transparent animationType="slide" onRequestClose={onClose}>
             <Pressable onPress={onClose} style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "flex-end" }}>
-                <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined}>
+                <KeyboardAvoider sheet>
                     <Pressable
                         onPress={() => {}}
                         style={{ backgroundColor: colors.background, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 32 }}
@@ -109,7 +110,7 @@ export default function ChangePasswordModal({ onClose }) {
                             <Text style={{ color: "#6B7280" }}>Cancel</Text>
                         </TouchableOpacity>
                     </Pressable>
-                </KeyboardAvoidingView>
+                </KeyboardAvoider>
             </Pressable>
         </Modal>
     )

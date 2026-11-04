@@ -11,7 +11,13 @@
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "We use your location to show you on the map and find nearby rides."
+        "NSLocationWhenInUseUsageDescription": "We use your location to show you on the map and find nearby rides.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "During an active ride we keep sharing your location with your passenger, even when TodaGoo is in the background.",
+        "UIBackgroundModes": [
+          "location",
+          "fetch",
+          "processing"
+        ]
       }
     },
     "android": {
@@ -24,7 +30,11 @@
       "predictiveBackGestureEnabled": false,
       "permissions": [
         "ACCESS_FINE_LOCATION",
-        "ACCESS_COARSE_LOCATION"
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_LOCATION",
+        "POST_NOTIFICATIONS"
       ]
     },
     "web": {
@@ -50,13 +60,23 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "We use your location to show you on the map and find nearby rides."
+          "locationWhenInUsePermission": "We use your location to show you on the map and find nearby rides.",
+          "locationAlwaysAndWhenInUsePermission": "During an active ride we keep sharing your location with your passenger, even when TodaGoo is in the background.",
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true
         }
       ],
       "expo-image",
       "expo-status-bar",
       "expo-web-browser",
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-background-task",
+      [
+        "expo-notifications",
+        {
+          "color": "#DF6D26"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

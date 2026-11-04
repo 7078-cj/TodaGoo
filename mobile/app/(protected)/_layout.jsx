@@ -8,6 +8,7 @@ import { LoadingScreen } from "../../components/loading";
 import { LOADING_MESSAGES } from "../../constants/loading";
 import { NotificationProvider } from "../../contexts/NotificationContext";
 import NotificationToast from "../../components/NotificationToast";
+import BackgroundWork from "../../components/BackgroundWork";
 
 function getRole(user) {
     const explicit = user?.role ?? user?.user_type;
@@ -104,6 +105,8 @@ export default function ProtectedLayout() {
 
                 {!isOtpRoute && <BottomNav />}
                 {!isOtpRoute && <NotificationToast />}
+                {/* background notification check + phone-notification taps */}
+                {auth.status === "ok" && <BackgroundWork />}
             </NotificationProvider>
         </ProfileProvider>
     );

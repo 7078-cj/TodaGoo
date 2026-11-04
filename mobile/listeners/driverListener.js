@@ -1,10 +1,13 @@
 import { Alert } from "react-native";
 import useWebSocket from "../hooks/useWebsocket";
+import { isAppInForeground, showBookingOffer } from "../background";
 
 function handleDriverMessage(data, setPendingBooking, setAcceptedBooking) {
     switch (data.type) {
         case "new_booking":
             setPendingBooking(data.data);
+            // app minimized: a phone notification, so the offer isn't missed before it expires
+            if (!isAppInForeground()) showBookingOffer(data.data);
             break;
 
         case "accept_booking":

@@ -1,14 +1,13 @@
 import React, { useCallback, useContext, useEffect, useRef, useState } from "react";
 import {
     ActivityIndicator,
-    KeyboardAvoidingView,
-    Platform,
     Pressable,
     Text,
     TextInput,
     View,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import KeyboardAvoider from "../../components/layouts/KeyboardAvoider";
 import { setStoredToken } from "../../utils/tokenStorage";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -199,10 +198,7 @@ export default function otp() {
     const resendDisabled = cooldown > 0 || resending;
 
     return (
-        <KeyboardAvoidingView
-            className="flex-1 bg-background"
-            behavior={Platform.OS === "ios" ? "padding" : undefined}
-        >
+        <KeyboardAvoider className="flex-1 bg-background">
             <AuthHeader tagline="Verify your account" />
 
             <View className="flex-1 px-8 pt-8">
@@ -283,6 +279,6 @@ export default function otp() {
                     onPress={() => submit(code)}
                 />
             </View>
-        </KeyboardAvoidingView>
+        </KeyboardAvoider>
     );
 }

@@ -1,5 +1,7 @@
 
 import "react-native-get-random-values";
+// defines the background tasks first: the OS may start the app headless just to run one
+import "@/background";
 import { Stack, router } from "expo-router";
 import "../global.css";
 import AuthContext, { AuthProvider } from "@/contexts/AuthContext";

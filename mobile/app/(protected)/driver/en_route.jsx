@@ -3,6 +3,7 @@ import React, { useContext, useEffect, useState } from 'react'
 import DriverContext from "../../../contexts/DriverContext";
 import bookingListener from "../../../listeners/bookingListener"
 import { getLocation } from "../../../utils/location"
+import { isDriverLocationTaskRunning } from "../../../background"
 import MapComponent from '../../../components/map/MapComponent'
 import BottomDetails from '../../../components/BottomDetails';
 import { LoadingScreen } from '../../../components/loading';
@@ -51,6 +52,8 @@ export default function booking() {
         if (!connected) return;
 
         const interval = setInterval(async () => {
+            // the background task (started by DriverContext) already sends it every 10 s
+            if (await isDriverLocationTaskRunning()) return;
             broadcastDriverLocation(sendMessage);
         }, 10000);
 

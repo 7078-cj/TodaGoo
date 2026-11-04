@@ -4,6 +4,9 @@ import useDriverListener from "../listeners/driverListener";
 import { useNavigationContainerRef } from "expo-router";
 import { goTo } from "../utils/navigation";
 import { setActiveBooking } from "../utils/activeBookingStore";
+import { startDriverLocationUpdates, stopDriverLocationUpdates } from "../background";
+
+const TRACKED_STATUSES = ["accepted", "in_progress"];
 
 const DriverContext = createContext(null);
 
@@ -50,6 +53,14 @@ export function DriverProvider({ children }) {
     useEffect(() => {
         setActiveBooking(acceptedBooking);
     }, [acceptedBooking]);
+
+    // keep sending the driver's location while the app is minimized / closed, for as long as the
+    // ride is active. Null (still loading after a restart) changes nothing; the ride ending stops it.
+    useEffect(() => {
+        if (!acceptedBooking) return;
+        if (TRACKED_STATUSES.includes(acceptedBooking.status)) startDriverLocationUpdates(acceptedBooking.id);
+        else stopDriverLocationUpdates();
+    }, [acceptedBooking?.id, acceptedBooking?.status]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // logging out / leaving the driver screens: no active ride for whoever uses the app next
     useEffect(() => () => setActiveBooking(null), []);

@@ -3,6 +3,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getStoredToken, setStoredToken, removeStoredToken } from "../utils/tokenStorage";
 import React, { createContext, ReactNode, useEffect, useState } from "react";
 import { jwtDecode } from "jwt-decode";
+import { stopBackgroundWork } from "../background";
 
 const AuthContext = createContext(null);
 
@@ -75,6 +76,8 @@ export function AuthProvider({ children }) {
     const logoutUser = async () => {
         setToken(null);
         setUser(null);
+        // no ride tracking / notification checks for the previous user
+        stopBackgroundWork().catch(() => {});
         try {
             await removeStoredToken(); // [SEC-L4]
             await AsyncStorage.removeItem("user");

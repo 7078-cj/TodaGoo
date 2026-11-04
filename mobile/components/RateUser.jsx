@@ -1,4 +1,5 @@
-import { View, Text, TouchableOpacity, ActivityIndicator, TextInput, ScrollView } from 'react-native'
+import { View, Text, TouchableOpacity, ActivityIndicator, TextInput } from 'react-native'
+import KeyboardAvoider from './layouts/KeyboardAvoider'
 import React, { useState } from 'react'
 import { Ionicons } from '@expo/vector-icons'
 import { createRate } from '../api/rate'
@@ -50,7 +51,7 @@ export default function RateUser({ bookingId, ratedUserId, person, onDone }) {
     }
 
     return (
-        <ScrollView contentContainerStyle={{ padding: 20 }} keyboardShouldPersistTaps="handled">
+        <KeyboardAvoider scroll contentContainerStyle={{ padding: 20 }}>
             {/* who you're rating */}
             {person && (
                 <View
@@ -141,6 +142,6 @@ export default function RateUser({ bookingId, ratedUserId, person, onDone }) {
                     )}
                 </TouchableOpacity>
             </View>
-        </ScrollView>
+        </KeyboardAvoider>
     )
 }

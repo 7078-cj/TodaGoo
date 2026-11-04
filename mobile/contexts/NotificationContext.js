@@ -8,6 +8,7 @@ import {
     deleteNotification,
     deleteNotifications,
 } from "../api/notifications";
+import { isAppInForeground, markNotifiedUpTo, setBadgeCount, showAppNotification } from "../background";
 
 const NotificationContext = createContext(null);
 
@@ -34,7 +35,10 @@ export function NotificationProvider({ children }) {
     const refresh = useCallback(async () => {
         setLoading(true);
         try {
-            setNotifications(await getNotifications());
+            const list = await getNotifications();
+            setNotifications(list);
+            // seen here, so the background check won't show them again
+            markNotifiedUpTo(list.reduce((max, n) => Math.max(max, n.id), 0) || null);
         } catch (err) {
             console.log("Failed to load notifications:", err);
         } finally {
@@ -55,7 +59,12 @@ export function NotificationProvider({ children }) {
                 : prev.map((n) => (n.id === notification.id ? notification : n));
         });
 
-        if (action === "created") setIncoming(notification);
+        if (action === "created") {
+            setIncoming(notification);
+            markNotifiedUpTo(notification.id);
+            // app minimized (socket still alive): show it as a phone notification
+            if (!isAppInForeground()) showAppNotification(notification);
+        }
     }, []);
 
     // Reloads the list every time the socket (re)connects, so nothing is missed while offline
@@ -107,10 +116,16 @@ export function NotificationProvider({ children }) {
 
     const clearIncoming = useCallback(() => setIncoming(null), []);
 
+    const unreadCount = notifications.filter((n) => !n.read).length;
+    // app icon badge
+    useEffect(() => {
+        setBadgeCount(unreadCount);
+    }, [unreadCount]);
+
     const value = useMemo(
         () => ({
             notifications,
-            unreadCount: notifications.filter((n) => !n.read).length,
+            unreadCount,
             loading,
             connected,
             refresh,
@@ -120,7 +135,7 @@ export function NotificationProvider({ children }) {
             incoming,
             clearIncoming,
         }),
-        [notifications, loading, connected, refresh, markRead, markAllRead, deleteMany, incoming, clearIncoming]
+        [notifications, unreadCount, loading, connected, refresh, markRead, markAllRead, deleteMany, incoming, clearIncoming]
     );
 
     return (
