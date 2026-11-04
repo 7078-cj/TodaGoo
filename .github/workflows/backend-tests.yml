@@ -1,0 +1,127 @@
+# Runs every backend test on each pull request (and on pushes to main).
+# To block merging until it passes: GitHub → Settings → Branches (or Rulesets) → protect `main`
+# → "Require status checks to pass" → add "Backend tests".
+#
+# Each run uploads the Excel test log (backend/test_log/*.xlsx, see backend/test_runner.py)
+# as the "test-log" artifact and writes the totals to the run's summary page.
+name: Backend tests
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# a new push to the same PR cancels the run still going for the old commit
+concurrency:
+  group: backend-tests-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Backend tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+
+    services:
+      postgres:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_DB: todagoo
+          POSTGRES_USER: todagoo
+          POSTGRES_PASSWORD: todagoo
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U todagoo"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+
+    defaults:
+      run:
+        working-directory: backend
+
+    # CI-only values (no real secrets needed). Same mode as local development:
+    # DEBUG=True keeps the HTTPS redirect off, so the test client isn't sent 301s.
+    env:
+      SECRET_KEY: ci-only-not-a-secret
+      DEBUG: "True"
+      ENVIRONMENT: development
+      ALLOWED_HOSTS: localhost,127.0.0.1,testserver
+      CORS_ALLOWED_ORIGINS: http://localhost:3000
+      EMAIL_HOST_USER: ci@example.com
+      EMAIL_HOST_PASSWORD: ci
+      PG_NAME: todagoo
+      PG_USER: todagoo
+      PG_PASSWORD: todagoo
+      PG_HOST: localhost
+      PG_PORT: "5432"
+      # no REDIS_HOST: channels / cache / celery use their in-memory test setup (see settings.py)
+      PYTHONUNBUFFERED: "1"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install GDAL / GEOS / PROJ (GeoDjango) and libpq (psycopg)
+        working-directory: .
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends gdal-bin libgdal-dev libgeos-dev libproj-dev libpq-dev
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Check for missing migrations
+        run: python manage.py makemigrations --check --dry-run
+
+      - name: Run tests
+        run: python manage.py test --noinput
+
+      - name: Upload Excel test log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-log
+          path: backend/test_log/*.xlsx
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Test summary
+        if: always()
+        run: |
+          python - <<'EOF' >> "$GITHUB_STEP_SUMMARY"
+          import glob
+          files = sorted(glob.glob("test_log/*.xlsx"))
+          if not files:
+              print("### Backend tests\nNo test log was written (the run stopped before the tests finished).")
+              raise SystemExit
+          from openpyxl import load_workbook
+          wb = load_workbook(files[-1], read_only=True)
+          rows = [r for r in wb["Summary"].iter_rows(values_only=True) if any(v is not None for v in r)]
+          info = {r[0]: r[1] for r in rows[:9]}
+          print(f"### Backend tests: {info.get('Overall')}")
+          print(f"**{info.get('Total tests')} tests** in {info.get('Duration')}: "
+                f"{info.get('Passed')} passed, {info.get('Failed')} failed, "
+                f"{info.get('Error')} errors, {info.get('Skipped')} skipped\n")
+          print("| Module | Tests | Passed | Failed | Error | Skipped |\n|---|---|---|---|---|---|")
+          for r in rows[10:]:
+              print("| " + " | ".join(str(v) for v in r[:6]) + " |")
+          bad = [r for r in wb["Test Cases"].iter_rows(min_row=2, values_only=True) if r[8] in ("Failed", "Error")]
+          if bad:
+              print("\n#### Failed tests")
+              for r in bad[:50]:
+                  print(f"- `{r[1]}.{r[2]}.{r[3]}`: {r[8]}")
+          print("\nFull details: download the **test-log** artifact (Excel).")
+          EOF
