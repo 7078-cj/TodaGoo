@@ -29,7 +29,7 @@ export default function driver() {
             {
                 page == 'user'
                     ? <UserRegisterForm role="Driver" setFormData={setFormData} setPage={setPage}/>
-                    : <DriverProfileForm setFormData={setFormData} onSubmit={submit}/>
+                    : <DriverProfileForm formData={formData} setFormData={setFormData} onSubmit={submit}/>
             }
         </KeyboardAvoidingView>
     )

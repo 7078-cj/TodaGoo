@@ -1,0 +1,113 @@
+# Mobile (Expo / React Native) tests: Jest, in mobile/__tests__/.
+#   Runs only when something under mobile/ (or this file) changed:
+#   Pull requests          the PR's changes compared with the branch it merges into
+#   Pushes                 the commits in the push (a new branch: compared with where it left main)
+#   Manual run             always (Actions → Mobile tests → Run workflow)
+#
+# To block merging until it passes: GitHub → Settings → Branches (or Rulesets) → protect `main`
+# → "Require status checks to pass" → add "Mobile tests". A skipped run counts as passed.
+#
+# Each run's summary page shows how many passed and, for every failed test, what caused it and the log
+# (mobile/__tests__/ciSummaryReporter.js); failures are also marked on the test lines.
+name: Mobile tests
+
+on:
+  pull_request:
+  push:
+  workflow_dispatch:
+
+# a new push to the same PR cancels the run still going for the old commit
+concurrency:
+  group: mobile-tests-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  # decides whether the tests run (see the table at the top)
+  changes:
+    name: Check for mobile changes
+    runs-on: ubuntu-latest
+    outputs:
+      run: ${{ steps.check.outputs.run }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: check
+        env:
+          EVENT: ${{ github.event_name }}
+          BEFORE: ${{ github.event.before }}
+          SHA: ${{ github.sha }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if [ "$EVENT" = "workflow_dispatch" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            echo "Manual run: running the mobile tests." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          if [ "$EVENT" = "pull_request" ]; then
+            BEFORE=$(git merge-base "$PR_BASE" "$PR_HEAD" 2>/dev/null || echo "$PR_BASE")
+            SHA="$PR_HEAD"
+          elif [ -z "$BEFORE" ] || [ "$BEFORE" = "0000000000000000000000000000000000000000" ] || ! git cat-file -e "$BEFORE" 2>/dev/null; then
+            # a new branch has no "before" commit: compare with where it left main
+            BEFORE=$(git merge-base origin/main "$SHA" 2>/dev/null || echo "")
+          fi
+          if [ -z "$BEFORE" ]; then
+            CHANGED=$(git ls-files)  # nothing to compare with: treat everything as changed
+          else
+            CHANGED=$(git diff --name-only "$BEFORE" "$SHA")
+          fi
+          MOBILE=$(echo "$CHANGED" | grep -E '^(mobile/|\.github/workflows/mobile-tests\.yml$)' || true)
+          if [ -n "$MOBILE" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            { echo "Mobile changed, running tests:"; echo '```'; echo "$MOBILE" | head -50; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "No mobile changes: tests skipped." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+  test:
+    name: Mobile tests
+    needs: changes
+    if: needs.changes.outputs.run == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    defaults:
+      run:
+        working-directory: mobile
+
+    env:
+      CI: "true"
+      TZ: Asia/Manila
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        # the console output is also saved as test_log/console.log (uploaded below)
+        run: |
+          mkdir -p test_log
+          set -o pipefail
+          npm run test:ci 2>&1 | tee test_log/console.log
+
+      - name: Upload test log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mobile-test-log
+          path: mobile/test_log/console.log
+          if-no-files-found: warn
+          retention-days: 30

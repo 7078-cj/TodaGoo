@@ -43,3 +43,6 @@ app-example
 /android
 
 .env
+
+# test logs
+test_log/
