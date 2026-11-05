@@ -10,7 +10,8 @@ import RegisterLayout from "@/components/RegisterLayout";
 const DEBOUNCE_MS = 400;
 
 // formData: the data collected on the previous step (username, password, ...)
-export default function DriverProfileForm({ formData, setFormData, onSubmit }) {
+// serverError: why the server refused the last Register (e.g. "A user with that username already exists.")
+export default function DriverProfileForm({ formData, setFormData, onSubmit, serverError }) {
     const [address, setAddress] = useState("");
     const [contact_number, setContactNumber] = useState("");
     const [toda_number, setTodaNumber] = useState("");
@@ -285,6 +286,10 @@ export default function DriverProfileForm({ formData, setFormData, onSubmit }) {
             {errors.vehicle_back_picture && (
                 <Text className={imageError}>{errors.vehicle_back_picture}</Text>
             )}
+
+            {serverError ? (
+                <Text className="text-error text-xs text-center mt-2">{serverError}</Text>
+            ) : null}
 
             <ButtonComponent
                 label="Register"

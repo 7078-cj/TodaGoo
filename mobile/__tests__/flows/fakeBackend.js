@@ -6,7 +6,7 @@
 //   const backend = createFakeBackend();   // installs global fetch + WebSocket
 //   backend.users / backend.bookings / backend.sockets   state, to check or set up
 //   backend.approveDriver(username)        what a TODA admin does in the dashboard
-//   backend.offlineNext()                  the next request fails like a lost connection
+//   backend.offlineNext(n, path?)          the next request(s) (to `path`) fail like a lost connection
 
 const PICKUP_RADIUS_M = 150; // backend/api/features/booking/helpers/pickup_proximity.py
 const OTP_MAX_ATTEMPTS = 5;
@@ -60,6 +60,7 @@ function createFakeBackend() {
     const tokens = new Map(); // access / refresh string → user id
     const requests = []; // every request: { method, path, auth, body }
     let offline = 0;
+    let offlinePath = null;
 
     // ---------- helpers ----------
     function issueTokens(user) {
@@ -428,12 +429,12 @@ function createFakeBackend() {
     });
 
     async function fetchImpl(url, options = {}) {
-        if (offline > 0) {
+        const [rawPath, rawQuery = ""] = String(url).split("?");
+        const path = rawPath.replace(/^https?:\/\/[^/]+\//, "").replace(/^\//, "").replace(/^api\//, "");
+        if (offline > 0 && (!offlinePath || offlinePath === path)) {
             offline -= 1;
             throw new TypeError("Network request failed");
         }
-        const [rawPath, rawQuery = ""] = String(url).split("?");
-        const path = rawPath.replace(/^https?:\/\/[^/]+\//, "").replace(/^\//, "").replace(/^api\//, "");
         const method = options.method ?? "GET";
         const auth = options.headers?.Authorization;
         const body = readBody(options.body);
@@ -562,8 +563,10 @@ function createFakeBackend() {
         approveDriver(username) {
             backend.user(username).status = "ACTIVE";
         },
-        offlineNext(count = 1) {
+        // the next `count` requests (only those to `path`, when given) fail like a lost connection
+        offlineNext(count = 1, path = null) {
             offline = count;
+            offlinePath = path;
         },
         // the server's 30 s offer timeout (websocket/features/driver.py booking_timeout)
         expireOffer(bookingId) {

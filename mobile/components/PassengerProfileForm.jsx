@@ -1,11 +1,13 @@
 import React, { useState } from 'react'
+import { Text } from 'react-native'
 import FormTextField from './inputs/FormTextField'
 import PickImageComponent from './inputs/PickImageComponent'
 import ButtonComponent from '@/components/ButtonComponent'
 import RegisterLayout from '@/components/RegisterLayout'
 
 // formData: the data collected on the previous step (username, password, ...)
-export default function PassengerProfileForm({ formData, setFormData, onSubmit }) {
+// serverError: why the server refused the last Register (e.g. "A user with that username already exists.")
+export default function PassengerProfileForm({ formData, setFormData, onSubmit, serverError }) {
 
     const [address, setAddress] = useState("")
     const [contact_number, setContactNumber] = useState("")
@@ -114,6 +116,10 @@ export default function PassengerProfileForm({ formData, setFormData, onSubmit }
                 setImage={setProfilePicture}
                 image={profile_picture}
             />
+
+            {serverError ? (
+                <Text className="text-error text-xs text-center mt-2">{serverError}</Text>
+            ) : null}
 
             <ButtonComponent
                 label="Register"
