@@ -35,7 +35,7 @@ export const NOTIFICATION_REDIRECTS = [
         activeRideOnly: true,
     },
     {
-        // "Your report was resolved / dismissed": your own report in full
+        // "Your report was relayed to MDRRMO / resolved / dismissed": your own report in full
         type: "report_update",
         path: { passenger: "/(protected)/profile", driver: "/(protected)/profile" },
         openReport: true,

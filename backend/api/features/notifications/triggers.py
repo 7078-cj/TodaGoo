@@ -49,19 +49,25 @@ def notify_if_driver_nearby(booking_id, lat, lng):
     return True
 
 
-CLOSED_REPORT_STATUSES = {"resolved", "dismissed"}
+# statuses the reporter is told about, and how the message words them
+NOTIFIED_REPORT_STATUSES = {
+    "relayed_to_mdrrmo": "relayed to MDRRMO",
+    "resolved": "resolved",
+    "dismissed": "dismissed",
+}
 
 
 def notify_report_status_changed(report, previous_status):
-    """Tell the reporter when their report is resolved or dismissed."""
-    if report.status == previous_status or report.status not in CLOSED_REPORT_STATUSES:
+    """Tell the reporter when their report is relayed to MDRRMO, resolved or dismissed."""
+    if report.status == previous_status or report.status not in NOTIFIED_REPORT_STATUSES:
         return
     if report.reported_by_id is None:
         return
 
     create_notification(
         report.reported_by,
-        f"Your report #IR-{report.id:03d} ({report.get_incident_types_display().lower()}) was {report.status}.",
+        f"Your report #IR-{report.id:03d} ({report.get_incident_types_display().lower()}) was "
+        f"{NOTIFIED_REPORT_STATUSES[report.status]}.",
         type=Notification.Type.REPORT_UPDATE,
         booking=report.booking,
         report=report,

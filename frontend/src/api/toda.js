@@ -43,8 +43,10 @@ export async function updateBookingSettings(data, idempotencyKey = null) {
     return response;
 }
 
-export async function getDashboardOverview() {
+// range: "today" | "week" | "month" (the dashboard's buttons). Without it the backend
+// always answers for today, whichever button is selected.
+export async function getDashboardOverview(range = "today") {
     const access = Cookie.get("access");
-    const response = await getRequest("admin/dashboard/", access);
+    const response = await getRequest(`admin/dashboard/?range=${encodeURIComponent(range)}`, access);
     return response;
 }

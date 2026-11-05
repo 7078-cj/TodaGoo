@@ -15,9 +15,7 @@ function DashBoard() {
       return
     }
 
-    if (department === "MDRRMO") {
-      nav("/mdrrmo")
-    } else if (department === "TODA") {
+    if (department === "TODA") {
       nav("/toda")
     } else {
       nav("/unauthorized")

@@ -1,12 +1,7 @@
 import React, { useEffect } from 'react'
 import { X } from 'lucide-react'
 import IncidentReportMap from './IncidentReportMap';
-
-const STATUS_STYLES = {
-    open: "bg-amber-100 text-amber-800 ring-amber-600/20",
-    resolved: "bg-emerald-100 text-emerald-800 ring-emerald-600/20",
-    dismissed: "bg-gray-100 text-gray-600 ring-gray-500/20",
-};
+import { reportStatusLabel, reportStatusStyle } from '../../constants/reportStatuses';
 
 function Field({ label, value }) {
     if (value === null || value === undefined || value === "") return null
@@ -109,9 +104,9 @@ export default function IncidentReportModal({ report, onClose }) {
                     </div>
                     <div className="flex items-center gap-2">
                         <span
-                            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset ${STATUS_STYLES[report.status] ?? STATUS_STYLES.open}`}
+                            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset ${reportStatusStyle(report.status)}`}
                         >
-                            {report.status}
+                            {reportStatusLabel(report.status)}
                         </span>
                         <button
                             onClick={onClose}

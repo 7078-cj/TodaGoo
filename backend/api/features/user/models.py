@@ -5,13 +5,13 @@ from datetime import timedelta
 from ..admin.models import Toda,TodaStation
 
 class Admin(models.Model):
+    # TODA admins only; reports that need MDRRMO are marked "Relayed to MDRRMO" by a TODA admin
     department_choices = [
         ('TODA', 'Toda'),
-        ('MDRRMO', 'MDRRMO'),
     ]
-    
+
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    department = models.CharField(max_length=100, choices=department_choices)
+    department = models.CharField(max_length=100, choices=department_choices, default='TODA')
 
 
     def __str__(self):
@@ -67,7 +67,7 @@ class Notification(models.Model):
         BOOKING_ACCEPTED = "booking_accepted", "Booking accepted"
         DRIVER_NEARBY = "driver_nearby", "Driver nearby"
         NEW_MESSAGE = "new_message", "New message"
-        # to the reporter when their report is resolved / dismissed
+        # to the reporter when their report is relayed to MDRRMO, resolved or dismissed
         REPORT_UPDATE = "report_update", "Report update"
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications')

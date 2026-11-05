@@ -6,7 +6,7 @@ from ..utils.security import is_deletion_allowed
 class IsPassengerOwnerOrAdmin(BasePermission):
     def has_object_permission(self, request, view, obj):
         if is_admin(request.user):
-            # [SEC-M10] MDRRMO admins may view but not delete passenger accounts
+            # [SEC-M10] only TODA admins may delete passenger accounts
             if request.method == "DELETE":
                 return is_deletion_allowed(request.user)
             return True

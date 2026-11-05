@@ -6,7 +6,6 @@ import IncidentReportCard from '../components/IncidentReport/IncidentReportCard'
 import IncidentReportModal from '../components/IncidentReport/IncidentReportModal';
 import Pagination from '../components/Pagination';
 
-const ADMIN_DEPARTMENTS = ["TODA", "MDRRMO"];
 const PAGE_SIZE = 10;
 
 export default function IncidentReports() {
@@ -18,7 +17,6 @@ export default function IncidentReports() {
     const [selectedReport, setSelectedReport] = useState(null)
     const user = useSelector((state) => state.auth.user);
 
-    const isAdmin = ADMIN_DEPARTMENTS.includes(user?.department)
     const totalPages = Math.max(1, Math.ceil(count / PAGE_SIZE))
 
     const fetchReports = async (targetPage = page) => {
@@ -54,13 +52,8 @@ export default function IncidentReports() {
         )
     }
 
-    const canUpdateReport = (report) => {
-        if (user?.department === "TODA") return true
-        if (user?.department === "MDRRMO") {
-            return ["accident", "reckless_driving", "others"].includes(report.incident_types)
-        }
-        return false
-    }
+    // TODA admins set every status, including "Relayed to MDRRMO"
+    const canUpdateReport = () => user?.department === "TODA"
 
     if (loading) return <div className="p-6 text-gray-500">Loading incident reports…</div>
     if (error) return <div className="p-6 text-red-500">Failed to load incident reports.</div>

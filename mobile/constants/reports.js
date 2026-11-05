@@ -1,9 +1,11 @@
 // Profile → Reports configuration.
 
-// One entry per backend IncidentReport status (open / resolved / dismissed).
+// One entry per backend IncidentReport status (open / relayed_to_mdrrmo / resolved / dismissed).
 // `label` is what the badge and filter tab show; rename freely (e.g. "Reviewed").
+// "Relayed to MDRRMO": the TODA admin passed the report on to MDRRMO; it's still open.
 export const REPORT_STATUSES = [
     { status: "open", label: "Open", color: "#2563EB" },
+    { status: "relayed_to_mdrrmo", label: "Relayed to MDRRMO", color: "#B45309" },
     { status: "resolved", label: "Resolved", color: "#0F5A4A" },
     { status: "dismissed", label: "Dismissed", color: "#6B7280" },
 ];

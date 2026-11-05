@@ -11,8 +11,11 @@ from rest_framework.test import APITestCase
 from api.features.booking.models import Booking
 from api.features.chat.models import Message
 from api.features.reports.models import IncidentReport
+from api.features.user.models import Admin
 
-from .factories import PICKUP, idem, make_admin, make_booking, make_driver, make_passenger, make_station, make_toda
+from .factories import (
+    PICKUP, idem, make_admin, make_booking, make_driver, make_passenger, make_station, make_toda, make_user,
+)
 
 MESSAGES = "message"
 MESSAGES_SEEN = "message-seen"
@@ -181,12 +184,21 @@ class IncidentReportTests(ParticipantsBase):
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(len(res.data["results"]), 1)
 
-    def test_mdrrmo_sees_only_its_incident_types(self, _layer):
+    def test_toda_admin_sees_every_incident_type(self, _layer):
         self.report(self.passenger.user, "overcharging")
         self.report(self.passenger.user, "accident")
-        self.as_user(make_admin("MDRRMO"))
+        self.as_user(make_admin("TODA"))
         res = self.client.get(reverse(REPORTS))
-        self.assertEqual([r["incident_types"] for r in res.data["results"]], ["accident"])
+        self.assertEqual(sorted(r["incident_types"] for r in res.data["results"]), ["accident", "overcharging"])
+
+    def test_list_filters_by_relayed_to_mdrrmo(self, _layer):
+        relayed = self.report(self.passenger.user, "accident").data["id"]
+        self.report(self.passenger.user, "overcharging")
+        IncidentReport.objects.filter(id=relayed).update(status="relayed_to_mdrrmo")
+        self.as_user(make_admin("TODA"))
+        res = self.client.get(reverse(REPORTS), {"status": "relayed_to_mdrrmo"})
+        self.assertEqual(res.status_code, status.HTTP_200_OK, res.data)
+        self.assertEqual([r["id"] for r in res.data["results"]], [relayed])
 
     def test_list_filter_validation(self, _layer):
         self.as_user(self.passenger.user)
@@ -214,9 +226,40 @@ class IncidentReportTests(ParticipantsBase):
         res = self.client.patch(reverse(REPORT_DETAIL, args=[report_id]), {"status": "dismissed"}, format="json", **idem())
         self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
 
-    def test_mdrrmo_cannot_see_toda_only_report(self, _layer):
-        report_id = self.report(self.passenger.user, "overcharging").data["id"]
-        self.as_user(make_admin("MDRRMO"))
+    def test_toda_admin_relays_report_to_mdrrmo(self, _layer):
+        report_id = self.report(self.passenger.user, "accident").data["id"]
+        self.as_user(make_admin("TODA"))
+        res = self.client.patch(
+            reverse(REPORT_DETAIL, args=[report_id]), {"status": "relayed_to_mdrrmo"}, format="json", **idem()
+        )
+        self.assertEqual(res.status_code, status.HTTP_200_OK, res.data)
+        self.assertEqual(res.data["status"], "relayed_to_mdrrmo")
+        report = IncidentReport.objects.get(id=report_id)
+        self.assertEqual(report.status, "relayed_to_mdrrmo")
+        self.assertEqual(report.get_status_display(), "Relayed to MDRRMO")
+        self.assertIsNone(report.resolved_at)  # relayed is still open
+
+    def test_reporter_cannot_relay_report(self, _layer):
+        report_id = self.report(self.passenger.user).data["id"]
+        res = self.client.patch(
+            reverse(REPORT_DETAIL, args=[report_id]), {"status": "relayed_to_mdrrmo"}, format="json", **idem()
+        )
+        self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(IncidentReport.objects.get(id=report_id).status, "open")
+
+    def test_unknown_status_is_refused(self, _layer):
+        report_id = self.report(self.passenger.user).data["id"]
+        self.as_user(make_admin("TODA"))
+        res = self.client.patch(reverse(REPORT_DETAIL, args=[report_id]), {"status": "mdrrmo"}, format="json", **idem())
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_admin_without_toda_department_sees_and_changes_nothing(self, _layer):
+        # e.g. a leftover non-TODA admin profile: treated like any other user
+        report_id = self.report(self.passenger.user, "accident").data["id"]
+        other = make_user("old_mdrrmo")
+        Admin.objects.create(user=other, department="MDRRMO")
+        self.as_user(other)
+        self.assertEqual(self.client.get(reverse(REPORTS)).data["results"], [])
         res = self.client.patch(reverse(REPORT_DETAIL, args=[report_id]), {"status": "resolved"}, format="json", **idem())
         self.assertEqual(res.status_code, status.HTTP_404_NOT_FOUND)
 
@@ -259,6 +302,14 @@ class IncidentReportResolutionTests(ParticipantsBase):
         report = self.reporters_view()
         self.assertEqual(report["status"], "resolved")
         self.assertEqual(report["resolution"], "Rider fined; passenger checked by MDRRMO.")
+        self.assertIsNotNone(report["resolved_at"])
+
+    def test_relayed_then_resolved_stamps_time_when_resolved(self, _layer):
+        self.update({"status": "relayed_to_mdrrmo"})
+        self.assertIsNone(self.reporters_view()["resolved_at"])
+        self.update({"status": "resolved", "resolution": "MDRRMO attended to the passenger."})
+        report = self.reporters_view()
+        self.assertEqual(report["status"], "resolved")
         self.assertIsNotNone(report["resolved_at"])
 
     def test_resolution_note_is_optional(self, _layer):
@@ -385,6 +436,22 @@ class ReportNotificationLinkTests(ParticipantsBase):
         self.assertEqual(n.report_id, self.report_id)
         self.assertIn(f"#IR-{self.report_id:03d}", n.message)
         self.assertIn("resolved", n.message)
+
+    def test_relaying_to_mdrrmo_notifies_the_reporter(self, _layer):
+        self.assertEqual(self.set_status("relayed_to_mdrrmo").status_code, status.HTTP_200_OK)
+        (n,) = self.notifications(self.passenger.user, "report_update")
+        self.assertEqual(n.report_id, self.report_id)
+        self.assertIn(f"#IR-{self.report_id:03d}", n.message)
+        self.assertIn("was relayed to MDRRMO.", n.message)
+        self.assertEqual(self.notifications(self.driver.user, "report_update"), [])
+
+    def test_relayed_then_resolved_notifies_twice(self, _layer):
+        self.set_status("relayed_to_mdrrmo")
+        self.set_status("resolved")
+        messages = [n.message for n in self.notifications(self.passenger.user, "report_update")]
+        self.assertEqual(len(messages), 2)
+        self.assertTrue(any("relayed to MDRRMO" in m for m in messages))
+        self.assertTrue(any(m.endswith("was resolved.") for m in messages))
 
     def test_dismissing_notifies_the_reporter(self, _layer):
         self.set_status("dismissed")

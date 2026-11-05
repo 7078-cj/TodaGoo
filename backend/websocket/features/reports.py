@@ -4,7 +4,7 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 from websocket.auth import SubprotocolAcceptMixin
 from api.features.utils.roles import get_admin_department
 
-VALID_DEPARTMENTS = {"TODA", "MDRRMO"}
+VALID_DEPARTMENTS = {"TODA"}
 
 
 class ReportsConsumer(SubprotocolAcceptMixin, AsyncWebsocketConsumer):  # [SEC-H8]
