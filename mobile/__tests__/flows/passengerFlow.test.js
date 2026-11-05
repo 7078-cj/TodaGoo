@@ -19,7 +19,7 @@ import {
 } from "./helpers";
 import { passengerRegister, resendPassengerOtp, verifyPassengerOtp } from "../../api/passenger";
 import { saveTokens, updateToken } from "../../api/auth";
-import { bookRide, cancelBooking, getBookingHistory, getFarePrice } from "../../api/book";
+import { bookRide, cancelBooking, getBooking, getBookingHistory, getFarePrice } from "../../api/book";
 import { createRate } from "../../api/rate";
 import { ERROR_MESSAGES } from "../../constants/errors";
 import { getStoredToken } from "../../utils/tokenStorage";
@@ -204,6 +204,15 @@ describe("passenger flow: happy path", () => {
         expect(auth.result.current.user.username).toBe("maria");
     });
 
+    it("getBooking loads one ride with the passenger's token", async () => {
+        const { auth } = await readyPassengerAndDriver();
+        const booking = await bookRide(BOOKING, newIdempotencyKey());
+        await expect(getBooking(booking.id)).resolves.toMatchObject({ id: booking.id, status: booking.status });
+        const req = backend.requests.at(-1);
+        expect(req).toMatchObject({ method: "GET", path: `booking/${booking.id}/` });
+        expect(req.auth).toBe(`Bearer ${auth.result.current.token.access}`);
+    });
+
     it("a retried booking with the same idempotency key doesn't book twice", async () => {
         await readyPassengerAndDriver();
         const key = newIdempotencyKey();
@@ -279,12 +288,12 @@ describe("passenger flow: errors", () => {
             await act(async () => {
                 res = await auth.result.current.loginUser("maria", "wrong-password");
             });
-            expect(res).toEqual({ success: false, error: "No active account found with the given credentials" });
+            expect(res).toEqual({ success: false, kind: "auth", error: "No active account found with the given credentials" });
             expect(auth.result.current.token).toBeNull();
             expect(await getStoredToken()).toBeNull();
         });
 
-        it("no connection: a readable error, no crash", async () => {
+        it("no connection: says so, instead of 'wrong password'", async () => {
             const auth = await renderAuth();
             unmounts.push(auth.unmount);
             backend.offlineNext();
@@ -292,7 +301,7 @@ describe("passenger flow: errors", () => {
             await act(async () => {
                 res = await auth.result.current.loginUser("maria", "password123");
             });
-            expect(res.success).toBe(false);
+            expect(res).toEqual({ success: false, kind: "network", error: ERROR_MESSAGES.network });
             expect(auth.result.current.token).toBeNull();
         });
     });

@@ -15,7 +15,7 @@ export const getBookingHistory = async () => {
 }
 
 export const getBooking = async (bookingId) => {
-    const res = await getRequest(`booking/${bookingId}/`, true)
+    const res = await getRequest(`booking/${bookingId}/`, {}, true)
     if (!res.success) throw new Error(res.error || "Failed to fetch booking")
     return res.data;
 }

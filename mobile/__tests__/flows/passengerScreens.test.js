@@ -295,25 +295,37 @@ describe("passenger screens: errors", () => {
             expect(backend.requests.filter((r) => r.path === "passenger/")).toHaveLength(0);
         });
 
-        it("a taken username: the server refuses, the screen stays on the form and doesn't log in", async () => {
+        it("a taken username: the server's reason is shown, the screen stays on the form and doesn't log in", async () => {
             backend.seedUser({ username: "maria", role: "passenger" });
             await openSignUp();
             await fillAccountStep();
             await fillProfileStep();
-            await settle();
+            await screen.findByText("A user with that username already exists.");
             expect(routeOfNav()).toBe("/register/passenger");
-            expect(screen.getByText("Register")).toBeTruthy();
             expect(backend.requests.some((r) => r.path === "user/token/user")).toBe(false);
         });
 
-        it("no connection: the screen stays on the form", async () => {
+        it("no connection: the network message, still on the form; Register again works", async () => {
             await openSignUp();
             await fillAccountStep();
             backend.offlineNext();
             await fillProfileStep();
-            await settle();
+            await screen.findByText(ERROR_MESSAGES.network);
             expect(routeOfNav()).toBe("/register/passenger");
             expect(backend.users).toHaveLength(0);
+
+            await press("Register"); // back online
+            await waitForScreen("/otp", "Enter your code");
+        });
+
+        it("account created but the login after it failed: says so, doesn't open the OTP screen", async () => {
+            await openSignUp();
+            await fillAccountStep();
+            backend.offlineNext(1, "user/token/user");
+            await fillProfileStep();
+            await screen.findByText(`Your account was created, but logging in failed: ${ERROR_MESSAGES.network} Please log in.`);
+            expect(routeOfNav()).toBe("/register/passenger");
+            expect(backend.user("maria")).toBeTruthy();
         });
     });
 
@@ -325,6 +337,18 @@ describe("passenger screens: errors", () => {
             await fill({ Username: "maria", Password: "Wrong#2026" });
             await press("Login");
             await screen.findByText("Invalid username or password.");
+            expect(routeOfNav()).toBe("/login");
+        });
+
+        it("no connection: the network message, not 'Invalid username or password.'", async () => {
+            backend.seedUser({ username: "maria", role: "passenger", password: "Maria#2026" });
+            navigation.reset("/(global)/login");
+            await render(<TestApp />);
+            await fill({ Username: "maria", Password: "Maria#2026" });
+            backend.offlineNext();
+            await press("Login");
+            await screen.findByText(ERROR_MESSAGES.network);
+            expect(screen.queryByText("Invalid username or password.")).toBeNull();
             expect(routeOfNav()).toBe("/login");
         });
 

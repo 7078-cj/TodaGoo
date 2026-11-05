@@ -4,9 +4,10 @@ import { jwtDecode } from "jwt-decode";
 import { getStoredToken, setStoredToken } from "../utils/tokenStorage";
 
 
+// The whole request result ({ success, kind, error, data }), so a caller can tell wrong credentials
+// (kind "auth") from no connection ("network" / "timeout") or a server error
 export async function loginRequest(username, password) {
-    const res = await postRequest('user/token/user', {username, password}, false)
-    return res.data;
+    return await postRequest('user/token/user', {username, password}, false)
 }
 
 export const updateToken = async (setToken, setUser, logoutUser) => {

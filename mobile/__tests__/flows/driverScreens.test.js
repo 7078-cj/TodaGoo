@@ -257,14 +257,25 @@ describe("driver screens: errors", () => {
             expect(screen.getByText("Invalid plate format (e.g., ABC1234)")).toBeTruthy();
         });
 
-        it("a taken username: the server refuses and the screen stays on the form", async () => {
+        it("a taken username: the server's reason is shown and the screen stays on the form", async () => {
             backend.seedUser({ username: "pedro", role: "driver" });
             await openSignUp();
             await fillProfile();
             await press("Register");
-            await settle();
+            await screen.findByText("A user with that username already exists.");
             expect(route()).toBe("/register/driver");
             expect(backend.users).toHaveLength(1);
+        });
+
+        it("account created but the login after it failed: says so, doesn't open the OTP screen", async () => {
+            await openSignUp();
+            await fillProfile();
+            backend.offlineNext(1, "user/token/user");
+            await press("Register");
+            await screen.findByText(`Your account was created, but logging in failed: ${ERROR_MESSAGES.network} Please log in.`);
+            expect(route()).toBe("/register/driver");
+            expect(navigation.log).not.toContain("push /(protected)/otp");
+            expect(backend.user("pedro")).toBeTruthy();
         });
 
         it("a wrong OTP shows the server's message", async () => {

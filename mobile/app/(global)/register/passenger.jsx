@@ -10,13 +10,19 @@ export default function passenger() {
     const [page, setPage] = useState('user')
     const [formData, setFormData] = useState({})
     const {loginUser} = useContext(AuthContext)
+    // why the last Register didn't go through (shown above the Register button)
+    const [serverError, setServerError] = useState(null)
 
     const submit = async (data) => {
+        setServerError(null)
         const res = await passengerRegister(data)
-        if(res.success){
-            const login = await loginUser(formData.username, formData.password)
-            login.success && router.push('/(protected)/otp')
+        if (!res.success) {
+            setServerError(res.error)
+            return
         }
+        const login = await loginUser(data.username, data.password)
+        if (login.success) router.push('/(protected)/otp')
+        else setServerError(`Your account was created, but logging in failed: ${login.error} Please log in.`)
     }
 
     // No ScrollView here: RegisterLayout scrolls the form inside its own sheet
@@ -28,7 +34,7 @@ export default function passenger() {
             {
                 page == 'user'
                     ? <UserRegisterForm role="Passenger" setFormData={setFormData} setPage={setPage}/>
-                    : <PassengerProfileForm formData={formData} setFormData={setFormData} onSubmit={submit}/>
+                    : <PassengerProfileForm formData={formData} setFormData={setFormData} onSubmit={submit} serverError={serverError}/>
             }
         </KeyboardAvoidingView>
     )

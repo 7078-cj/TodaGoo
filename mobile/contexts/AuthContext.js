@@ -35,21 +35,27 @@ export function AuthProvider({ children }) {
     }, []);
 
     const loginUser = async (username, password) => {
-        let data;
+        let res;
         try {
-            data = await loginRequest(username, password);
+            res = await loginRequest(username, password);
         } catch (err) {
-            const message =
-                err?.response?.data?.detail ||
-                err?.response?.data?.message ||
-                (err?.request ? "Network error. Please check your connection." : "Something went wrong. Please try again.");
             console.error("Login request failed:", err);
-            return { success: false, error: message };
+            return { success: false, kind: "unknown", error: "Something went wrong. Please try again." };
         }
 
+        // kind: "auth" / "validation" = wrong username or password; "network" / "timeout" / "server" /
+        // "throttled" = the login didn't get through, with a message saying why (constants/errors.js)
+        if (!res?.success) {
+            return {
+                success: false,
+                kind: res?.kind ?? "unknown",
+                error: res?.error || "Invalid username or password.",
+            };
+        }
+
+        const data = res.data;
         if (!data?.access) {
-            const message = data?.detail || data?.message || "Invalid username or password.";
-            return { success: false, error: message };
+            return { success: false, kind: "unknown", error: "Received an invalid session token. Please try again." };
         }
 
         let decodedUser;

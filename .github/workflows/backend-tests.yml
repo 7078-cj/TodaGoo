@@ -9,6 +9,7 @@
 #
 # Each run's summary page shows how many passed and, for every failed test, what caused it, the calls
 # it made and the full traceback (api/test/ci_summary.py); failures are also marked on the test lines.
+# On a pull request the same summary is posted as a comment ("Backend tests"), updated on every push.
 # The "test-log" artifact has the Excel test log (backend/test_log/*.xlsx) and console.log.
 name: Backend tests
 
@@ -71,6 +72,9 @@ jobs:
     needs: changes
     if: needs.changes.outputs.run == 'true'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write # the test results comment
     timeout-minutes: 40
 
     services:
@@ -109,6 +113,9 @@ jobs:
       PG_PORT: "5432"
       # no REDIS_HOST: channels / cache / celery use their in-memory test setup (see settings.py)
       PYTHONUNBUFFERED: "1"
+      # ci_summary.py also writes the summary here, for the PR comment; HEAD_SHA links failures to their lines
+      TEST_SUMMARY_FILE: test_log/summary.md
+      HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
 
     steps:
       - uses: actions/checkout@v4
@@ -134,16 +141,34 @@ jobs:
         run: python manage.py makemigrations --check --dry-run
 
       - name: Run tests
+        id: tests
         # the console output is also saved as test_log/console.log (uploaded below)
         run: |
           mkdir -p test_log
           set -o pipefail
           python manage.py test --noinput 2>&1 | tee test_log/console.log
 
-      # passed / failed counts, what failed, why, and the log -> run summary + annotations
+      # passed / failed counts, what failed, why, and the log -> run summary + annotations + summary.md
       - name: Test summary
         if: always()
         run: python api/test/ci_summary.py test_log
+
+      # the same summary as a comment on the PR, updated on every push (one comment, not one per run)
+      - name: Comment test results on the PR
+        if: always() && github.event_name == 'pull_request'
+        continue-on-error: true # a PR from a fork gets a read-only token: no comment, the check still counts
+        uses: actions/github-script@v7
+        env:
+          TESTS_OUTCOME: ${{ steps.tests.outcome }}
+        with:
+          script: |
+            const post = require(`${process.env.GITHUB_WORKSPACE}/.github/scripts/post-test-comment.js`);
+            await post({ github, context, core }, {
+              id: "backend-tests",
+              title: "Backend tests",
+              file: `${process.env.GITHUB_WORKSPACE}/backend/test_log/summary.md`,
+              outcome: process.env.TESTS_OUTCOME,
+            });
 
       - name: Upload test log (Excel + console.log)
         if: always()
@@ -153,5 +178,6 @@ jobs:
           path: |
             backend/test_log/*.xlsx
             backend/test_log/console.log
+            backend/test_log/summary.md
           if-no-files-found: warn
           retention-days: 30

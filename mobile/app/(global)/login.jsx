@@ -56,7 +56,9 @@ export default function login() {
         try {
             const res = await loginUser(username, password)
             if (!res.success) {
-                setErrors({ general: "Invalid username or password." })
+                // wrong details get one message; no connection / server trouble say so instead
+                const wrongDetails = res.kind === "auth" || res.kind === "validation"
+                setErrors({ general: wrongDetails ? "Invalid username or password." : res.error })
             } else {
                 res.user.role == 'passenger'
                     ? router.replace('/(protected)/passenger/home')
