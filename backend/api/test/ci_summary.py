@@ -3,7 +3,8 @@ GitHub Actions summary for a test run, built from the Excel test log (see test_l
 
     python api/test/ci_summary.py [test_log_dir]
 
-Writes to the run's summary page ($GITHUB_STEP_SUMMARY; stdout when run locally):
+Writes to the run's summary page ($GITHUB_STEP_SUMMARY; stdout when run locally), and to
+$TEST_SUMMARY_FILE when set (the workflow posts that file as a comment on the pull request):
   - how many passed / failed / errored / skipped, and a per-module table
   - for every failed test: what caused it, the file + line, what it expected, the API / websocket
     calls it made with their responses, and the full traceback (the log)
@@ -47,6 +48,15 @@ def fence(text, lang=""):
     return f"````{lang}\n{text}\n````"
 
 
+def source_link(path, line):
+    """`path` line N, linked to that line on GitHub when running in Actions (the PR's head commit)."""
+    repo, sha = os.environ.get("GITHUB_REPOSITORY"), os.environ.get("HEAD_SHA") or os.environ.get("GITHUB_SHA")
+    if not (repo and sha):
+        return f"`{path}` line {line}"
+    server = os.environ.get("GITHUB_SERVER_URL", "https://github.com")
+    return f"[`{path}` line {line}]({server}/{repo}/blob/{sha}/{path}#L{line})"
+
+
 def location(tb):
     """(repo-relative path, line) of the deepest frame in a test file, for the annotation."""
     found = None
@@ -74,15 +84,33 @@ def main(log_dir="test_log"):
             stream.reconfigure(encoding="utf-8")
         except (AttributeError, ValueError):
             pass
-    out_path = os.environ.get("GITHUB_STEP_SUMMARY")
-    out = open(out_path, "a", encoding="utf-8") if out_path else sys.stdout
     run_url = None
     if os.environ.get("GITHUB_RUN_ID"):
         run_url = f"{os.environ.get('GITHUB_SERVER_URL', 'https://github.com')}/{os.environ.get('GITHUB_REPOSITORY')}/actions/runs/{os.environ['GITHUB_RUN_ID']}"
 
-    def say(line=""):
-        print(line, file=out)
+    lines = []
 
+    def say(line=""):
+        lines.append(line)
+
+    try:
+        write_summary(log_dir, run_url, say)
+    finally:
+        text = "\n".join(lines) + "\n"
+        out_path = os.environ.get("GITHUB_STEP_SUMMARY")
+        if out_path:
+            with open(out_path, "a", encoding="utf-8") as out:
+                out.write(text)
+        else:
+            sys.stdout.write(text)
+        comment_path = os.environ.get("TEST_SUMMARY_FILE")
+        if comment_path:
+            os.makedirs(os.path.dirname(comment_path) or ".", exist_ok=True)
+            with open(comment_path, "w", encoding="utf-8") as f:
+                f.write(text)
+
+
+def write_summary(log_dir, run_url, say):
     files = sorted(f for f in glob.glob(os.path.join(log_dir, "*.xlsx")) if not os.path.basename(f).startswith("~$"))
     if not files:
         say("### ❌ Backend tests")
@@ -117,7 +145,9 @@ def main(log_dir="test_log"):
         say()
         say(f"#### ❌ Failed tests ({len(failures)})")
         for r in failures:
-            say(f"- `{cell(r, 'module')}.{cell(r, 'cls')}.{cell(r, 'test')}`: **{cell(r, 'result')}**: {clip(cell(r, 'cause').splitlines()[0] if cell(r, 'cause') else '', 200)}")
+            where = location(cell(r, "traceback"))
+            at = f" ({source_link(*where)})" if where else ""
+            say(f"- `{cell(r, 'module')}.{cell(r, 'cls')}.{cell(r, 'test')}`: **{cell(r, 'result')}**{at}: {clip(cell(r, 'cause').splitlines()[0] if cell(r, 'cause') else '', 200)}")
         say()
         say("#### Details")
         for r in failures[:MAX_DETAILED]:
@@ -131,7 +161,7 @@ def main(log_dir="test_log"):
             say("**What caused it**")
             say(fence(clip(cause, MAX_OUTPUT_CHARS)))
             if where:
-                say(f"**Where:** `{where[0]}` line {where[1]}")
+                say(f"**Where:** {source_link(*where)}")
             if cell(r, "expected"):
                 say("**Expected**")
                 say(fence(clip(cell(r, "expected"), MAX_OUTPUT_CHARS)))

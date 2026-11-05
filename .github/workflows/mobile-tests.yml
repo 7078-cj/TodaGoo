@@ -9,6 +9,8 @@
 #
 # Each run's summary page shows how many passed and, for every failed test, what caused it and the log
 # (mobile/__tests__/ciSummaryReporter.js); failures are also marked on the test lines.
+# On a pull request the same summary is posted as a comment ("Mobile tests"), updated on every push.
+# A PR with no mobile changes gets no mobile comment (the tests are skipped).
 name: Mobile tests
 
 on:
@@ -74,6 +76,9 @@ jobs:
     needs: changes
     if: needs.changes.outputs.run == 'true'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write # the test results comment
     timeout-minutes: 20
 
     defaults:
@@ -83,6 +88,9 @@ jobs:
     env:
       CI: "true"
       TZ: Asia/Manila
+      # ciSummaryReporter.js also writes the summary here, for the PR comment; HEAD_SHA links failures to their lines
+      TEST_SUMMARY_FILE: test_log/summary.md
+      HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
 
     steps:
       - uses: actions/checkout@v4
@@ -97,17 +105,37 @@ jobs:
         run: npm ci
 
       - name: Run tests
+        id: tests
         # the console output is also saved as test_log/console.log (uploaded below)
         run: |
           mkdir -p test_log
           set -o pipefail
           npm run test:ci 2>&1 | tee test_log/console.log
 
+      # the run summary as a comment on the PR, updated on every push (one comment, not one per run)
+      - name: Comment test results on the PR
+        if: always() && github.event_name == 'pull_request'
+        continue-on-error: true # a PR from a fork gets a read-only token: no comment, the check still counts
+        uses: actions/github-script@v7
+        env:
+          TESTS_OUTCOME: ${{ steps.tests.outcome }}
+        with:
+          script: |
+            const post = require(`${process.env.GITHUB_WORKSPACE}/.github/scripts/post-test-comment.js`);
+            await post({ github, context, core }, {
+              id: "mobile-tests",
+              title: "Mobile tests",
+              file: `${process.env.GITHUB_WORKSPACE}/mobile/test_log/summary.md`,
+              outcome: process.env.TESTS_OUTCOME,
+            });
+
       - name: Upload test log
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: mobile-test-log
-          path: mobile/test_log/console.log
+          path: |
+            mobile/test_log/console.log
+            mobile/test_log/summary.md
           if-no-files-found: warn
           retention-days: 30
