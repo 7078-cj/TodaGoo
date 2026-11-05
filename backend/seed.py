@@ -48,11 +48,8 @@ def seed_booking_settings():
         print("Booking settings already exist.")
 
 
-# Create TODA admin
+# Create TODA admin (the only admin department; MDRRMO gets reports through "Relayed to MDRRMO")
 create_admin("todaAdmin", "toda12345", "TODA")
-
-# Create MDRRMO admin
-create_admin("mdrrmoAdmin", "mdrrmo12345", "MDRRMO")
 
 # Seed booking settings
 seed_booking_settings()

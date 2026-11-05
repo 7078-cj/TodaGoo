@@ -316,3 +316,46 @@ class DriverConsumerTests(ConsumerBase):
         self.assertFalse(connected)
         self.assertEqual(code, 4004)
         await self.close_all()
+
+
+# ---------------------------------------------------------------------------
+# ws/reports/<department>: only TODA (MDRRMO is no longer an admin department)
+# ---------------------------------------------------------------------------
+class ReportsConsumerTests(ConsumerBase):
+    def setUp(self):
+        super().setUp()
+        from .factories import make_admin
+        self.admin = make_admin("TODA")
+
+    async def test_toda_admin_gets_report_updates(self):
+        from api.features.reports.models import IncidentReport
+        from django.contrib.gis.geos import Point
+
+        communicator, connected, _ = await self.connect("/ws/reports/TODA", self.admin)
+        self.assertTrue(connected)
+
+        booking = await sync_to_async(make_booking)(self.passenger, self.driver)
+        report = await sync_to_async(IncidentReport.objects.create)(
+            booking=booking, reported_by=self.passenger.user, location=Point(PICKUP["lng"], PICKUP["lat"]),
+            incident_types="accident",
+        )
+        message = await self.receive_type(communicator, "incident_report_update")
+        self.assertEqual((message["action"], message["report"]["id"]), ("created", report.id))
+
+        report.status = "relayed_to_mdrrmo"
+        await sync_to_async(report.save)()
+        message = await self.receive_type(communicator, "incident_report_update")
+        self.assertEqual((message["action"], message["report"]["status"]), ("updated", "relayed_to_mdrrmo"))
+        await self.close_all()
+
+    async def test_mdrrmo_socket_no_longer_exists(self):
+        _, connected, code = await self.connect("/ws/reports/MDRRMO", self.admin)
+        self.assertFalse(connected)
+        self.assertEqual(code, 4004)
+        await self.close_all()
+
+    async def test_non_admin_is_rejected(self):
+        _, connected, code = await self.connect("/ws/reports/TODA", self.passenger.user)
+        self.assertFalse(connected)
+        self.assertEqual(code, 4003)
+        await self.close_all()

@@ -19,10 +19,6 @@ def is_toda_admin(user):
     return bool(user and user.is_authenticated and get_admin_department(user) == "TODA")
 
 
-def is_mdrrmo_admin(user):
-    return bool(user and user.is_authenticated and get_admin_department(user) == "MDRRMO")
-
-
 def get_user_role(user):
     if hasattr(user, "admin"):
         return "admin"

@@ -8,10 +8,8 @@ import DashBoard from "./pages/DashBoard";
 import PrivateRoutes from "./context/PrivateRoutes";
 import { updateToken, getTokenExpiryMs } from "./utils/auth";
 import ForgotPasswordPage from "./pages/ForgotPassword";
-import MDRRMORoutes from "./context/MDRRMOroutes";
 import TODARoutes from "./context/TODAroutes";
 import Unauthorized from "./pages/Unauthorized";
-import MdrrmoDashboard from "./pages/MdrrmoDashboard";
 import TodaDashboard from "./pages/TodaDashboard";
 import Header from "./components/Header";
 import SideBarComponent from "./components/SideBarComponent";
@@ -25,11 +23,6 @@ import TodaGooDrivers from "./pages/TodaGooDrivers";
 import Passengers from "./pages/Passengers";
 import IncidentReports from "./pages/IncidentReports";
 import BookingSettings from "./pages/BookingSettings";
-
-const MDRRMO_MENU = [
-    { label: "Dashboard", href: "/mdrrmo", icon: LayoutDashboard },
-    { label: "Reports", href: "/mdrrmo/reports", icon: MapPin },
-];
 
 const TODA_MENU = [
     { label: "Dashboard", href: "/toda", icon: LayoutDashboard },
@@ -90,7 +83,6 @@ function AppContent() {
     const showLayout = !hideLayoutRoutes.includes(location.pathname);
 
     const getMenuItems = () => {
-        if (location.pathname.startsWith("/mdrrmo")) return MDRRMO_MENU;
         if (location.pathname.startsWith("/toda")) return TODA_MENU;
         return [];
     };
@@ -133,17 +125,6 @@ function AppContent() {
 
                                 <Route element={<PrivateRoutes />}>
                                     <Route path="/" element={<DashBoard />} />
-
-                                    <Route element={<MDRRMORoutes />}>
-                                        <Route
-                                            path="/mdrrmo"
-                                            element={<MdrrmoDashboard />}
-                                        />
-                                        <Route
-                                            path="/mdrrmo/reports"
-                                            element={<IncidentReports />}
-                                        />
-                                    </Route>
 
                                     <Route element={<TODARoutes />}>
                                         <Route

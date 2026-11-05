@@ -10,6 +10,10 @@ module.exports = {
     preset: "jest-expo",
     testMatch: ["<rootDir>/__tests__/**/*.test.js"],
     setupFiles: ["<rootDir>/__tests__/setup.js"],
+    // runs after Jest is installed in each file: longer waits for the screen flow tests
+    setupFilesAfterEnv: ["<rootDir>/__tests__/setupAfterEnv.js"],
+    // a flow test walks through many screens; slower machines (CI) need more than the default 5 s
+    testTimeout: 30000,
     moduleNameMapper: {
         // illustrations (react-native-svg-transformer in metro.config.js); before "@/" so "@/assets/x.svg" matches
         "\\.svg$": "<rootDir>/__tests__/__mocks__/svgMock.js",

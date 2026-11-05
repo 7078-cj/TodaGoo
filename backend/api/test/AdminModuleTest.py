@@ -118,7 +118,6 @@ class TodaBase(APITestCase):
     def setUp(self):
         cache.clear()  # views cache lists; also resets throttles
         self.admin = make_admin()
-        self.mdrrmo = make_admin("mdrrmo", department="MDRRMO")
         self.outsider = User.objects.create_user("outsider", password="pass12345!")
         self.toda_a = make_toda("Toda A", prefix="01", x0=121.0)
         self.toda_b = make_toda("Toda B", prefix="02", x0=122.0)
@@ -151,12 +150,6 @@ class BoundaryListCreateTests(TodaBase):
         # KNOWN BUG: TodaAdminPermission only defines has_object_permission, which DRF
         # never calls on list/create endpoints, so any logged-in user gets through.
         self.client.force_authenticate(self.outsider)
-        self.assertEqual(self.client.get(self.url).status_code, status.HTTP_403_FORBIDDEN)
-
-    def test_mdrrmo_admin_cannot_list(self):
-        # KNOWN BUG: same missing has_permission. MDRRMO admins are blocked on detail
-        # routes but allowed on list routes.
-        self.client.force_authenticate(self.mdrrmo)
         self.assertEqual(self.client.get(self.url).status_code, status.HTTP_403_FORBIDDEN)
 
     def test_non_admin_cannot_create(self):

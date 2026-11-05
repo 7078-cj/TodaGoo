@@ -9,7 +9,7 @@ from ..utils.reconstruction import reconstruct_nested, collect_indexed_lists
 from rest_framework import status
 from ...idempotency import IdempotentAPIView
 
-from .models import IncidentReport, MDRRMO_INCIDENT_TYPES
+from .models import IncidentReport
 from .serializers import (
     IncidentReportSerializer,
     IncidentReportCreateSerializer,
@@ -25,10 +25,9 @@ from django.utils import timezone
 INCIDENT_REPORT_WINDOW = timedelta(days=3)
 
 
-from ..utils.roles import is_toda_admin, is_mdrrmo_admin
+from ..utils.roles import is_toda_admin
 
 is_toda_admin_user = is_toda_admin
-is_mdrrmo_admin_user = is_mdrrmo_admin
 
 
 def get_booking_or_404(booking_id, user):
@@ -75,11 +74,8 @@ class IncidentReportListCreateView(IdempotentAPIView, ListCreateAPIView):
         )
         user = self.request.user
 
-        if is_toda_admin_user(user):
-            pass
-        elif is_mdrrmo_admin_user(user):
-            qs = qs.filter(incident_types__in=MDRRMO_INCIDENT_TYPES)
-        else:
+        # TODA admins see every report; everyone else only the ones they filed
+        if not is_toda_admin_user(user):
             qs = qs.filter(reported_by=user)
 
         qs = self.apply_filters(qs, admin_qualified=is_toda_admin_user(user))
@@ -158,22 +154,14 @@ class IncidentReportRetrieveUpdateView(IdempotentAPIView, RetrieveUpdateAPIView)
         qs = super().get_queryset()
         user = self.request.user
 
-        if is_toda_admin_user(user):
-            pass
-        elif is_mdrrmo_admin_user(user):
-            qs = qs.filter(incident_types__in=MDRRMO_INCIDENT_TYPES)
-        else:
+        if not is_toda_admin_user(user):
             qs = qs.filter(reported_by=user)
 
         return qs
 
     def _can_update(self, user, instance):
-        """Whether this admin is allowed to change status on this specific report."""
-        if is_toda_admin_user(user):
-            return True
-        if is_mdrrmo_admin_user(user):
-            return instance.incident_types in MDRRMO_INCIDENT_TYPES
-        return False
+        """Only TODA admins change a report's status (incl. relaying it to MDRRMO)."""
+        return is_toda_admin_user(user)
 
     def update(self, request, *args, **kwargs):
         partial = kwargs.pop("partial", False)

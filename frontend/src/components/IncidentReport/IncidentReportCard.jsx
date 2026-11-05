@@ -1,17 +1,6 @@
 import React, { useState } from 'react'
 import { updateIncidentReportsStatus } from '../../api/incident_reports';
-
-const STATUS_CHOICES = [
-    { value: "open", label: "Open" },
-    { value: "resolved", label: "Resolved" },
-    { value: "dismissed", label: "Dismissed" },
-];
-
-const STATUS_STYLES = {
-    open: "bg-amber-100 text-amber-800 ring-amber-600/20",
-    resolved: "bg-emerald-100 text-emerald-800 ring-emerald-600/20",
-    dismissed: "bg-gray-100 text-gray-600 ring-gray-500/20",
-};
+import { REPORT_STATUSES, reportStatusLabel, reportStatusStyle } from '../../constants/reportStatuses';
 
 export default function IncidentReportCard({ report, canUpdateStatus, onStatusUpdated, onViewDetails }) {
     const [updating, setUpdating] = useState(false)
@@ -26,7 +15,7 @@ export default function IncidentReportCard({ report, canUpdateStatus, onStatusUp
         try {
             const res = await updateIncidentReportsStatus(report.id, newStatus)
             onStatusUpdated(res.data ?? res ?? { ...report, status: newStatus })
-        } catch (err) {
+        } catch {
             setError("Failed to update status.")
         } finally {
             setUpdating(false)
@@ -45,9 +34,9 @@ export default function IncidentReportCard({ report, canUpdateStatus, onStatusUp
                     </p>
                 </div>
                 <span
-                    className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset ${STATUS_STYLES[report.status] ?? STATUS_STYLES.open}`}
+                    className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset ${reportStatusStyle(report.status)}`}
                 >
-                    {report.status}
+                    {reportStatusLabel(report.status)}
                 </span>
             </div>
 
@@ -95,7 +84,7 @@ export default function IncidentReportCard({ report, canUpdateStatus, onStatusUp
                         disabled={updating}
                         className="text-sm rounded-md border-gray-300 py-1 pl-2 pr-7 focus:border-indigo-500 focus:ring-indigo-500 disabled:opacity-50"
                     >
-                        {STATUS_CHOICES.map((choice) => (
+                        {REPORT_STATUSES.map((choice) => (
                             <option key={choice.value} value={choice.value}>
                                 {choice.label}
                             </option>

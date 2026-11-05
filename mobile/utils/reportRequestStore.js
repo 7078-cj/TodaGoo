@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from "react";
 
-// "Open report X in Profile → Reports", set by a tapped "report resolved / dismissed" notification
+// "Open report X in Profile → Reports", set by a tapped "report relayed / resolved / dismissed" notification
 // (always one of the user's own reports). { reportId }
 // Cleared when the report modal is closed.
 let request = null;

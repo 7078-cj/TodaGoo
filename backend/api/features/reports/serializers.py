@@ -110,7 +110,7 @@ class IncidentReportCreateSerializer(serializers.ModelSerializer):
 
 
 class IncidentReportStatusUpdateSerializer(serializers.ModelSerializer):
-    """Restricted update serializer — for MDRRMO/staff resolving reports.
+    """Restricted update serializer — for TODA admins relaying / resolving reports.
     Passengers shouldn't be able to rewrite location/details after submission."""
 
     CLOSED_STATUSES = {"resolved", "dismissed"}

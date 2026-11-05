@@ -4,7 +4,7 @@ from django.db import transaction
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
-from .models import IncidentReport, MDRRMO_INCIDENT_TYPES
+from .models import IncidentReport
 from .serializers import IncidentReportSerializer
 
 
@@ -23,8 +23,5 @@ def broadcast_incident_report(sender, instance, created, **kwargs):
         }
 
         async_to_sync(channel_layer.group_send)("admin_TODA", payload)
-
-        if instance.incident_types in MDRRMO_INCIDENT_TYPES:
-            async_to_sync(channel_layer.group_send)("admin_MDRRMO", payload)
 
     transaction.on_commit(_send)

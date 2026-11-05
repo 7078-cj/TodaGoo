@@ -21,7 +21,7 @@ from .helpers import (
 PASSWORD = "StrongPass123!"
 
 # Any endpoint that needs an admin token, to prove a login token really works
-ADMIN_ONLY_URL = "passenger-list-create"
+ADMIN_ONLY_URL = "list_create_passenger"  # PassengerListCreateView (api/features/passenger/urls.py)
 
 
 def make_user(username, **kwargs):
@@ -98,10 +98,26 @@ class UserLoginTests(APITestCase):
         self.assertEqual(claims["role"], "admin")
         self.assertEqual(claims["department"], "TODA")
 
-    def test_mdrrmo_admin_department_claim(self):
+    def test_mdrrmo_admins_lose_admin_access_in_migration(self):
+        # migration 0043: MDRRMO is no longer an admin department
+        import importlib
+        from django.apps import apps
+
+        migration = importlib.import_module("api.migrations.0043_remove_mdrrmo_add_relayed_status")
         make_admin("mdrrmo_admin", department="MDRRMO")
-        token = get_access_token(self.client, "mdrrmo_admin", PASSWORD)
-        self.assertEqual(decode_access(token)["department"], "MDRRMO")
+        make_admin("toda_admin", department="TODA")
+
+        migration.remove_mdrrmo_admins(apps, None)
+
+        mdrrmo_user = User.objects.get(username="mdrrmo_admin")
+        self.assertFalse(Admin.objects.filter(user=mdrrmo_user).exists())
+        self.assertFalse(mdrrmo_user.is_active)
+        self.assertEqual(Admin.objects.get(user__username="toda_admin").department, "TODA")
+        self.assertTrue(User.objects.get(username="toda_admin").is_active)
+        # can't log in any more
+        for url_name in (USER_LOGIN_URL, ADMIN_LOGIN_URL):
+            res = self.client.post(reverse(url_name), {"username": "mdrrmo_admin", "password": PASSWORD}, format="json")
+            self.assertEqual(res.status_code, status.HTTP_401_UNAUTHORIZED, url_name)
 
     def test_user_without_any_profile_gets_unknown_role(self):
         make_user("plain")

@@ -3,8 +3,6 @@ from django.contrib.auth.models import User
 from ..booking.models import Booking
 from django.contrib.gis.db import models as geomodels
 
-MDRRMO_INCIDENT_TYPES = {"accident", "reckless_driving", "others", "harassment"}
-
 # Optional tags the reporter can add in the app ("Tags" on the report form)
 REPORT_TAGS = [
     ("unsafe", "Unsafe"),
@@ -30,8 +28,11 @@ class IncidentReport(models.Model):
         ("none", "None"),
     ]
 
+    # relayed_to_mdrrmo: a TODA admin passed the report on to MDRRMO; still open (not resolved_at)
+    RELAYED_TO_MDRRMO = "relayed_to_mdrrmo"
     STATUS_CHOICES = [
         ("open", "Open"),
+        (RELAYED_TO_MDRRMO, "Relayed to MDRRMO"),
         ("resolved", "Resolved"),
         ("dismissed", "Dismissed"),
     ]
