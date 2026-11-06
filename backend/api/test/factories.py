@@ -24,6 +24,20 @@ DROPOFF = {"lat": 14.56, "lng": 121.06}
 FAR_AWAY = {"lat": 14.70, "lng": 121.30}
 
 _seq = itertools.count(1)
+_driver_numbers = itertools.count(1)
+
+
+_passenger_numbers = itertools.count(1)
+
+
+def next_driver_number():
+    """A mobile number no other test driver has: Driver.contact_number is unique ("09180000001", ...)."""
+    return f"0918{next(_driver_numbers):07d}"
+
+
+def next_passenger_number():
+    """A mobile number no other test passenger has: Passenger.contact_number is unique ("09160000001", ...)."""
+    return f"0916{next(_passenger_numbers):07d}"
 
 
 def idem():
@@ -67,7 +81,7 @@ def make_passenger(**extra):
     return Passenger.objects.create(
         user=user,
         address="Somewhere St.",
-        contact_number="09170000000",
+        contact_number=next_passenger_number(),
         emergency_contact_name="Mom",
         emergency_contact_number="09170000001",
         verified=True,
@@ -81,7 +95,7 @@ def make_driver(toda=None, station=None, **extra):
     fields = dict(
         user=user,
         address="Driver St.",
-        contact_number="09180000000",
+        contact_number=next_driver_number(),
         toda_boundary=toda,
         toda_station=station,
         toda_number=f"01-{n:03d}",

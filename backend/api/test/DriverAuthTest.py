@@ -10,6 +10,7 @@ from rest_framework.test import APITestCase
 
 # Adjust these imports to match your project layout
 from ..features.user.models import Admin, Driver
+from .factories import next_driver_number
 from..features.admin.models import Toda, TodaStation, RegisteredToda
 
 # Adjust to your url names
@@ -77,7 +78,7 @@ def make_driver(
         user=user,
         status=driver_status,
         address="1 Driver St",
-        contact_number="09171234567",
+        contact_number=next_driver_number(),
         toda_boundary=toda,
         toda_station=station,
         toda_number=toda_number,

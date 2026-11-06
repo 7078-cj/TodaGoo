@@ -6,6 +6,8 @@ from rest_framework.test import APITestCase
 
 from api.features.user.models import Admin, Driver, Passenger
 
+from .factories import next_driver_number, next_passenger_number
+
 from .helpers import (
     ADMIN_LOGIN_URL,
     REFRESH_URL,
@@ -39,7 +41,7 @@ def make_passenger(username="passenger"):
     Passenger.objects.create(
         user=user,
         address="1 Main St",
-        contact_number="09171234567",
+        contact_number=next_passenger_number(),
         emergency_contact_name="Jane Contact",
         emergency_contact_number="09179876543",
     )
@@ -51,7 +53,7 @@ def make_driver(username="driver", vehicle_plate="DRV-001"):
     Driver.objects.create(
         user=user,
         address="1 Driver St",
-        contact_number="09171234567",
+        contact_number=next_driver_number(),
         toda_number="01-001",
         vehicle_plate=vehicle_plate,
     )

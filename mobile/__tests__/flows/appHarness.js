@@ -22,6 +22,7 @@ import { usePath } from "./screenMocks";
 const SCREENS = {
     "/": () => require("../../app/index").default,
     "/login": () => require("../../app/(global)/login").default,
+    "/forgot_password": () => require("../../app/(global)/forgot_password").default,
     "/choose_a_role": () => require("../../app/(global)/choose_a_role").default,
     "/register/passenger": () => require("../../app/(global)/register/passenger").default,
     "/register/driver": () => require("../../app/(global)/register/driver").default,

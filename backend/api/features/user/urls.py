@@ -18,6 +18,7 @@ from .views import (registerUser,
                     delete_notification,
                     delete_notifications_bulk,
                     change_password)
+from .sms_reset_views import request_sms_reset, verify_sms_reset, confirm_sms_reset
 
 
 urlpatterns = [
@@ -30,6 +31,10 @@ urlpatterns = [
     path("reset-password/", reset_password, name='reset_password'),
     path("resend-code/", resend_reset_code, name='resend_code'),
     path("change-password/", change_password, name='change_password'),
+    # forgot password in the app, by SMS code to the account's number
+    path("sms-reset/request/", request_sms_reset, name='sms_reset_request'),
+    path("sms-reset/verify/", verify_sms_reset, name='sms_reset_verify'),
+    path("sms-reset/confirm/", confirm_sms_reset, name='sms_reset_confirm'),
     path("notifications/", get_user_notification, name='get_user_notification'),
     path("notifications/mark-as-read/<int:notification_id>/", mark_notification_as_read, name='mark_notification_as_read'),
     path("notifications/mark-all-as-read/", mark_all_unread_notifications_as_read, name='mark_all_unread_notifications_as_read'),

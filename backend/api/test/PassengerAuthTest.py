@@ -9,6 +9,7 @@ from rest_framework.test import APITestCase
 
 # Adjust these imports to match your project layout
 from ..features.user.models import Admin, Passenger
+from .factories import next_passenger_number
 
 # Adjust to your url names
 LIST_CREATE_URL = "list_create_passenger"
@@ -25,7 +26,7 @@ def make_passenger(username, rating=0, first_name="", last_name="", password="pa
     Passenger.objects.create(
         user=user,
         address="123 Main St",
-        contact_number="09171234567",
+        contact_number=next_passenger_number(),
         emergency_contact_name="Jane Contact",
         emergency_contact_number="09179876543",
         rating=rating,

@@ -137,6 +137,8 @@ REST_FRAMEWORK = {
         "user": "100/min",
         # [SEC-C2] Used by ScopedRateThrottle on the forgot/verify/reset/resend endpoints.
         "password_reset": "10/hour",
+        # per IP, on the app's SMS forgot-password endpoints (request / verify / confirm)
+        "sms_password_reset": "20/hour",
         # per user: limits guessing the current password on user/change-password/
         "password_change": "10/hour",
     },
@@ -402,6 +404,13 @@ MAX_ROUTES_JSON_BYTES = env.int("MAX_ROUTES_JSON_BYTES", default=200_000)
 PASSWORD_RESET_CODE_TTL = env.int("PASSWORD_RESET_CODE_TTL", default=300)
 PASSWORD_RESET_MAX_ATTEMPTS = env.int("PASSWORD_RESET_MAX_ATTEMPTS", default=5)
 PASSWORD_RESET_RESEND_COOLDOWN = env.int("PASSWORD_RESET_RESEND_COOLDOWN", default=60)
+
+# Forgot password in the app, by SMS code (api/features/utils/sms_password_reset.py)
+SMS_RESET_OTP_TTL = env.int("SMS_RESET_OTP_TTL", default=300)                # code valid for 5 min
+SMS_RESET_MAX_ATTEMPTS = env.int("SMS_RESET_MAX_ATTEMPTS", default=5)        # wrong codes before it's thrown away
+SMS_RESET_RESEND_COOLDOWN = env.int("SMS_RESET_RESEND_COOLDOWN", default=60) # seconds between codes for one number
+SMS_RESET_MAX_PER_HOUR = env.int("SMS_RESET_MAX_PER_HOUR", default=3)        # codes per number per hour
+SMS_RESET_TOKEN_TTL = env.int("SMS_RESET_TOKEN_TTL", default=600)            # reset token after a verified code
 
 # [SEC-C3] HTTPS / production hardening (only when DEBUG is off)
 CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[])

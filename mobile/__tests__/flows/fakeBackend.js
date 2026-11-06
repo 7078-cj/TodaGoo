@@ -165,6 +165,96 @@ function createFakeBackend() {
         return json(200, issueTokens(user));
     });
 
+    // ---- forgot password by SMS code (user/sms_reset_views.py + utils/sms_password_reset.py) ----
+    // Times come from Date.now(), so jest fake timers control the cooldown and the expiry.
+    const smsReset = { codes: new Map(), attempts: new Map(), cooldownUntil: new Map(), hourly: new Map(), tokens: new Map() };
+    const normalizePh = (value) => {
+        let d = String(value ?? "").replace(/\D/g, "");
+        if (d.startsWith("63") && d.length === 12) d = "0" + d.slice(2);
+        else if (d.startsWith("9") && d.length === 10) d = "0" + d;
+        return /^09\d{9}$/.test(d) ? d : null;
+    };
+    const badPhone = () => json(400, { phone: "Enter a valid mobile number (e.g. 09123456789).", error: "Enter a valid mobile number (e.g. 09123456789)." });
+    const invalidCode = () => json(400, { error: "Invalid or expired code." });
+
+    route("POST", /^user\/sms-reset\/request\/$/, false, (_, body) => {
+        const phone = normalizePh(body.phone);
+        if (!phone) return badPhone();
+        const owners = users.filter((u) => !u.isAdmin && u.profile?.contact_number === phone);
+        if (owners.length !== 1) {
+            const msg = "No account is registered with this number.";
+            return json(404, { phone: msg, error: msg });
+        }
+        const now = Date.now();
+        if ((smsReset.cooldownUntil.get(phone) ?? 0) > now) {
+            return json(429, { error: "Please wait 60 seconds before requesting a new code.", retry_after: 60 });
+        }
+        smsReset.cooldownUntil.set(phone, now + 60_000);
+        const recent = (smsReset.hourly.get(phone) ?? []).filter((t) => t > now - 3_600_000);
+        recent.push(now);
+        smsReset.hourly.set(phone, recent);
+        if (recent.length > 3) {
+            return json(429, { error: "Too many code requests for this number. Try again in an hour.", retry_after: 3600 });
+        }
+        {
+            const code = backend.nextSmsCode ?? String(100000 + ((nextId * 7919) % 900000));
+            if (backend.smsFails) {
+                smsReset.cooldownUntil.delete(phone);
+                return json(503, { error: "We couldn't send the code. Please try again in a moment." });
+            }
+            smsReset.codes.set(phone, { userId: owners[0].id, code, expires: now + 5 * 60_000 });
+            smsReset.attempts.set(phone, 0);
+            backend.smsOutbox.push({ phone, code });
+        }
+        return json(200, { message: "We sent a 6-digit code to this number.", retry_after: 60 });
+    });
+
+    route("POST", /^user\/sms-reset\/verify\/$/, false, (_, body) => {
+        const phone = normalizePh(body.phone);
+        if (!phone) return badPhone();
+        const locked = () => json(429, { error: "Too many wrong attempts. Request a new code." });
+        if ((smsReset.attempts.get(phone) ?? 0) >= 5) {
+            smsReset.codes.delete(phone);
+            return locked();
+        }
+        const stored = smsReset.codes.get(phone);
+        if (stored && stored.expires > Date.now() && String(body.otp ?? "").trim() === stored.code) {
+            smsReset.codes.delete(phone); // single use
+            smsReset.attempts.delete(phone);
+            const token = `reset-${nextId++}-${Math.random().toString(36).slice(2)}`;
+            smsReset.tokens.set(token, { userId: stored.userId, expires: Date.now() + 10 * 60_000 });
+            return json(200, { message: "Code verified.", reset_token: token, expires_in: 600 });
+        }
+        const attempts = (smsReset.attempts.get(phone) ?? 0) + 1;
+        smsReset.attempts.set(phone, attempts);
+        if (attempts >= 5) {
+            smsReset.codes.delete(phone);
+            return locked();
+        }
+        return invalidCode();
+    });
+
+    route("POST", /^user\/sms-reset\/confirm\/$/, false, (_, body) => {
+        const expired = () => json(400, { error: "Your reset session has expired. Start again." });
+        const entry = smsReset.tokens.get(body.reset_token);
+        if (!entry || entry.expires <= Date.now()) return expired();
+        const password = String(body.password ?? "");
+        const rules = [
+            [password.length >= 8, "This password is too short. It must contain at least 8 characters."],
+            [/[A-Z]/.test(password), "Password must contain at least 1 uppercase letter."],
+            [/[0-9]/.test(password), "Password must contain at least 1 number."],
+            [/[^A-Za-z0-9]/.test(password), "Password must contain at least 1 special character."],
+        ];
+        const broken = rules.filter(([ok]) => !ok).map(([, msg]) => msg);
+        if (broken.length) return json(400, { password: broken, error: broken[0] }); // token kept
+        smsReset.tokens.delete(body.reset_token); // single use
+        const user = userById(entry.userId);
+        user.password = password;
+        // [SEC-M13] every session of the user ends
+        for (const [t, id] of tokens) if (id === user.id) tokens.delete(t);
+        return json(200, { message: "Password updated. Log in with your new password." });
+    });
+
     // passenger/ and driver/ registration (PassengerSerializer / DriverSerializer)
     function register(role) {
         return (_, body) => {
@@ -554,6 +644,11 @@ function createFakeBackend() {
         users,
         bookings,
         ratings,
+        // forgot password by SMS: codes "sent" (nothing leaves the test), the next code to send,
+        // and whether the SMS provider fails
+        smsOutbox: [],
+        nextSmsCode: null,
+        smsFails: false,
         queue,
         sockets,
         requests,

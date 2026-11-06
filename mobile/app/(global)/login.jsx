@@ -1,16 +1,19 @@
 import { View, Text, TouchableOpacity, ScrollView, KeyboardAvoidingView, Keyboard, Platform } from 'react-native'
 import React, { useContext, useEffect, useRef, useState } from 'react'
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { passwordProblem } from '@/utils/validation';
 import AuthContext from '@/contexts/AuthContext';
 import AuthHeader from '@/components/AuthHeader';          // adjust paths
 import ButtonComponent from '@/components/ButtonComponent';
 import FormTextField from '@/components/inputs/FormTextField';
 import LoginIllustration from '@/assets/Login.svg';
 
-export default function login() {
+export default function Login() {
     const { loginUser } = useContext(AuthContext)
     const insets = useSafeAreaInsets()
+    // ?reset=done: back from Forgot Password with a new password
+    const { reset } = useLocalSearchParams()
     const [username, setUsername] = useState('')
     const [password, setPassword] = useState('')
     const [errors, setErrors] = useState({})
@@ -33,17 +36,8 @@ export default function login() {
             newErrors.username = "username is required"
         }
 
-        if (!password) {
-            newErrors.password = "Password is required"
-        } else if (password.length < 8) {
-            newErrors.password = "Minimum 8 characters"
-        } else if (!/[A-Z]/.test(password)) {
-            newErrors.password = "Must contain at least 1 uppercase letter"
-        } else if (!/[0-9]/.test(password)) {
-            newErrors.password = "Must contain at least 1 number"
-        } else if (!/[!@#$%^&*(),.?":{}|<>_\-+=\[\];'`~/\\]/.test(password)) {
-            newErrors.password = "Must contain at least 1 special character"
-        }
+        const badPassword = passwordProblem(password)
+        if (badPassword) newErrors.password = badPassword
 
         setErrors(newErrors)
         return Object.keys(newErrors).length === 0
@@ -89,6 +83,12 @@ export default function login() {
                     </View>
 
                     <View className="px-8">
+                        {reset === "done" ? (
+                            <Text className="text-success text-sm text-center mb-3">
+                                Password updated. Log in with your new password.
+                            </Text>
+                        ) : null}
+
                         <FormTextField
                             label="Username"
                             value={username}
@@ -108,6 +108,14 @@ export default function login() {
                             autoCapitalize="none"
                         />
 
+                        <TouchableOpacity
+                            onPress={() => router.push("/(global)/forgot_password")}
+                            className="self-end"
+                            accessibilityRole="link"
+                        >
+                            <Text className="text-secondary text-sm font-semibold">Forgot password?</Text>
+                        </TouchableOpacity>
+
                         {errors.general ? (
                             <Text className="text-error text-xs text-center mt-1">
                                 {errors.general}
@@ -122,7 +130,7 @@ export default function login() {
                         />
 
                         <View className="flex-row justify-center mt-4">
-                            <Text className="text-primary text-base">Don't have an account? </Text>
+                            <Text className="text-primary text-base">{"Don't have an account? "}</Text>
                             <TouchableOpacity onPress={() => router.push("/(global)/choose_a_role")}>
                                 <Text className="text-secondary text-base font-semibold">Sign Up</Text>
                             </TouchableOpacity>
