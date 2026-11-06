@@ -6,7 +6,7 @@ from rest_framework.test import APITestCase
 
 from api.features.user.models import Admin, Driver, Passenger
 
-from .factories import next_driver_number
+from .factories import next_driver_number, next_passenger_number
 
 from .helpers import (
     ADMIN_LOGIN_URL,
@@ -41,7 +41,7 @@ def make_passenger(username="passenger"):
     Passenger.objects.create(
         user=user,
         address="1 Main St",
-        contact_number="09171234567",
+        contact_number=next_passenger_number(),
         emergency_contact_name="Jane Contact",
         emergency_contact_number="09179876543",
     )
