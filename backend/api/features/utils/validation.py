@@ -111,3 +111,16 @@ class DriverValidationMixin:
         return value.upper()
 
 
+
+
+# Philippine mobile numbers are stored the way sign-up saves them: 11 digits, "09XXXXXXXXX"
+# (Passenger / Driver contact_number). Accepts what people type: "0912 345 6789",
+# "+63 912-345-6789", "639123456789", "9123456789".
+def normalize_ph_mobile(value):
+    """The number as "09XXXXXXXXX", or None when it isn't a Philippine mobile number."""
+    digits = re.sub(r"\D", "", str(value or ""))
+    if digits.startswith("63") and len(digits) == 12:
+        digits = "0" + digits[2:]
+    elif digits.startswith("9") and len(digits) == 10:
+        digits = "0" + digits
+    return digits if re.fullmatch(r"09\d{9}", digits) else None

@@ -8,13 +8,27 @@ const { View, Text, TouchableOpacity } = require("react-native");
 
 // ---- expo-router: a tiny navigator. Screens call router.push / replace / dismissTo as usual, and
 // <TestApp> (appHarness.js) renders the screen for the current path. ----
-const nav = { path: "/", history: [], listeners: new Set(), log: [] };
-const toPath = (to) => (typeof to === "string" ? to : to?.pathname ?? "/");
+const nav = { path: "/", params: {}, history: [], listeners: new Set(), log: [] };
+const EMPTY_PARAMS = {};
+// router.push("/a?x=1") or router.push({ pathname: "/a", params: { x: "1" } }) -> path + params
+function parseTarget(to) {
+    if (typeof to !== "string") return { path: to?.pathname ?? "/", params: to?.params ?? EMPTY_PARAMS };
+    const [path, query] = to.split("?");
+    return { path, params: query ? Object.fromEntries(new URLSearchParams(query)) : EMPTY_PARAMS };
+}
 function go(kind, to, keepHistory) {
-    const path = toPath(to);
-    if (keepHistory) nav.history.push(nav.path);
+    const { path, params } = parseTarget(to);
+    if (keepHistory) nav.history.push({ path: nav.path, params: nav.params });
     nav.log.push({ kind, path });
     nav.path = path;
+    nav.params = params;
+    nav.listeners.forEach((l) => l());
+}
+function back() {
+    const prev = nav.history.pop() ?? { path: "/", params: EMPTY_PARAMS };
+    nav.log.push({ kind: "back", path: prev.path });
+    nav.path = prev.path;
+    nav.params = prev.params;
     nav.listeners.forEach((l) => l());
 }
 const router = {
@@ -22,19 +36,24 @@ const router = {
     navigate: jest.fn((to) => go("navigate", to, true)),
     replace: jest.fn((to) => go("replace", to, false)),
     dismissTo: jest.fn((to) => go("dismissTo", to, false)),
-    back: jest.fn(() => go("back", nav.history.pop() ?? "/", false)),
+    back: jest.fn(back),
     canGoBack: jest.fn(() => nav.history.length > 0),
     setParams: jest.fn(),
 };
 const navigation = {
-    reset(path = "/") {
+    reset(to = "/") {
+        const { path, params } = parseTarget(to);
         nav.path = path;
+        nav.params = params;
         nav.history = [];
         nav.log = [];
         Object.values(router).forEach((fn) => fn.mockClear?.());
     },
     get path() {
         return nav.path;
+    },
+    get params() {
+        return nav.params;
     },
     // ["push /(protected)/otp", "replace /(protected)/passenger/home", ...]
     get log() {
@@ -53,8 +72,8 @@ const expoRouter = {
     useRouter: () => router,
     useNavigationContainerRef: () => navigationRef,
     useRootNavigationState: () => navigationRef.getRootState(),
-    useLocalSearchParams: () => ({}),
-    useGlobalSearchParams: () => ({}),
+    useLocalSearchParams: () => React.useSyncExternalStore(navigation.subscribe, () => nav.params),
+    useGlobalSearchParams: () => React.useSyncExternalStore(navigation.subscribe, () => nav.params),
     usePathname: () => usePath(),
     useSegments: () => usePath().split("/").filter(Boolean),
     // the screen is focused while it's mounted

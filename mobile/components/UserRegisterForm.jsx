@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { normalizeUsername } from '@/utils/validation'
+import { normalizeUsername, passwordProblem } from '@/utils/validation'
 import FormTextField from './inputs/FormTextField'
 import ButtonComponent from '@/components/ButtonComponent'
 import RegisterLayout from '@/components/RegisterLayout'
@@ -27,17 +27,8 @@ export default function UserRegisterForm({ setPage, setFormData, role }) {
         if (!firstName.trim()) newErrors.firstName = "First name is required"
         if (!lastName.trim()) newErrors.lastName = "Last name is required"
 
-        if (!password) {
-            newErrors.password = "Password is required"
-        } else if (password.length < 8) {
-            newErrors.password = "Minimum 8 characters"
-        } else if (!/[A-Z]/.test(password)) {
-            newErrors.password = "Must contain at least 1 uppercase letter"
-        } else if (!/[0-9]/.test(password)) {
-            newErrors.password = "Must contain at least 1 number"
-        } else if (!/[!@#$%^&*(),.?":{}|<>_\-+=\[\];'`~/\\]/.test(password)) {
-            newErrors.password = "Must contain at least 1 special character"
-        }
+        const badPassword = passwordProblem(password)
+        if (badPassword) newErrors.password = badPassword
 
         if (!confirmPassword) {
             newErrors.confirmPassword = "Confirm your password"
