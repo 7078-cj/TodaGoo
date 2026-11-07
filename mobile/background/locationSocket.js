@@ -1,6 +1,8 @@
 import { getAccessToken } from "./auth";
+import config from "../constants/config";
 
-const WS_URL = process.env.EXPO_PUBLIC_WS_URL || "ws://localhost:8000";
+// always ends with "/" (constants/config.js)
+const WS_URL = config.wsUrl;
 const OPEN_TIMEOUT_MS = 8000;
 // booking socket close codes meaning "this ride is no longer yours" (see backend websocket/features/booking.py)
 const NOT_ALLOWED_CODES = [4003, 4004];

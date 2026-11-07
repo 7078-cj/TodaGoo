@@ -3,7 +3,10 @@ import { File } from "expo-file-system";
 import { getStoredToken } from "./tokenStorage";
 import { ERROR_MESSAGES, REQUEST_TIMEOUT_MS, UPLOAD_TIMEOUT_MS, firstErrorMessage } from "../constants/errors";
 
-const API = process.env.EXPO_PUBLIC_API_URL ?? "";
+import config from "../constants/config";
+
+// always ends with "/" (constants/config.js), so `${API}booking/` is a valid URL
+const API = config.apiUrl;
 
 const getToken = async (isToken) => {
     if (!isToken) return null;

@@ -43,6 +43,8 @@ app-example
 /android
 
 .env
+# production values for release builds: kept out of git, uploaded to EAS via .easignore
+.env.production
 
 # test logs
 test_log/

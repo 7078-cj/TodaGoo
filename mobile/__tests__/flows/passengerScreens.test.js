@@ -7,7 +7,7 @@ import React from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as SecureStore from "expo-secure-store";
 import { Alert } from "react-native";
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react-native";
+import { act, fireEvent, render, screen } from "@testing-library/react-native";
 
 import { createFakeBackend } from "./fakeBackend";
 import { TestApp, fill, press, waitForScreen } from "./appHarness";

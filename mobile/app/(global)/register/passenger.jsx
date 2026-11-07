@@ -1,4 +1,4 @@
-import { KeyboardAvoidingView, Platform } from 'react-native'
+import KeyboardAvoider from '@/components/layouts/KeyboardAvoider'
 import React, { useContext, useState } from 'react'
 import UserRegisterForm from '@/components/UserRegisterForm'
 import PassengerProfileForm from '@/components/PassengerProfileForm'
@@ -27,15 +27,12 @@ export default function passenger() {
 
     // No ScrollView here: RegisterLayout scrolls the form inside its own sheet
     return (
-        <KeyboardAvoidingView
-            className="flex-1 bg-background"
-            behavior={Platform.OS === "ios" ? "padding" : "height"}
-        >
+        <KeyboardAvoider className="bg-background">
             {
                 page == 'user'
                     ? <UserRegisterForm role="Passenger" setFormData={setFormData} setPage={setPage}/>
                     : <PassengerProfileForm formData={formData} setFormData={setFormData} onSubmit={submit} serverError={serverError}/>
             }
-        </KeyboardAvoidingView>
+        </KeyboardAvoider>
     )
 }

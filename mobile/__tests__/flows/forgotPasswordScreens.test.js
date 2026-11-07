@@ -46,7 +46,6 @@ const route = () => routeOf(navigation.path);
 const button = (name) => screen.getByRole("button", { name });
 const tap = (name) => fireEvent.press(button(name));
 const isBusy = (name) => !!button(name).props.accessibilityState?.busy;
-const settle = (ms = 30) => act(() => new Promise((resolve) => setTimeout(resolve, ms)));
 
 // Holds the next request until the returned release() is called, to see the loading state
 function holdNextRequest() {

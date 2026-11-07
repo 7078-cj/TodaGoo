@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getStoredToken } from "../utils/tokenStorage";
+import config from "../constants/config";
+
+// always ends with "/" (constants/config.js): `${BASE_URL}ws/driver/12`
+const BASE_URL = config.wsUrl;
 
 export default function useWebSocket(url, options = {}) {
-    const BASE_URL = process.env.EXPO_PUBLIC_WS_URL || "ws://localhost:8000";
-
     const socketRef = useRef(null);
 
     const [connected, setConnected] = useState(false);

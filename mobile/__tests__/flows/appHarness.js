@@ -47,6 +47,8 @@ function Routes() {
     const load = SCREENS[path];
     if (!load) return <Text>{`No screen for ${path}`}</Text>;
     const Screen = load();
+    // the router's job: the screen for the current path (each path keeps one component)
+    // eslint-disable-next-line react-hooks/static-components
     const screenEl = <Screen key={path} />;
 
     const [section] = path.split("/").filter(Boolean);

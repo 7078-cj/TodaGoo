@@ -1,4 +1,4 @@
-import { ScrollView, KeyboardAvoidingView, Platform } from 'react-native'
+import KeyboardAvoider from '@/components/layouts/KeyboardAvoider'
 import React, { useContext, useEffect, useState } from 'react'
 import UserRegisterForm from '../../../components/UserRegisterForm'
 import DriverProfileForm from '../../../components/DriverProfileForm'
@@ -27,16 +27,13 @@ export default function driver() {
     }
 
     return (
-        <KeyboardAvoidingView
-                    className="flex-1 bg-background"
-                    behavior={Platform.OS === "ios" ? "padding" : "height"}
-                >
+        <KeyboardAvoider className="bg-background">
                     
             {
                 page == 'user'
                     ? <UserRegisterForm role="Driver" setFormData={setFormData} setPage={setPage}/>
                     : <DriverProfileForm formData={formData} setFormData={setFormData} onSubmit={submit} serverError={serverError}/>
             }
-        </KeyboardAvoidingView>
+        </KeyboardAvoider>
     )
 }

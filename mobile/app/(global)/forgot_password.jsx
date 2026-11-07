@@ -1,4 +1,5 @@
-import { View, Text, TouchableOpacity, KeyboardAvoidingView, Platform } from 'react-native'
+import { View, Text, TouchableOpacity } from 'react-native'
+import KeyboardAvoider from '@/components/layouts/KeyboardAvoider'
 import React, { useEffect, useState } from 'react'
 import { router } from 'expo-router'
 import RegisterLayout from '@/components/RegisterLayout'
@@ -140,7 +141,7 @@ export default function ForgotPassword() {
     ) : null
 
     return (
-        <KeyboardAvoidingView className="flex-1 bg-background" behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+        <KeyboardAvoider className="bg-background">
             <RegisterLayout tagline="Forgot Password">
                 {step === 'phone' && (
                     <>
@@ -226,6 +227,6 @@ export default function ForgotPassword() {
                     <Text className="text-primary text-sm">Back to Login</Text>
                 </TouchableOpacity>
             </RegisterLayout>
-        </KeyboardAvoidingView>
+        </KeyboardAvoider>
     )
 }
