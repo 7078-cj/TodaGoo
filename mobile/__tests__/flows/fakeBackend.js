@@ -386,6 +386,25 @@ function createFakeBackend() {
         return json(204);
     });
 
+    // booking/views.py cancel_booking: the passenger cancels before pickup
+    route("POST", /^booking\/(\d+)\/cancel\/$/, true, (user, _, __, [id]) => {
+        if (user.role !== "passenger") return json(400, { error: "User is not a passenger" });
+        const b = bookings.find((x) => x.id === Number(id) && x.passengerId === user.id);
+        if (!b) return json(404, { error: "Booking not found" });
+        if (b.status === "pending") {
+            bookings.splice(bookings.indexOf(b), 1);
+            return json(200, { id: b.id, status: "cancelled" });
+        }
+        if (b.status === "in_progress") {
+            return json(400, { error: "Your driver has already picked you up, so the ride can't be cancelled." });
+        }
+        if (b.status !== "accepted") return json(400, { error: "This ride has already ended." });
+        b.status = "cancelled";
+        touch(b);
+        broadcastBooking(b); // passenger "booking_accepted" + driver "booking_update", like signals.py
+        return json(200, serializeBooking(b));
+    });
+
     route("GET", /^booking\/(\d+)\/$/, true, (user, _, __, [id]) => {
         const b = bookings.find((x) => x.id === Number(id) && [x.passengerId, x.driverId].includes(user.id));
         return b ? json(200, serializeBooking(b)) : json(404, { error: "Booking not found" });

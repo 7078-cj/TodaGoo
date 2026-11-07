@@ -41,6 +41,11 @@ export const NOTIFICATION_REDIRECTS = [
         openReport: true,
     },
     {
+        // "Booking #12 was cancelled by the passenger" (to the driver): the trip is gone, nothing to open
+        type: "booking_cancelled",
+        path: null,
+    },
+    {
         type: "general",
         path: null,
     },

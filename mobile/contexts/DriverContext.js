@@ -1,5 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import React, { createContext, useEffect, useRef, useState } from "react";
+import React, { createContext, useCallback, useEffect, useRef, useState } from "react";
+import { Alert } from "react-native";
 import useDriverListener from "../listeners/driverListener";
 import { useNavigationContainerRef } from "expo-router";
 import { goTo } from "../utils/navigation";
@@ -38,7 +39,11 @@ export function DriverProvider({ children }) {
     }, []);
 
     useEffect(() => {
-        if (!acceptedBooking) return;
+        // no trip (finished or cancelled): the next ride navigates again
+        if (!acceptedBooking) {
+            lastScreenRef.current = null;
+            return;
+        }
 
         const screen = acceptedBooking.status === "completed" ? "complete" : "en_route";
         const key = `${acceptedBooking.id}:${screen}`;
@@ -68,6 +73,19 @@ export function DriverProvider({ children }) {
         
 
 
+    // Every update of the accepted ride (socket, trip screen) comes through here. The passenger
+    // cancelling before pickup ends the trip: say so, stop sharing location, back to Home.
+    const receiveBooking = useCallback((booking) => {
+        if (booking?.status === "cancelled") {
+            stopDriverLocationUpdates();
+            setAcceptedBooking(null);
+            Alert.alert("Ride cancelled", "The passenger cancelled this ride. Tap Ready to get your next booking.");
+            goTo("/(protected)/driver/home", navigationRef.getRootState());
+            return;
+        }
+        setAcceptedBooking(booking);
+    }, [navigationRef]);
+
     const {
         acceptBooking,
         declineBooking,
@@ -77,7 +95,7 @@ export function DriverProvider({ children }) {
         userId,
         () => console.log("refresh"),
         setPendingBooking,
-        setAcceptedBooking
+        receiveBooking
     );
 
     return (
@@ -89,7 +107,7 @@ export function DriverProvider({ children }) {
                 connected,
                 connectionStatus,
                 acceptedBooking,
-                setAcceptedBooking
+                setAcceptedBooking: receiveBooking,
             }}
         >
             {children}

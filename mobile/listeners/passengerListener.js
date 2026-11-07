@@ -29,7 +29,7 @@ function handlePassengerMessage(data, setPendingBooking, setBookingUnavailable) 
     }
 }
 
-export default function passengerListener(userId, onRefresh, setPendingBooking, setBookingUnavailable){
+export default function usePassengerListener(userId, onRefresh, setPendingBooking, setBookingUnavailable){
     const  { sendMessage, connected, connectionStatus } = useWebSocket(
         `ws/passenger/${userId}`,
         {

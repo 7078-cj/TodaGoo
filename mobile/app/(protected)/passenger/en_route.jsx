@@ -1,7 +1,7 @@
 import { View } from 'react-native'
 import React, { useContext, useEffect, useState } from 'react'
 import PassengerContext from '../../../contexts/PassengerContext'
-import bookingListener from '../../../listeners/bookingListener'
+import useBookingListener from '../../../listeners/bookingListener'
 import MapComponent from '../../../components/map/MapComponent'
 import BottomDetails from '../../../components/BottomDetails'
 import { LoadingScreen } from '../../../components/loading';
@@ -10,13 +10,13 @@ import ChatModal from '../../../components/chat/ChatModal'
 import useChatPresence from '../../../hooks/useChatPresence'
 import useOpenChatParam from '../../../hooks/useOpenChatParam'
 
-export default function booking() {
-    const { pendingBooking } = useContext(PassengerContext)
+export default function PassengerEnRoute() {
+    const { pendingBooking, setPendingBooking } = useContext(PassengerContext)
     const [driverLocation, setDriverLocation] = useState(null)
     const [chatVisible, setChatVisible] = useState(false)
     const [messages, setMessages] = useState([])
 
-    const ws = bookingListener(
+    const ws = useBookingListener(
         pendingBooking?.id,
         () => console.log("refresh"), 
         setDriverLocation,
@@ -70,7 +70,13 @@ export default function booking() {
                 route={pendingBooking.routes}
                 isRoute={false}
             />
-            <BottomDetails booking={pendingBooking} isDriver={false} setChatVisible={setChatVisible}/>
+            <BottomDetails
+                booking={pendingBooking}
+                isDriver={false}
+                setChatVisible={setChatVisible}
+                // PassengerContext sees "cancelled" and goes back to Home
+                onCancelled={(cancelled) => setPendingBooking({ ...pendingBooking, ...cancelled, status: "cancelled" })}
+            />
             <ChatModal
                 visible={chatVisible}
                 onClose={closeChat}
