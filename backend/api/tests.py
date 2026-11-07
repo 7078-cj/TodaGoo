@@ -13,3 +13,4 @@ from .test.ProfileTest import *
 from .test.OfferFlowTest import *
 # `manage.py test` (and CI) only runs what's imported here: add every new test module
 from .test.SmsPasswordResetTest import *
+from .test.CancelBookingTest import *

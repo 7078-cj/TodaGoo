@@ -25,7 +25,7 @@ function handleBookingMessage(data, setDriverLocation, setMessages) {
     }
 }
 
-export default function bookingListener(bookingId, onRefresh, setDriverLocation, setMessages) {
+export default function useBookingListener(bookingId, onRefresh, setDriverLocation, setMessages) {
     const { sendMessage, connected, connectionStatus } = useWebSocket(
         // no socket until there's a booking (avoids connecting to ws/booking/undefined)
         bookingId ? `ws/booking/${bookingId}` : null,

@@ -76,6 +76,15 @@ export const getFarePrice = async (start, end, stops = []) => {
     return price;
 };
 
+// The passenger cancels before pickup: while searching (the booking is deleted) or after a driver
+// accepted (status "cancelled"; the driver's app is told). Throws with the server's reason after
+// pickup ("Your driver has already picked you up, ...").
+export const cancelRide = async (bookingId) => {
+    const res = await postRequest(`booking/${bookingId}/cancel/`, {}, true)
+    if (!res.success) throw new Error(res.error || "Failed to cancel the ride")
+    return res.data;
+}
+
 // Cancel a booking that no driver has taken yet (the backend only deletes pending bookings)
 export const cancelBooking = async (bookingId) => {
     const res = await deleteRequest(`booking/${bookingId}/`, true)

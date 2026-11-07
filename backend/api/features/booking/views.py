@@ -24,7 +24,9 @@ from rest_framework.exceptions import ValidationError
 from ..utils.roles import is_toda_admin
 from ..utils.security import validate_booking_payload, DRIVER_PENDING
 from .helpers.pickup_proximity import PICKUP_RADIUS_M, distance_to_pickup_m, get_driver_coords
+from django.db import transaction
 from django.db.models import Prefetch
+from ..notifications.triggers import notify_booking_cancelled
 
 # [SEC-M12] statuses that count as "the passenger already has a booking"
 ACTIVE_BOOKING_STATUSES = ['pending', 'accepted', 'in_progress']
@@ -202,7 +204,50 @@ class BookingDetailView(IdempotentAPIView,APIView):
 
         booking.delete()
         return Response(status=204)
-    
+
+
+# The passenger cancels before being picked up:
+#   pending  (still looking for a driver) -> deleted, as DELETE does
+#   accepted (driver on the way)          -> status "cancelled": kept for both people's history; the
+#                                            driver's app is told (signals.booking_updated) and notified
+#   in_progress / completed / cancelled   -> refused
+CANCEL_PICKED_UP_MESSAGE = "Your driver has already picked you up, so the ride can't be cancelled."
+CANCEL_ENDED_MESSAGE = "This ride has already ended."
+
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def cancel_booking(request, booking_id):
+    passenger = get_passenger(request.user)
+    if not passenger:
+        return Response({"error": "User is not a passenger"}, status=400)
+
+    with transaction.atomic():
+        # locked: a driver tapping "Pick Up Passenger" at the same moment waits, then sees "cancelled"
+        booking = (
+            Booking.objects.select_for_update()
+            .filter(id=booking_id, passenger=passenger)
+            .first()
+        )
+        if booking is None:
+            return Response({"error": "Booking not found"}, status=404)
+
+        if booking.status == Booking.Status.PENDING:
+            booking.delete()
+            return Response({"id": booking_id, "status": Booking.Status.CANCELLED}, status=200)
+
+        if booking.status == Booking.Status.IN_PROGRESS:
+            return Response({"error": CANCEL_PICKED_UP_MESSAGE}, status=400)
+
+        if booking.status != Booking.Status.ACCEPTED:
+            return Response({"error": CANCEL_ENDED_MESSAGE}, status=400)
+
+        booking.status = Booking.Status.CANCELLED
+        booking.save()
+        transaction.on_commit(lambda: notify_booking_cancelled(booking))
+
+    return Response(BookingSerializer(booking).data, status=200)
+
 
 @api_view(['GET'])
 @permission_classes([permissions.IsAuthenticated])

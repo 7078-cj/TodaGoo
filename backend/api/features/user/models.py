@@ -67,6 +67,8 @@ class Notification(models.Model):
         BOOKING_ACCEPTED = "booking_accepted", "Booking accepted"
         DRIVER_NEARBY = "driver_nearby", "Driver nearby"
         NEW_MESSAGE = "new_message", "New message"
+        # to the driver when the passenger cancels an accepted ride before pickup
+        BOOKING_CANCELLED = "booking_cancelled", "Booking cancelled"
         # to the reporter when their report is relayed to MDRRMO, resolved or dismissed
         REPORT_UPDATE = "report_update", "Report update"
 

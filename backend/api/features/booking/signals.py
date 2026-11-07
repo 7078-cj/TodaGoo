@@ -57,7 +57,10 @@ def booking_updated(sender, instance, created, **kwargs):
     if created:
         return
 
-    if instance.status in (Booking.Status.ACCEPTED, Booking.Status.IN_PROGRESS, Booking.Status.COMPLETED):
+    # CANCELLED: the passenger cancelled before pickup; both apps leave the trip screen
+    if instance.status in (
+        Booking.Status.ACCEPTED, Booking.Status.IN_PROGRESS, Booking.Status.COMPLETED, Booking.Status.CANCELLED,
+    ) and instance.driver_id is not None:
         transaction.on_commit(
             lambda: broadcast(
                 f"user_{instance.passenger.user.id}",

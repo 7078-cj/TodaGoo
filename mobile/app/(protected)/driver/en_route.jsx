@@ -1,7 +1,7 @@
 import { View } from 'react-native'
 import React, { useContext, useEffect, useState } from 'react'
 import DriverContext from "../../../contexts/DriverContext";
-import bookingListener from "../../../listeners/bookingListener"
+import useBookingListener from "../../../listeners/bookingListener"
 import { getLocation } from "../../../utils/location"
 import { isDriverLocationTaskRunning } from "../../../background"
 import MapComponent from '../../../components/map/MapComponent'
@@ -33,7 +33,7 @@ export default function booking() {
     const [messages, setMessages] = useState([])
 
     const { sendMessage, connected, connectionStatus } =
-        bookingListener(
+        useBookingListener(
             acceptedBooking?.id,
             () => console.log("refresh"),
             setDriverLocation,

@@ -1,6 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import React, { createContext, useEffect, useRef, useState } from "react";
-import passengerListener from "../listeners/passengerListener";
+import React, { createContext, useCallback, useEffect, useRef, useState } from "react";
+import usePassengerListener from "../listeners/passengerListener";
 import { useNavigationContainerRef } from "expo-router";
 import { goTo } from "../utils/navigation";
 import { setActiveBooking } from "../utils/activeBookingStore";
@@ -28,7 +28,11 @@ export function PassengerProvider({ children }) {
     }, []);
 
     useEffect(() => {
-        if (!pendingBooking) return;
+        // no trip (finished or cancelled): the next ride navigates again
+        if (!pendingBooking) {
+            lastScreenRef.current = null;
+            return;
+        }
 
         const screen = pendingBooking.status === "completed" ? "complete" : "en_route";
         const key = `${pendingBooking.id}:${screen}`;
@@ -48,12 +52,23 @@ export function PassengerProvider({ children }) {
     useEffect(() => () => setActiveBooking(null), []);
     
     
-    const ws = passengerListener(userId, () => console.log("refresh"), setPendingBooking, setBookingUnavailable);
+    // Every booking update (socket, trip screen) comes through here. A ride cancelled before pickup
+    // (from this phone, or the server's update) ends the trip: back to Home, nothing to follow.
+    const receiveBooking = useCallback((booking) => {
+        if (booking?.status === "cancelled") {
+            setPendingBooking(null);
+            goTo("/(protected)/passenger/home", navigationRef.getRootState());
+            return;
+        }
+        setPendingBooking(booking);
+    }, [navigationRef]);
+
+    const ws = usePassengerListener(userId, () => console.log("refresh"), receiveBooking, setBookingUnavailable);
 
     return (
-        <PassengerContext.Provider value={{ 
+        <PassengerContext.Provider value={{
             pendingBooking,
-            setPendingBooking,
+            setPendingBooking: receiveBooking,
             bookingUnavailable,
             setBookingUnavailable,
         }}>

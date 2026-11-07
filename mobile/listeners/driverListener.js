@@ -40,7 +40,7 @@ function handleDriverMessage(data, setPendingBooking, setAcceptedBooking) {
     }
 }
 
-export default function driverListener(userId, onRefresh,  setPendingBooking, setAcceptedBooking ) {
+export default function useDriverListener(userId, onRefresh,  setPendingBooking, setAcceptedBooking ) {
     const { sendMessage, connected, connectionStatus } = useWebSocket(
         `ws/driver/${userId}`,
         {

@@ -3,8 +3,8 @@
 import React, { useContext, useState } from "react";
 import { act, renderHook, waitFor } from "@testing-library/react-native";
 import AuthContext, { AuthProvider } from "../../contexts/AuthContext";
-import passengerListener from "../../listeners/passengerListener";
-import driverListener from "../../listeners/driverListener";
+import usePassengerListener from "../../listeners/passengerListener";
+import useDriverListener from "../../listeners/driverListener";
 
 // Sockets and the token refresh log to the console; keep the test output readable
 export function quietConsole() {
@@ -49,7 +49,7 @@ export async function renderPassengerSocket(userId) {
     const hook = await renderHook(() => {
         const [booking, setBooking] = useState(null);
         const [unavailable, setUnavailable] = useState(null);
-        const conn = passengerListener(userId, undefined, setBooking, setUnavailable);
+        const conn = usePassengerListener(userId, undefined, setBooking, setUnavailable);
         return { booking, unavailable, ...conn };
     });
     await waitFor(() => expect(hook.result.current.connected).toBe(true));
@@ -61,7 +61,7 @@ export async function renderDriverSocket(userId) {
     const hook = await renderHook(() => {
         const [pending, setPending] = useState(null);
         const [accepted, setAccepted] = useState(null);
-        const conn = driverListener(userId, undefined, setPending, setAccepted);
+        const conn = useDriverListener(userId, undefined, setPending, setAccepted);
         return { pending, accepted, ...conn };
     });
     await waitFor(() => expect(hook.result.current.connected).toBe(true));

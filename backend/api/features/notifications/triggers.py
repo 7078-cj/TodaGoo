@@ -18,6 +18,18 @@ def notify_booking_accepted(booking):
     )
 
 
+def notify_booking_cancelled(booking):
+    """Tell the driver the passenger cancelled the accepted ride (before pickup)."""
+    if booking.driver_id is None:
+        return
+    create_notification(
+        booking.driver.user,
+        f"Booking #{booking.id} was cancelled by the passenger.",
+        type=Notification.Type.BOOKING_CANCELLED,
+        booking=booking,
+    )
+
+
 def notify_if_driver_nearby(booking_id, lat, lng):
     flag = f"booking_{booking_id}_driver_nearby_notified"
     # runs on every location update, so skip the DB once the passenger was told

@@ -2,7 +2,7 @@ import { View, Text, TouchableOpacity, ActivityIndicator, Alert } from 'react-na
 import React, { useState, useRef } from 'react'
 import newIdempotencyKey from '../utils/idempotencyKey'
 import { Ionicons } from '@expo/vector-icons'
-import { completeBooking, inProgressBooking } from "../api/book"
+import { cancelRide, completeBooking, inProgressBooking } from "../api/book"
 import IncidentReportModal from './IncidentReportModal'
 import PersonDetailsModal from './PersonDetailsModal'
 import colors from '../constants/colors'
@@ -32,8 +32,34 @@ export default function BottomDetails({
     onStatusChange,
     setChatVisible,
     driverLocation,
+    onCancelled, // passenger: after the ride was cancelled (gets the cancelled booking)
 }) {
     const [loading, setLoading] = useState(false)
+    const [cancelling, setCancelling] = useState(false)
+
+    // the passenger can cancel until the driver picks them up
+    const canCancel = !isDriver && booking.status === "accepted"
+
+    const cancel = async () => {
+        setCancelling(true)
+        try {
+            const cancelled = await cancelRide(booking.id)
+            onCancelled?.(cancelled)
+        } catch (err) {
+            // e.g. the driver picked them up a moment ago
+            Alert.alert("Couldn't cancel the ride", err.message)
+        } finally {
+            setCancelling(false)
+        }
+    }
+
+    const confirmCancel = () => {
+        if (cancelling) return
+        Alert.alert("Cancel this ride?", "Your driver is on the way. They'll be told the ride was cancelled.", [
+            { text: "Keep Ride", style: "cancel" },
+            { text: "Cancel Ride", style: "destructive", onPress: cancel },
+        ])
+    }
     const [visible, setVisible] = useState(false)
     const [detailsVisible, setDetailsVisible] = useState(false)
 
@@ -227,6 +253,33 @@ export default function BottomDetails({
                         ? "Getting your location..."
                         : `You are ${Math.round(distanceToPickup)} m away. Get within ${PICKUP_RADIUS_M} m of the pickup point to pick up the passenger.`}
                 </Text>
+            )}
+
+            {/* Passenger: cancel while the driver is on the way (not after pickup) */}
+            {canCancel && (
+                <TouchableOpacity
+                    onPress={confirmCancel}
+                    disabled={cancelling}
+                    activeOpacity={0.85}
+                    accessibilityRole="button"
+                    accessibilityLabel="Cancel Ride"
+                    accessibilityState={{ disabled: cancelling, busy: cancelling }}
+                    style={{
+                        marginTop: 18,
+                        borderWidth: 1.5,
+                        borderColor: colors.error,
+                        borderRadius: 999,
+                        paddingVertical: 14,
+                        alignItems: "center",
+                        opacity: cancelling ? 0.7 : 1,
+                    }}
+                >
+                    {cancelling ? (
+                        <ActivityIndicator color={colors.error} />
+                    ) : (
+                        <Text style={{ color: colors.error, fontSize: 18, fontWeight: "600" }}>Cancel Ride</Text>
+                    )}
+                </TouchableOpacity>
             )}
 
             <PersonDetailsModal
