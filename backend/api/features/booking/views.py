@@ -27,6 +27,7 @@ from .helpers.pickup_proximity import PICKUP_RADIUS_M, distance_to_pickup_m, get
 from django.db import transaction
 from django.db.models import Prefetch
 from ..notifications.triggers import notify_booking_cancelled
+from .logs import log_cancelled_by_passenger, log_completed, log_picked_up
 
 # [SEC-M12] statuses that count as "the passenger already has a booking"
 ACTIVE_BOOKING_STATUSES = ['pending', 'accepted', 'in_progress']
@@ -183,6 +184,10 @@ class BookingDetailView(IdempotentAPIView,APIView):
 
         booking.status = new_status
         booking.save()
+        if new_status == Booking.Status.IN_PROGRESS:
+            log_picked_up(booking)
+        elif new_status == Booking.Status.COMPLETED:
+            log_completed(booking)
 
         return Response(BookingSerializer(booking).data)
 
@@ -244,6 +249,7 @@ def cancel_booking(request, booking_id):
 
         booking.status = Booking.Status.CANCELLED
         booking.save()
+        log_cancelled_by_passenger(booking)
         transaction.on_commit(lambda: notify_booking_cancelled(booking))
 
     return Response(BookingSerializer(booking).data, status=200)
@@ -456,6 +462,7 @@ def get_booking_history(request):
         .prefetch_related(
             "stops",
             "ratings",
+            "logs",
             Prefetch("messages", queryset=Message.objects.order_by("created_at")),
         )
         .order_by("-created_at")

@@ -1,6 +1,6 @@
 from django.contrib.gis.geos import Point
 from rest_framework import serializers
-from .models import Booking, Stop, DriverQueue, Rate, User
+from .models import Booking, BookingLog, Stop, DriverQueue, Rate, User
 from ..driver.serializers import DriverReadSerializer
 from ..passenger.serializers import PassengerReadSerializer
 from rest_framework.exceptions import PermissionDenied
@@ -216,6 +216,13 @@ class MessageSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = fields
 
+class BookingLogSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = BookingLog
+        fields = ["id", "event", "message", "created_at"]
+        read_only_fields = fields
+
+
 class BookingHistorySerializer(serializers.ModelSerializer):
     # same {lat, lng} shape as BookingSerializer (a bare ModelSerializer gives "SRID=4326;POINT (...)")
     start = PointField(read_only=True)
@@ -225,6 +232,8 @@ class BookingHistorySerializer(serializers.ModelSerializer):
     stops = StopSerializer(many=True, read_only=True)
     ratings = RateSerializer(many=True, read_only=True)
     messages = MessageSerializer(many=True, read_only=True)
+    # what happened, oldest first (booking/logs.py)
+    logs = BookingLogSerializer(many=True, read_only=True)
 
     class Meta:
         model = Booking
@@ -245,5 +254,6 @@ class BookingHistorySerializer(serializers.ModelSerializer):
             "routes",
             "ratings",
             "messages",
+            "logs",
         ]
         read_only_fields = fields

@@ -8,6 +8,7 @@ from django.db.models import Avg
 from .utils import assign_driver_sync
 from ...broadcast import broadcast
 from .serializers import BookingSerializer
+from .logs import log_requested, log_rated
 import logging
 logger = logging.getLogger(__name__)
 
@@ -16,6 +17,8 @@ logger = logging.getLogger(__name__)
 def update_rating_on_rate_created(sender, instance, created, **kwargs):
     if not created:
         return
+
+    log_rated(instance)
 
     rated_user = instance.user
 
@@ -47,6 +50,8 @@ def trigger_driver_assignment(sender, instance, created, **kwargs):
     logger.info("Booking post_save: id=%s created=%s status=%s driver_id=%s",
                 instance.id, created, instance.status, instance.driver_id)
     if created and instance.status == Booking.Status.PENDING and instance.driver_id is None:
+        # first log line, written before assignment can log "offered"
+        log_requested(instance)
         transaction.on_commit(
             lambda: threading.Thread(target=_run_assignment, args=(instance.id,), daemon=True).start()
         )

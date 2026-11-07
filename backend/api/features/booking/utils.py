@@ -8,6 +8,7 @@ from .helpers.nearest_toda import get_nearest_toda
 from .helpers.nearest_toda_station import get_nearest_toda_station
 from .helpers.nearest_driver import get_nearest_driver
 from .helpers.offer_driver import offer_driver
+from .logs import log_offered
 
 
 def assign_driver_sync(booking_id, exclude_driver_ids=None):
@@ -43,5 +44,6 @@ def assign_driver_sync(booking_id, exclude_driver_ids=None):
 
         if nearest:
             offer_driver(nearest, transaction, data)
+            log_offered(booking)
         else:
             booking_error("No drivers are currently available.", passenger_user_id, booking, transaction)
