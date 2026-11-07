@@ -1,3 +1,5 @@
+import config from "../../constants/config";
+
 export async function fetchOsrmRoutes({
     coordinates,
     setRoutes,
@@ -11,7 +13,7 @@ export async function fetchOsrmRoutes({
 
         setIsLoading?.(true);
 
-        const ORS_API_KEY = process.env.EXPO_PUBLIC_ORS_API_KEY;
+        const ORS_API_KEY = config.orsApiKey;
 
         const response = await fetch(
             "https://api.openrouteservice.org/v2/directions/driving-car/geojson",

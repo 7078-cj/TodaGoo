@@ -18,6 +18,7 @@ from api.features.booking.helpers.offer_guard import claim_offer
 from api.broadcast import broadcast
 from api.features.utils.security import parse_lat_lng
 from api.features.notifications.triggers import notify_booking_accepted
+from api.features.booking.logs import log_accepted, log_offer_declined, log_offer_expired
 
 
 class DriverConsumer(SubprotocolAcceptMixin, AsyncWebsocketConsumer):  # [SEC-H8]
@@ -169,6 +170,8 @@ class DriverConsumer(SubprotocolAcceptMixin, AsyncWebsocketConsumer):  # [SEC-H8
         if booking.status != Booking.Status.PENDING or booking.driver_id is not None:
             return
 
+        log_offer_expired(booking)
+
         if cached_location:
             location = Point(cached_location["lng"], cached_location["lat"], srid=4326)
         else:
@@ -218,6 +221,7 @@ class DriverConsumer(SubprotocolAcceptMixin, AsyncWebsocketConsumer):  # [SEC-H8
             booking.driver = driver
             booking.status = Booking.Status.ACCEPTED
             booking.save(update_fields=["driver", "status"])
+            log_accepted(booking)
 
             cache.delete(f"driver_{driver.id}_booking")
             cache.delete(f"driver_{driver.id}_location")
@@ -245,6 +249,10 @@ class DriverConsumer(SubprotocolAcceptMixin, AsyncWebsocketConsumer):  # [SEC-H8
                 driver=driver,
                 defaults={"location": Point(lng, lat, srid=4326)},
             )
+
+            booking = Booking.objects.filter(id=booking_id, status=Booking.Status.PENDING).first()
+            if booking is not None:
+                log_offer_declined(booking)
 
             cache.delete(f"driver_{driver.id}_booking")
             cache.delete(f"driver_{driver.id}_location")

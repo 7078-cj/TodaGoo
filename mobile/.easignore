@@ -1,0 +1,61 @@
+# What EAS Build does NOT upload. EAS reads this file instead of .gitignore when it exists, so it
+# repeats .gitignore's rules except one: .env.production IS uploaded (git-ignored, but the build
+# needs it; Expo bundles release builds with it). Keep the two files in sync.
+# Check what gets uploaded: npx eas-cli build:inspect --platform android --stage archive --output ./archive-check --profile production
+
+# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
+
+# dependencies
+node_modules/
+
+# Expo
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# Native
+.kotlin/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# Metro
+.metro-health-check*
+
+# debug
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# macOS
+.DS_Store
+*.pem
+
+# local env files
+.env*.local
+
+# typescript
+*.tsbuildinfo
+
+app-example
+
+# generated native folders
+/ios
+/android
+
+.env
+
+# test logs
+test_log/
+
+# never upload local development values or local overrides
+.env
+.env*.local
+
+# tests aren't needed to build the app
+__tests__/
+coverage/

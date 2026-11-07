@@ -1,9 +1,8 @@
-/* ---- Media files come back as relative paths like /media/driver_profiles/x.png ----
-   Set this to your server origin (no trailing slash, no /api), e.g.
-   EXPO_PUBLIC_API_URL=http://192.168.1.78:8000  */
-const API_ORIGIN = (process.env.EXPO_PUBLIC_API_URL || "")
-    .replace(/\/api\/?$/, "")
-    .replace(/\/$/, "");
+import config from "../constants/config";
+
+// Media files come back as relative paths like /media/driver_profiles/x.png: they're served from
+// the API's origin (EXPO_PUBLIC_API_URL without /api, see constants/config.js)
+const API_ORIGIN = config.apiOrigin;
 
 export const mediaUrl = (path) => {
     if (!path) return null;

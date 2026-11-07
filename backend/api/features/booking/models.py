@@ -62,3 +62,36 @@ class Stop(models.Model):
 
     class Meta:
         ordering = ["order"]
+
+class BookingLog(models.Model):
+    """
+    One thing that happened to a booking, in order: requested, offered, accepted, picked up, ...
+    Written by api/features/booking/logs.py log_booking_event(); shown in Ride History to the
+    ride's passenger and driver. Messages never name drivers who didn't take the ride.
+    Incident reports are not logged (the reported person is never told they were reported).
+    """
+
+    class Event(models.TextChoices):
+        REQUESTED = "requested", "Ride requested"
+        OFFERED = "offered", "Offered to a driver"
+        OFFER_DECLINED = "offer_declined", "Driver declined"
+        OFFER_EXPIRED = "offer_expired", "Offer expired"
+        ACCEPTED = "accepted", "Driver accepted"
+        DRIVER_NEARBY = "driver_nearby", "Driver near pickup"
+        PICKED_UP = "picked_up", "Passenger picked up"
+        COMPLETED = "completed", "Ride completed"
+        CANCELLED = "cancelled", "Ride cancelled"
+        RATED = "rated", "Rated"
+
+    booking = models.ForeignKey(Booking, on_delete=models.CASCADE, related_name="logs")
+    event = models.CharField(max_length=30, choices=Event.choices)
+    message = models.CharField(max_length=255)
+    # who did it (None: the system, e.g. offers and timeouts)
+    actor = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name="+")
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ["created_at", "id"]
+
+    def __str__(self):
+        return f"Booking #{self.booking_id}: {self.event}"

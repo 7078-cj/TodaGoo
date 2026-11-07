@@ -68,6 +68,46 @@ function Stars({ score }) {
     )
 }
 
+// Booking log events (backend BookingLog.Event) -> icon; anything new uses `default`
+const LOG_ICONS = {
+    requested: "add-circle-outline",
+    offered: "paper-plane-outline",
+    offer_declined: "close-circle-outline",
+    offer_expired: "time-outline",
+    accepted: "checkmark-circle-outline",
+    driver_nearby: "navigate-outline",
+    picked_up: "car-outline",
+    completed: "flag-outline",
+    cancelled: "ban-outline",
+    rated: "star-outline",
+    default: "ellipse-outline",
+}
+
+// "10:30 AM" (the date is in the header)
+const timeOf = (iso) => formatDateTime(iso).split(", ").pop()
+
+// What happened during the ride, oldest first (booking.logs from the history API)
+function Activity({ logs }) {
+    if (!logs?.length) {
+        return <Text style={{ fontSize: 12, color: "#6B7280" }}>No activity was recorded for this ride.</Text>
+    }
+    return logs.map((log, i) => {
+        const last = i === logs.length - 1
+        return (
+            <View key={log.id} style={{ flexDirection: "row" }} testID={`log-${log.event}`}>
+                <View style={{ alignItems: "center", width: 22 }}>
+                    <Ionicons name={LOG_ICONS[log.event] ?? LOG_ICONS.default} size={18} color={colors.secondary} />
+                    {!last && <View style={{ flex: 1, width: 2, backgroundColor: colors.border, marginVertical: 2 }} />}
+                </View>
+                <View style={{ flex: 1, flexDirection: "row", marginLeft: 6, paddingBottom: last ? 0 : 12 }}>
+                    <Text style={{ flex: 1, fontSize: 13, color: colors.dark }}>{log.message}</Text>
+                    <Text style={{ fontSize: 11, color: "#6B7280", marginLeft: 8 }}>{timeOf(log.created_at)}</Text>
+                </View>
+            </View>
+        )
+    })
+}
+
 // Start, stops, end in the same shape the trip screens give MapComponent
 function buildMarkers(booking) {
     if (!booking) return []
@@ -241,6 +281,10 @@ export default function BookingHistoryModal({ booking, visible, onClose, current
                             )}
                         </Section>
                     )}
+
+                    <Section title="Activity">
+                        <Activity logs={booking.logs} />
+                    </Section>
 
                     <Section title="Chat log" note="This ride has ended, so the chat is read-only.">
                         <Messages messages={messages} currentUserId={currentUserId} senderNames={senderNames} inline emptyText="No messages were sent during this ride." />

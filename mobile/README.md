@@ -25,6 +25,81 @@ In the output, you'll find options to open the app in a
 
 You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
 
+## Building the app (EAS)
+
+Prepared, not built yet. Builds run on [EAS Build](https://docs.expo.dev/build/introduction/).
+
+### Where the settings come from
+
+| Setting | Local (`npx expo start`) | EAS build (preview / production) |
+| --- | --- | --- |
+| `EXPO_PUBLIC_API_URL`, `EXPO_PUBLIC_WS_URL`, `EXPO_PUBLIC_ORS_API_KEY` | `.env` | `.env.production`, overridden by the profile's EAS environment variables if set |
+| app name / id / scheme | `app.config.js` (`APP_VARIANT`, default `development`) | `eas.json` sets `APP_VARIANT` per profile |
+
+- **`.env.production`** holds the release values. It's git-ignored, and EAS uploads it anyway because `.easignore` (which EAS reads instead of `.gitignore`) leaves it in. Expo loads it when it bundles a release build. Your local `.env` is never uploaded.
+- **`EXPO_PUBLIC_*` values are built into the app**, so anyone with the app can read them. Never put a secret there.
+- **All the app's code reads them through `constants/config.js`**, which adds the trailing `/` the URLs need and takes the socket URL from the API host when `EXPO_PUBLIC_WS_URL` is empty.
+
+### Build profiles (`eas.json`)
+
+| Profile | App | Android package / iOS bundle id | Output |
+| --- | --- | --- | --- |
+| `development` | TodaGoo Dev | `com.todagoo.app.dev` | APK, iOS simulator |
+| `preview` | TodaGoo Preview | `com.todagoo.app.preview` | APK for testers (internal) |
+| `production` | TodaGoo | `com.todagoo.app` | AAB for Play Store, App Store build |
+
+Each variant installs side by side on one phone. Build numbers are counted by EAS (`appVersionSource: remote`, `autoIncrement` on production); the version people see is `APP_VERSION` (default `app.json` `version`).
+
+### Checks before a build
+
+`app.config.js` refuses an EAS build (or `STRICT_CONFIG=true`) when:
+- `EXPO_PUBLIC_API_URL` is missing or not http(s);
+- production: the URLs aren't `https://` / `wss://`, or point at a LAN / localhost address;
+- preview or production: the URLs are still the `…example…` placeholders from `.env.production`.
+
+Locally it only warns. Plain `http://` (a LAN backend) is allowed only in development / preview builds (Android `usesCleartextTraffic` through `expo-build-properties`).
+
+### Before the first build
+
+1. **Put the real production server** in `mobile/.env.production` (`https://…/api/` and `wss://…/`).
+2. **Choose the app id** for good: `APP_ID` (default `com.todagoo.app`). It can't change once the app is in a store.
+3. **Install EAS CLI, log in and link the project:**
+
+   ```bash
+   npm install -g eas-cli
+   ```
+
+   ```bash
+   eas login
+   ```
+
+   ```bash
+   eas init
+   ```
+
+   `eas init` gives a project id; set it as `EAS_PROJECT_ID` (in each EAS environment, or in `.env.production`).
+4. **Optional:** to give preview builds their own server (for example a LAN backend), set its URLs in the preview EAS environment. They take priority over `.env.production`:
+
+   ```bash
+   eas env:create --environment preview --name EXPO_PUBLIC_API_URL --value http://192.168.1.10:8000/api/ --visibility plaintext
+   ```
+
+5. **Check what EAS will upload** (`.env.production` must be listed, `.env` must not):
+
+   ```bash
+   npx eas-cli build:inspect --platform android --stage archive --output ./archive-check --profile production
+   ```
+
+### Build (when ready)
+
+```bash
+eas build --profile preview --platform android
+```
+
+```bash
+eas build --profile production --platform all
+```
+
 ## Get a fresh project
 
 When you're ready, run:

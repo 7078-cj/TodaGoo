@@ -2,6 +2,7 @@ from django.core.cache import cache
 
 from ..booking.helpers.pickup_proximity import is_near_pickup
 from ..booking.models import Booking
+from ..booking.logs import log_driver_nearby
 from ..user.models import Notification
 from ..user.utils import create_notification
 from .chat_presence import is_chat_open
@@ -58,6 +59,7 @@ def notify_if_driver_nearby(booking_id, lat, lng):
         type=Notification.Type.DRIVER_NEARBY,
         booking=booking,
     )
+    log_driver_nearby(booking)
     return True
 
 

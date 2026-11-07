@@ -1,5 +1,7 @@
-import { View, Text, TouchableOpacity, ScrollView, KeyboardAvoidingView, Keyboard, Platform } from 'react-native'
-import React, { useContext, useEffect, useRef, useState } from 'react'
+import { View, Text, TouchableOpacity } from 'react-native'
+import React, { useContext, useState } from 'react'
+import KeyboardAvoider from '@/components/layouts/KeyboardAvoider';
+import KeyboardAwareScrollView, { useKeyboardVisible } from '@/components/layouts/KeyboardAwareScrollView';
 import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { passwordProblem } from '@/utils/validation';
@@ -18,16 +20,8 @@ export default function Login() {
     const [password, setPassword] = useState('')
     const [errors, setErrors] = useState({})
     const [submitting, setSubmitting] = useState(false)
-    const scrollRef = useRef(null)
-
-    // When the keyboard opens, scroll down so the inputs and Login button stay visible
-    useEffect(() => {
-        const sub = Keyboard.addListener(
-            Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow",
-            () => setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 50)
-        )
-        return () => sub.remove()
-    }, [])
+    // while typing, a smaller illustration leaves the fields and the Login button room
+    const keyboardOpen = useKeyboardVisible()
 
     const validate = () => {
         let newErrors = {}
@@ -64,13 +58,10 @@ export default function Login() {
     }
 
     return (
-        <KeyboardAvoidingView
-            className="flex-1 bg-background"
-            behavior={Platform.OS === "ios" ? "padding" : "height"}
-        >
-            <ScrollView
-                ref={scrollRef}
-                keyboardShouldPersistTaps="handled"
+        <KeyboardAvoider className="bg-background">
+            {/* the focused field scrolls above the keyboard (with room for the next one / the button) */}
+            <KeyboardAwareScrollView
+                extraSpace={120}
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{ flexGrow: 1 }}
             >
@@ -79,7 +70,7 @@ export default function Login() {
                     <AuthHeader tagline="Sign In and Continue" />
 
                     <View className="items-center mt-6 mb-4 px-8">
-                        <LoginIllustration width="100%" height={350} />
+                        <LoginIllustration width="100%" height={keyboardOpen ? 160 : 350} />
                     </View>
 
                     <View className="px-8">
@@ -137,7 +128,7 @@ export default function Login() {
                         </View>
                     </View>
                 </View>
-            </ScrollView>
-        </KeyboardAvoidingView>
+            </KeyboardAwareScrollView>
+        </KeyboardAvoider>
     )
 }
