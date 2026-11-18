@@ -30,10 +30,24 @@ const env = (name, fallback = "") => (process.env[name] ?? fallback).trim();
 // (EAS environment variables, the shell) win, as they do for the bundle.
 function loadReleaseEnv(variant) {
     if (variant === "development") return;
+
     const { parseProjectEnv } = require("@expo/env");
-    const { env: fileEnv } = parseProjectEnv(__dirname, { mode: "production", silent: true });
+
+    const { env: fileEnv } = parseProjectEnv(__dirname, {
+        mode: "production",
+        silent: true,
+    });
+
     for (const [key, value] of Object.entries(fileEnv)) {
-        if (process.env[key] === undefined) process.env[key] = value;
+        // Preserve variables explicitly configured in EAS.
+        // For local configuration, prioritize .env.production.
+        if (process.env.EAS_BUILD === "true") {
+            if (process.env[key] === undefined) {
+                process.env[key] = value;
+            }
+        } else {
+            process.env[key] = value;
+        }
     }
 }
 
