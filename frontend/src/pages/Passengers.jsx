@@ -1,97 +1,117 @@
+
 import React, { useEffect, useState } from 'react'
 import {
     getPassengerList,
     blackListPassenger,
     unBlackListPassenger,
-} from '../api/passenger';
-import Table from '../components/Table';
-import Pagination from '../components/Pagination';
-import SearchFilter from '../components/SearchFilter';
+} from '../api/passenger'
+
+import Table from '../components/Table'
+import Pagination from '../components/Pagination'
+import SearchFilter from '../components/SearchFilter'
 
 export default function Passengers() {
     const [passengers, setPassengers] = useState([])
+
     const [page, setPage] = useState(1)
     const [totalPages, setTotalPages] = useState(1)
-    const [loading, setLoading] = useState(false);
-    const [actionLoadingId, setActionLoadingId] = useState(null);
 
-    const [deleteTarget, setDeleteTarget] = useState(null);
-    const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+    const [loading, setLoading] = useState(false)
+    const [actionLoadingId, setActionLoadingId] = useState(null)
 
-    const [search, setSearch] = useState("");
-    const [minRating, setMinRating] = useState("");
-    const [maxRating, setMaxRating] = useState("");
-    const [blacklistedOnly, setBlacklistedOnly] = useState(false);
+    const [search, setSearch] = useState('')
+    const [minRating, setMinRating] = useState('')
+    const [maxRating, setMaxRating] = useState('')
+    const [blacklistedOnly, setBlacklistedOnly] = useState(false)
 
     const fetchPassengers = async (currentPage = page) => {
         try {
-            setLoading(true);
+            setLoading(true)
 
-            const params = new URLSearchParams();
+            const params = new URLSearchParams()
 
-            if (search) params.append('search', search);
-            if (minRating) params.append('min_rating', minRating);
-            if (maxRating) params.append('max_rating', maxRating);
-            if (blacklistedOnly) params.append('blacklisted', 'true');
-            params.append('page', currentPage);
+            if (search) params.append('search', search)
+            if (minRating) params.append('min_rating', minRating)
+            if (maxRating) params.append('max_rating', maxRating)
 
-            const res = await getPassengerList(params.toString());
+            if (blacklistedOnly) {
+                params.append('blacklisted', 'true')
+            }
 
-            setPassengers(res.results || []);
-            setTotalPages(Math.ceil((res.count || 0) / 10));
+            params.append('page', currentPage)
+
+            const res = await getPassengerList(params.toString())
+
+            setPassengers(res.results || [])
+            setTotalPages(
+                Math.max(1, Math.ceil((res.count || 0) / 10))
+            )
         } catch (err) {
-            console.error(err);
+            console.error('Failed to fetch passengers:', err)
         } finally {
-            setLoading(false);
+            setLoading(false)
         }
     }
 
     const handleEdit = async (passenger) => {
-        const isBlacklisted = passenger.passenger_profile.status === "BLACKLISTED";
-        const confirmMsg = isBlacklisted
-            ? `Remove ${passenger.first_name} ${passenger.last_name} from the blacklist?`
-            : `Blacklist ${passenger.first_name} ${passenger.last_name}?`;
+        const isBlacklisted =
+            passenger.passenger_profile.status === 'BLACKLISTED'
 
-        if (!window.confirm(confirmMsg)) return;
+        const fullName = `${passenger.first_name} ${passenger.last_name}`
+
+        const confirmMsg = isBlacklisted
+            ? `Remove ${fullName} from the blacklist?`
+            : `Blacklist ${fullName}?`
+
+        if (!window.confirm(confirmMsg)) return
 
         try {
-            setActionLoadingId(passenger.id);
+            setActionLoadingId(passenger.id)
+
             if (isBlacklisted) {
-                await unBlackListPassenger(passenger.id);
+                await unBlackListPassenger(passenger.id)
             } else {
-                await blackListPassenger(passenger.id);
+                await blackListPassenger(passenger.id)
             }
-            await fetchPassengers(page);
+
+            await fetchPassengers(page)
         } catch (err) {
-            console.error(err);
-            alert('Failed to update passenger status.');
+            console.error(err)
+            alert('Failed to update passenger status.')
         } finally {
-            setActionLoadingId(null);
+            setActionLoadingId(null)
         }
     }
 
+    // Debounced search and filter changes
     useEffect(() => {
         const handler = setTimeout(() => {
             if (page !== 1) {
-                setPage(1);
+                setPage(1)
             } else {
-                fetchPassengers(1);
+                fetchPassengers(1)
             }
-        }, 500);
+        }, 500)
 
-        return () => clearTimeout(handler);
-    }, [search, minRating, maxRating, blacklistedOnly]);
+        return () => clearTimeout(handler)
+    }, [search, minRating, maxRating, blacklistedOnly])
 
+    // Fetch when pagination changes
     useEffect(() => {
         if (page !== 1) {
-            fetchPassengers(page);
+            fetchPassengers(page)
         }
-    }, [page]);
+    }, [page])
 
     return (
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4 p-4">
+            {/* Search and filters */}
             <div className="flex items-center gap-2 flex-wrap">
-                <SearchFilter search={search} setSearch={setSearch} placeholder={"Search for Passengers....."} />
+                <SearchFilter
+                    search={search}
+                    setSearch={setSearch}
+                    placeholder="Search for Passengers....."
+                />
 
                 <input
                     type="number"
@@ -103,6 +123,7 @@ export default function Passengers() {
                     placeholder="Min rating"
                     className="px-3 py-2 text-sm rounded-lg border bg-background w-28"
                 />
+
                 <input
                     type="number"
                     step="0.1"
@@ -118,28 +139,41 @@ export default function Passengers() {
                     <input
                         type="checkbox"
                         checked={blacklistedOnly}
-                        onChange={(e) => setBlacklistedOnly(e.target.checked)}
+                        onChange={(e) =>
+                            setBlacklistedOnly(e.target.checked)
+                        }
                     />
+
                     Blacklisted only
                 </label>
             </div>
 
+            {/* Passenger table */}
             <Table
-                row={[ 'First Name', 'Last Name', 'Status', '']}
+                row={['First Name', 'Last Name', 'Status', '']}
                 list={passengers}
                 loading={loading}
                 dataRender={[
-                    { accessor: 'first_name', className: 'px-4 py-2 font-medium', profile_picture:'passenger_profile.profile_picture' },
-                    { accessor: 'last_name', className: 'px-4 py-2 font-mono' },
-                    { accessor: 'passenger_profile.status', className: 'px-4 py-2 capitalize' },
+                    {
+                        accessor: 'first_name',
+                        className: 'px-4 py-2 font-medium',
+                        type: 'avatar',
+                        profile_picture: 'passenger_profile.profile_picture',
+                    },
+                    {
+                        accessor: 'last_name',
+                        className: 'px-4 py-2 font-mono',
+                    },
+                    {
+                        accessor: 'passenger_profile.status',
+                        className: 'px-4 py-2 capitalize',
+                    },
                 ]}
                 handleEdit={handleEdit}
-                setDeleteTarget={setDeleteTarget}
-                setDeleteOpen={setDeleteModalOpen}
-                page={page}
                 actionLoadingId={actionLoadingId}
             />
 
+            {/* Pagination */}
             <Pagination
                 page={page}
                 setPage={setPage}
