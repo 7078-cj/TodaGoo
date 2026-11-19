@@ -110,7 +110,21 @@ module.exports = ({ config }) => {
     const plugins = (config.plugins ?? []).filter(
         (p) => (Array.isArray(p) ? p[0] : p) !== "expo-build-properties"
     );
-    plugins.push(["expo-build-properties", { android: { usesCleartextTraffic: cleartext } }]);
+    plugins.push([
+        "expo-build-properties",
+        {
+            android: {
+                usesCleartextTraffic: cleartext,
+                // SDK 58 turns on R8 for release APKs. expo-background-task uses WorkManager,
+                // and R8 strips the Room/Work constructors those classes need at process start,
+                // so the APK opens then immediately "keeps stopping".
+                extraProguardRules: [
+                    "-keep class * extends androidx.room.RoomDatabase { <init>(); }",
+                    "-keep class * extends androidx.work.InputMerger { <init>(); }",
+                ].join("\n"),
+            },
+        },
+    ]);
 
     return {
         ...config,
