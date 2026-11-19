@@ -1,8 +1,8 @@
 import { Stack, Redirect, router, useSegments } from "expo-router";
-import { useEffect, useState } from "react";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useContext, useEffect, useMemo } from "react";
 import BottomNav from "../../components/layouts/BottomNav";
 import Header from "../../components/layouts/Header";
+import AuthContext from "../../contexts/AuthContext";
 import { ProfileProvider } from "../../contexts/ProfileContext";
 import { LoadingScreen } from "../../components/loading";
 import { LOADING_MESSAGES } from "../../constants/loading";
@@ -24,53 +24,25 @@ function getRole(user) {
 }
 
 export default function ProtectedLayout() {
-    const [auth, setAuth] = useState({
-        status: "checking",
-        role: null,
-    });
+    // Single source of truth: AuthContext (hydrated from storage by AuthProvider,
+    // updated by login and by the OTP screen).
+    const { user, authHydrated } = useContext(AuthContext);
+
+    const auth = useMemo(() => {
+        if (!authHydrated) return { status: "checking", role: null };
+        if (!user) return { status: "unauthenticated", role: null };
+        return {
+            status: user.verified === false ? "unverified" : "ok",
+            role: getRole(user),
+        };
+    }, [user, authHydrated]);
 
     const segments = useSegments();
-    const path = segments.join("/");
     const isOtpRoute = segments.includes("otp");
     // screens that render their own PageHeader instead of the "Hello" Header
-    const hasOwnHeader = ["history", "profile", "edit_profile", "complete", "notifications"].some((s) => segments.includes(s));
-
-    useEffect(() => {
-        let cancelled = false;
-
-        const checkAuth = async () => {
-            try {
-                const raw = await AsyncStorage.getItem("user");
-                const user = raw ? JSON.parse(raw) : null;
-
-                if (!user) {
-                    if (!cancelled) {
-                        setAuth({ status: "unauthenticated", role: null });
-                    }
-                    return;
-                }
-
-                const role = getRole(user);
-
-                if (!cancelled) {
-                    setAuth({
-                        status: user.verified === false ? "unverified" : "ok",
-                        role,
-                    });
-                }
-            } catch {
-                if (!cancelled) {
-                    setAuth({ status: "unauthenticated", role: null });
-                }
-            }
-        };
-
-        checkAuth();
-
-        return () => {
-            cancelled = true;
-        };
-    }, []);
+    const hasOwnHeader = ["history", "profile", "edit_profile", "complete", "notifications"].some((s) =>
+        segments.includes(s)
+    );
 
     useEffect(() => {
         if (auth.status === "unverified" && !isOtpRoute) {
