@@ -30,10 +30,24 @@ const env = (name, fallback = "") => (process.env[name] ?? fallback).trim();
 // (EAS environment variables, the shell) win, as they do for the bundle.
 function loadReleaseEnv(variant) {
     if (variant === "development") return;
+
     const { parseProjectEnv } = require("@expo/env");
-    const { env: fileEnv } = parseProjectEnv(__dirname, { mode: "production", silent: true });
+
+    const { env: fileEnv } = parseProjectEnv(__dirname, {
+        mode: "production",
+        silent: true,
+    });
+
     for (const [key, value] of Object.entries(fileEnv)) {
-        if (process.env[key] === undefined) process.env[key] = value;
+        // Preserve variables explicitly configured in EAS.
+        // For local configuration, prioritize .env.production.
+        if (process.env.EAS_BUILD === "true") {
+            if (process.env[key] === undefined) {
+                process.env[key] = value;
+            }
+        } else {
+            process.env[key] = value;
+        }
     }
 }
 
@@ -96,7 +110,21 @@ module.exports = ({ config }) => {
     const plugins = (config.plugins ?? []).filter(
         (p) => (Array.isArray(p) ? p[0] : p) !== "expo-build-properties"
     );
-    plugins.push(["expo-build-properties", { android: { usesCleartextTraffic: cleartext } }]);
+    plugins.push([
+        "expo-build-properties",
+        {
+            android: {
+                usesCleartextTraffic: cleartext,
+                // SDK 58 turns on R8 for release APKs. expo-background-task uses WorkManager,
+                // and R8 strips the Room/Work constructors those classes need at process start,
+                // so the APK opens then immediately "keeps stopping".
+                extraProguardRules: [
+                    "-keep class * extends androidx.room.RoomDatabase { <init>(); }",
+                    "-keep class * extends androidx.work.InputMerger { <init>(); }",
+                ].join("\n"),
+            },
+        },
+    ]);
 
     return {
         ...config,

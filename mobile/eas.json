@@ -27,7 +27,7 @@
       "environment": "production",
       "autoIncrement": true,
       "env": { "APP_VARIANT": "production" },
-      "android": { "buildType": "app-bundle" }
+      "android": { "buildType": "apk" }
     }
   },
   "submit": {

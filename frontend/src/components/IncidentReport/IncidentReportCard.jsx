@@ -1,10 +1,48 @@
 import React, { useState } from 'react'
+import { AlertTriangle, FileText, PackageSearch, CircleAlert } from 'lucide-react'
 import { updateIncidentReportsStatus } from '../../api/incident_reports';
 import { REPORT_STATUSES, reportStatusLabel, reportStatusStyle } from '../../constants/reportStatuses';
+import colors from '../../constants/colors'; // adjust path
 
-export default function IncidentReportCard({ report, canUpdateStatus, onStatusUpdated, onViewDetails }) {
+const SEVERITY_STYLES = {
+    severe: 'bg-orange-50 text-orange-700 ring-orange-300',
+    moderate: 'bg-blue-50 text-blue-700 ring-blue-300',
+    minor: 'bg-gray-50 text-gray-600 ring-gray-300',
+}
+
+// Icon + tint per incident type. Adjust the keys to match your incident_types values.
+function typeIcon(type = "") {
+    if (type.includes("reckless")) return { Icon: AlertTriangle, color: '#7B1FA2', bg: '#F3E8FF' }
+    if (type.includes("overcharg")) return { Icon: FileText, color: colors.primary, bg: '#FFF1E6' }
+    if (type.includes("lost")) return { Icon: PackageSearch, color: colors.secondary, bg: '#E6F4EE' }
+    return { Icon: CircleAlert, color: colors.primary, bg: '#FFF1E6' }
+}
+
+const titleCase = (s = "") =>
+    s.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
+
+export const reportCode = (report) => `IR-${String(report.id).padStart(3, "0")}`
+export const reportTitle = (report) => `${titleCase(report.incident_types)} | ${reportCode(report)}`
+
+function reporterName(report) {
+    const p = report.reporter ?? report.booking?.passenger
+    if (!p) return "Unknown"
+    return typeof p === "string" ? p : `${p.first_name ?? ""} ${p.last_name ?? ""}`.trim()
+}
+
+const Pill = ({ className = "", children }) => (
+    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-medium ring-1 ring-inset ${className}`}>
+        {children}
+    </span>
+)
+
+export default function IncidentReportCard({ report, selected, canUpdateStatus, onStatusUpdated, onViewDetails }) {
     const [updating, setUpdating] = useState(false)
     const [error, setError] = useState(null)
+
+    const { Icon, color, bg } = typeIcon(report.incident_types)
+    const tags = report.tags ?? []
+    const severity = report.severity?.toLowerCase()
 
     const handleStatusChange = async (e) => {
         const newStatus = e.target.value
@@ -23,66 +61,62 @@ export default function IncidentReportCard({ report, canUpdateStatus, onStatusUp
     }
 
     return (
-        <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm hover:shadow-md transition-shadow">
-            <div className="flex items-start justify-between gap-3">
-                <div>
-                    <p className="text-sm font-semibold text-gray-900">
-                        Incident #{report.id}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                        {new Date(report.created_at).toLocaleString()}
-                    </p>
-                </div>
-                <span
-                    className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset ${reportStatusStyle(report.status)}`}
-                >
-                    {reportStatusLabel(report.status)}
-                </span>
-            </div>
-
-            <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
-                <div>
-                    <p className="text-gray-400 text-xs uppercase tracking-wide">Type</p>
-                    <p className="text-gray-800 capitalize">{report.incident_types.replace("_", " ")}</p>
-                </div>
-                <div>
-                    <p className="text-gray-400 text-xs uppercase tracking-wide">Injured party</p>
-                    <p className="text-gray-800 capitalize">{report.injured_party}</p>
-                </div>
-            </div>
-
-            {report.details ? (
-                <p className="mt-3 text-sm text-gray-600 line-clamp-2">{report.details}</p>
-            ) : null}
-
-            {report.evidence?.length > 0 && (
-                <div className="mt-3 flex gap-2 overflow-x-auto">
-                    {report.evidence.slice(0, 4).map((ev) => (
-                        <img
-                            key={ev.id}
-                            src={ev.file}
-                            alt="evidence"
-                            className="h-14 w-14 rounded-md object-cover border border-gray-200 flex-shrink-0"
-                        />
-                    ))}
-                </div>
-            )}
-
-            <button
-                onClick={() => onViewDetails(report)}
-                className="mt-3 text-xs font-medium text-indigo-600 hover:underline"
+        <div
+            role="button"
+            tabIndex={0}
+            onClick={() => onViewDetails(report)}
+            onKeyDown={(e) => e.key === "Enter" && onViewDetails(report)}
+            className="flex items-center gap-4 rounded-xl border px-4 py-3 cursor-pointer transition-shadow hover:shadow-md"
+            style={{
+                backgroundColor: colors.surface,
+                borderColor: selected ? colors.secondary : colors.border,
+                boxShadow: selected ? `0 0 0 2px ${colors.secondary}` : undefined,
+            }}
+        >
+            {/* Type icon */}
+            <div
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border"
+                style={{ backgroundColor: bg, borderColor: color }}
             >
-                View full details
-            </button>
+                <Icon className="h-5 w-5" style={{ color }} />
+            </div>
 
-            {canUpdateStatus && (
-                <div className="mt-4 flex items-center gap-2 border-t border-gray-100 pt-3">
-                    <label className="text-xs text-gray-500">Status:</label>
+            {/* Title, meta, tags */}
+            <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-semibold" style={{ color: colors.dark }}>
+                    {reportTitle(report)}
+                </p>
+                <p className="text-xs text-gray-500">
+                    {new Date(report.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                    {" • "}Reporter: {reporterName(report)}
+                </p>
+                {tags.length > 0 && (
+                    <div className="mt-1.5 flex flex-wrap gap-1.5">
+                        {tags.map((tag) => (
+                            <Pill key={tag} className="bg-orange-50 text-orange-700 ring-orange-300">
+                                {titleCase(tag)}
+                            </Pill>
+                        ))}
+                    </div>
+                )}
+                {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
+            </div>
+
+            {/* Severity + status */}
+            <div className="flex shrink-0 items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                {severity && (
+                    <Pill className={SEVERITY_STYLES[severity] ?? SEVERITY_STYLES.minor}>
+                        {titleCase(severity)}
+                    </Pill>
+                )}
+
+                {canUpdateStatus ? (
                     <select
                         value={report.status}
                         onChange={handleStatusChange}
                         disabled={updating}
-                        className="text-sm rounded-md border-gray-300 py-1 pl-2 pr-7 focus:border-indigo-500 focus:ring-indigo-500 disabled:opacity-50"
+                        className="rounded-full border py-0.5 pl-2 pr-6 text-[11px] disabled:opacity-50"
+                        style={{ borderColor: colors.border, color: colors.dark }}
                     >
                         {REPORT_STATUSES.map((choice) => (
                             <option key={choice.value} value={choice.value}>
@@ -90,10 +124,12 @@ export default function IncidentReportCard({ report, canUpdateStatus, onStatusUp
                             </option>
                         ))}
                     </select>
-                    {updating && <span className="text-xs text-gray-400">Saving…</span>}
-                    {error && <span className="text-xs text-red-500">{error}</span>}
-                </div>
-            )}
+                ) : (
+                    <Pill className={reportStatusStyle(report.status)}>
+                        {reportStatusLabel(report.status)}
+                    </Pill>
+                )}
+            </div>
         </div>
     )
 }

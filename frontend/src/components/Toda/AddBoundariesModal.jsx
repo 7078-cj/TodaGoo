@@ -102,9 +102,7 @@ function AddBoundariesModal({ fetchTodas, open, setOpen, toda }) {
 
     return (
         <Dialog open={open} onOpenChange={setOpen} className="w-full">
-            <DialogTrigger disabled={loading}>
-                {loading ? "Processing..." : "Add TODA Stations"}
-            </DialogTrigger>
+            
 
             <DialogContent className="bg-amber-50 w-[95vw] max-w-4xl h-screen max-h-[95vh] overflow-y-auto">
                 <DialogHeader>

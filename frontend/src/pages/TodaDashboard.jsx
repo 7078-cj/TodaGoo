@@ -12,6 +12,7 @@ import {
     Legend,
 } from 'chart.js';
 import { getDashboardOverview } from '../api/toda';
+import colors from '../constants/colors' 
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, ArcElement, Tooltip, Legend);
 
@@ -182,7 +183,7 @@ export default function DashboardOverview() {
     };
 
     return (
-        <div className="min-h-full bg-green-50 p-4 sm:p-6">
+        <div className="min-h-full p-4 sm:p-6" style={{ backgroundColor: colors.background }}>
             <div className="flex flex-wrap items-center justify-between gap-3">
                 <h1 className="text-2xl font-semibold text-gray-800">Dashboard Overview</h1>
 

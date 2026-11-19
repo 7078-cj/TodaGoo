@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import {
     Map,
     MapMarker,
@@ -117,32 +117,62 @@ function normaliseArea(area, index) {
     return null;
 }
 
+/**
+ * Bounding box [[minLng, minLat], [maxLng, maxLat]] covering the given
+ * normalised areas. Returns null if there are no valid coordinates.
+ */
+function getAreasBounds(normalisedAreas) {
+    let minLng = Infinity, minLat = Infinity, maxLng = -Infinity, maxLat = -Infinity;
+
+    const visit = (c) => {
+        if (typeof c[0] === "number") {
+            minLng = Math.min(minLng, c[0]);
+            maxLng = Math.max(maxLng, c[0]);
+            minLat = Math.min(minLat, c[1]);
+            maxLat = Math.max(maxLat, c[1]);
+        } else {
+            c.forEach(visit);
+        }
+    };
+
+    normalisedAreas.forEach(({ feature }) => visit(feature.geometry.coordinates));
+
+    return Number.isFinite(minLng) ? [[minLng, minLat], [maxLng, maxLat]] : null;
+}
+
 // ---------------------------------------------------------------------------
 // AreaLayers – inner component that consumes the MapLibre map instance via
 // the useMap() hook (same pattern as the documentation example).
 // ---------------------------------------------------------------------------
-function AreaLayers({ areas }) {
+function AreaLayers({ areas, enableClickZoom = true }) {
     const { map, isLoaded } = useMap();
     const [hoveredArea, setHoveredArea] = useState(null);
     const registeredIds = useRef(new Set());
+    const registeredSources = useRef(new Set());
 
-    const normalisedAreas = areas
-        .map((a, i) => normaliseArea(a, i))
-        .filter(Boolean);
+    // Only recompute when the actual area data changes
+    const areasKey = JSON.stringify(areas);
+    const normalisedAreas = useMemo(
+        () => areas.map((a, i) => normaliseArea(a, i)).filter(Boolean),
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [areasKey]
+    );
 
     // Build / update layers whenever the map is ready or areas change
     useEffect(() => {
-        if (!map || !isLoaded || !normalisedAreas.length) return;
+        if (!map || !isLoaded) return;
 
-        const newIds = new Set();
+        const newLayerIds = new Set();
+        const newSourceIds = new Set();
 
         normalisedAreas.forEach(({ id, color, fillOpacity, lineOpacity, lineWidth, feature }) => {
             const sourceId = `area-source-${id}`;
             const fillId = `area-fill-${id}`;
             const lineId = `area-line-${id}`;
 
-            newIds.add(fillId);
-            newIds.add(lineId);
+            newLayerIds.add(fillId);
+            newLayerIds.add(lineId);
+            newSourceIds.add(sourceId);
 
             // Source
             if (!map.getSource(sourceId)) {
@@ -192,31 +222,58 @@ function AreaLayers({ areas }) {
             }
         });
 
-        // Remove stale layers that are no longer in the areas list
+        // Remove stale layers / sources that are no longer in the areas list
         registeredIds.current.forEach((layerId) => {
-            if (!newIds.has(layerId) && map.getLayer(layerId)) {
+            if (!newLayerIds.has(layerId) && map.getLayer(layerId)) {
                 map.removeLayer(layerId);
             }
         });
+        registeredSources.current.forEach((sourceId) => {
+            if (!newSourceIds.has(sourceId) && map.getSource(sourceId)) {
+                map.removeSource(sourceId);
+            }
+        });
 
-        registeredIds.current = newIds;
-    }, [map, isLoaded, JSON.stringify(normalisedAreas)]);
+        registeredIds.current = newLayerIds;
+        registeredSources.current = newSourceIds;
+    }, [map, isLoaded, normalisedAreas]);
 
-    // Hover interactions
+    // Fit the view to the full coverage of all areas (zoomed out a bit)
     useEffect(() => {
         if (!map || !isLoaded || !normalisedAreas.length) return;
 
-        const fillLayerIds = normalisedAreas.map(({ id }) => `area-fill-${id}`);
+        const bounds = getAreasBounds(normalisedAreas);
+        if (!bounds) return;
+
+        map.fitBounds(bounds, {
+            padding: 60,   // breathing room around the polygons
+            maxZoom: 15,   // never zoom in tighter than this
+            duration: 800,
+        });
+    }, [map, isLoaded, normalisedAreas]);
+
+    // Hover + click interactions
+    useEffect(() => {
+        if (!map || !isLoaded || !normalisedAreas.length) return;
+
+        const fillLayerIds = normalisedAreas
+            .map(({ id }) => `area-fill-${id}`)
+            .filter((layerId) => map.getLayer(layerId));
+
+        if (!fillLayerIds.length) return;
+
+        const findHit = (point) => {
+            const features = map.queryRenderedFeatures(point, { layers: fillLayerIds });
+            if (!features.length) return null;
+            const hitId = features[0].layer.id.replace("area-fill-", "");
+            return normalisedAreas.find((a) => a.id === hitId) ?? null;
+        };
 
         const handleMouseMove = (e) => {
-            const features = map.queryRenderedFeatures(e.point, { layers: fillLayerIds });
-            if (features.length > 0) {
+            const hit = findHit(e.point);
+            if (hit) {
                 map.getCanvas().style.cursor = "pointer";
-                // Find matching area label
-                const hitLayerId = features[0].layer.id;
-                const hitId = hitLayerId.replace("area-fill-", "");
-                const match = normalisedAreas.find((a) => a.id === hitId);
-                setHoveredArea(match?.label ?? null);
+                setHoveredArea(hit.label);
             } else {
                 map.getCanvas().style.cursor = "";
                 setHoveredArea(null);
@@ -228,14 +285,31 @@ function AreaLayers({ areas }) {
             setHoveredArea(null);
         };
 
+        // Click a boundary → fly to and fit that boundary
+        const handleClick = (e) => {
+            const hit = findHit(e.point);
+            if (!hit) return;
+
+            const bounds = getAreasBounds([hit]);
+            if (!bounds) return;
+
+            map.fitBounds(bounds, {
+                padding: 80,
+                maxZoom: 17,
+                duration: 800,
+            });
+        };
+
         map.on("mousemove", handleMouseMove);
         map.on("mouseout", handleMouseLeave);
+        if (enableClickZoom) map.on("click", handleClick);
 
         return () => {
             map.off("mousemove", handleMouseMove);
             map.off("mouseout", handleMouseLeave);
+            if (enableClickZoom) map.off("click", handleClick);
         };
-    }, [map, isLoaded, normalisedAreas]);
+    }, [map, isLoaded, normalisedAreas, enableClickZoom]);
 
     // Cleanup all layers/sources on unmount
     useEffect(() => {
@@ -248,12 +322,10 @@ function AreaLayers({ areas }) {
             } catch {
                 return;
             }
-            normalisedAreas.forEach(({ id }) => {
-                const fillId = `area-fill-${id}`;
-                const lineId = `area-line-${id}`;
-                const sourceId = `area-source-${id}`;
-                try { if (map.getLayer(fillId)) map.removeLayer(fillId); } catch { /* already gone */ }
-                try { if (map.getLayer(lineId)) map.removeLayer(lineId); } catch { /* already gone */ }
+            registeredIds.current.forEach((layerId) => {
+                try { if (map.getLayer(layerId)) map.removeLayer(layerId); } catch { /* already gone */ }
+            });
+            registeredSources.current.forEach((sourceId) => {
                 try { if (map.getSource(sourceId)) map.removeSource(sourceId); } catch { /* already gone */ }
             });
         };
@@ -368,9 +440,11 @@ export default function MapComponent({
                     <MapEventListener setLocation={setLocation} editMode={editMode} reverse_lat={reverse_lat} />
                 )}
 
-                {/* Polygon / GeoJSON area overlays */}
+                {/* Polygon / GeoJSON area overlays.
+                    Click-to-center is disabled in editMode so it doesn't
+                    clash with MapEventListener picking a location. */}
                 {normalisedAreasProp.length > 0 && (
-                    <AreaLayers areas={normalisedAreasProp} />
+                    <AreaLayers areas={normalisedAreasProp} enableClickZoom={!editMode} />
                 )}
 
                 {/* Route polylines */}

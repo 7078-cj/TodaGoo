@@ -1,6 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import Login from "./pages/Login";
 import DashBoard from "./pages/DashBoard";
@@ -14,7 +14,16 @@ import TodaDashboard from "./pages/TodaDashboard";
 import Header from "./components/Header";
 import SideBarComponent from "./components/SideBarComponent";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
-import { LayoutDashboard, MapPin } from "lucide-react";
+import {
+    LayoutDashboard,
+    MapPin,
+    Map,
+    ClipboardList,
+    Users,
+    User,
+    FileWarning,
+    Settings,
+} from "lucide-react";
 import TodaBoundaries from "./pages/TodaBoundaries";
 import Footer from "./components/Footer";
 import RegisteredToda from "./pages/RegisteredToda";
@@ -26,14 +35,16 @@ import BookingSettings from "./pages/BookingSettings";
 
 const TODA_MENU = [
     { label: "Dashboard", href: "/toda", icon: LayoutDashboard },
-    { label: "Boundaries", href: "/toda/boundaries", icon: MapPin },
-    { label: "RegisteredToda", href: "/toda/registered", icon: MapPin },
+    { label: "Boundaries", href: "/toda/boundaries", icon: Map },
+    { label: "RegisteredToda", href: "/toda/registered", icon: ClipboardList },
     { label: "Stations", href: "/toda/stations", icon: MapPin },
-    { label: "TODAGoo Drivers", href: "/toda/todagoo_drivers", icon: MapPin },
-    { label: "Passengers", href: "/toda/passengers", icon: MapPin },
-    { label: "Reports", href: "/toda/reports", icon: MapPin },
-    { label: "Settings", href: "/toda/settings", icon: MapPin },
+    { label: "TODAGoo Drivers", href: "/toda/todagoo_drivers", icon: Users },
+    { label: "Passengers", href: "/toda/passengers", icon: User },
+    { label: "Reports", href: "/toda/reports", icon: FileWarning },
+    { label: "Settings", href: "/toda/settings", icon: Settings },
 ];
+
+const normalizePath = (path) => path.replace(/\/$/, "") || "/";
 
 function AppContent() {
     const dispatch = useDispatch();
@@ -41,6 +52,14 @@ function AppContent() {
     const location = useLocation();
     const didInitRef = useRef(false);
     const timerRef = useRef(null);
+
+    // tracks which sidebar page is currently active
+    const [activePage, setActivePage] = useState(normalizePath(location.pathname));
+
+    // keep it in sync when the URL changes (back/forward, typed URL, redirects)
+    useEffect(() => {
+        setActivePage(normalizePath(location.pathname));
+    }, [location.pathname]);
 
     const REFRESH_BUFFER_MS = 60 * 1000;
 
@@ -108,10 +127,9 @@ function AppContent() {
 
                 <SidebarProvider>
                     <SideBarComponent
-                        menuItems={getMenuItems().map((item) => ({
-                            ...item,
-                            active: location.pathname === item.href,
-                        }))}
+                        menuItems={getMenuItems()}
+                        activePage={activePage}
+                        onNavigate={setActivePage}
                         footer={<Footer />}
                     />
 

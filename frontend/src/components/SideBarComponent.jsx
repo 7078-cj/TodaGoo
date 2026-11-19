@@ -1,48 +1,80 @@
-import React from 'react'
+import React, { useState } from 'react'
+import { Link } from 'react-router-dom'
+import colors from '../constants/colors' 
 import {
     Sidebar,
     SidebarContent,
     SidebarFooter,
     SidebarGroup,
     SidebarGroupContent,
-    SidebarGroupLabel,
-    SidebarHeader,
     SidebarMenu,
-    SidebarMenuButton,
     SidebarMenuItem,
 } from "@/components/ui/sidebar"
 
-export default function SideBarComponent({ header, menuItems = [], footer }) {
-
-    const menuButtonStyle = "flex items-center gap-2 text-sm";
+export default function SideBarComponent({
+    menuItems = [],
+    footer,
+    activePage,
+    onNavigate,
+}) {
+    const [hovered, setHovered] = useState(null)
 
     return (
-        <Sidebar  className="top-16 h-[calc(100vh-4rem)] w-64 border-r">
+        <Sidebar
+            className="top-16 h-[calc(100vh-4rem)] w-64 border-r"
+            style={{ borderColor: colors.border }}
+        >
 
-            <SidebarContent>
-                <SidebarGroup>
-                    <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+            <SidebarContent
+                className="px-3 pt-4"
+            >
+                <SidebarGroup className="p-0">
                     <SidebarGroupContent>
-                        <SidebarMenu>
-                            {menuItems.map((item) => (
-                                <SidebarMenuItem key={item.label}>
-                                    <SidebarMenuButton isActive={item.active} className={menuButtonStyle}>
-                                        <a href={item.href} className={menuButtonStyle}>
-                                            {item.icon && <item.icon className="w-4 h-4" />}
-                                            {item.label}
-                                        </a>
-                                    </SidebarMenuButton>
-                                </SidebarMenuItem>
-                            ))}
+                        <SidebarMenu className="gap-1">
+                            {menuItems.map((item) => {
+                                const isActive = activePage === item.href
+                                const isHovered = hovered === item.href
+
+                                return (
+                                    <SidebarMenuItem key={item.label}>
+                                        <Link
+                                            to={item.href}
+                                            onClick={() => onNavigate?.(item.href)}
+                                            onMouseEnter={() => setHovered(item.href)}
+                                            onMouseLeave={() => setHovered(null)}
+                                            className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors"
+                                            style={{
+                                                backgroundColor: isActive
+                                                    ? colors.secondary
+                                                    : isHovered
+                                                        ? `${colors.secondary}1A` // 10% tint
+                                                        : 'transparent',
+                                                color: isActive
+                                                    ? colors.onPrimary
+                                                    : colors.secondary,
+                                            }}
+                                        >
+                                            {item.icon && <item.icon className="h-4 w-4 shrink-0" />}
+                                            <span>{item.label}</span>
+                                        </Link>
+                                    </SidebarMenuItem>
+                                )
+                            })}
                         </SidebarMenu>
                     </SidebarGroupContent>
                 </SidebarGroup>
             </SidebarContent>
 
-            <SidebarFooter className="px-4 py-3 border-t">
+            <SidebarFooter
+                className="border-t px-4 py-4"
+                style={{
+                    borderColor: colors.border,
+                }}
+            >
                 {footer ?? (
-                    <div className="text-xs text-muted-foreground">
-                        © {new Date().getFullYear()} TODA System
+                    <div className="text-center">
+                        <p className="text-sm font-bold" style={{ color: colors.secondary }}>Admin</p>
+                        <p className="text-xs" style={{ color: colors.secondary }}>TODA</p>
                     </div>
                 )}
             </SidebarFooter>
