@@ -1,118 +1,105 @@
 import React from 'react'
 import { Pencil, Trash2 } from 'lucide-react'
+import colors from '../constants/colors'
 
-const getValue = (obj, path) =>
-    path.split('.').reduce((acc, key) => (acc == null ? acc : acc[key]), obj);
+function Avatar({ name = '', src }) {
+    if (src) {
+        return <img src={src} alt={name} className="w-8 h-8 rounded-full object-cover" />
+    }
+    const initials = name
+        .split(' ')
+        .map((w) => w[0])
+        .slice(0, 2)
+        .join('')
+        .toUpperCase()
+
+    return (
+        <div
+            className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold"
+            style={{ backgroundColor: colors.background, color: colors.secondary }}
+        >
+            {initials || '?'}
+        </div>
+    )
+}
 
 export default function Table({
-    row = [],
-    list = [],
-    loading = false,
-    dataRender = [],
+    row,
+    list,
+    loading,
+    dataRender,
     handleEdit,
     setDeleteTarget,
     setDeleteOpen,
-    page,
-    actionLoadingId = null,
 }) {
-    const colCount = row.length || 1;
-
     return (
-        <div className="rounded-lg border overflow-hidden text-sm">
-            <table className="w-full">
-                <thead className="bg-muted text-muted-foreground text-xs uppercase">
-                    <tr>
-                        {row.map((h) => (
+        <div className="overflow-x-auto">
+            <table className="w-full text-sm" style={{ color: colors.dark }}>
+                <thead>
+                    <tr style={{ backgroundColor: colors.secondary, color: colors.onPrimary }}>
+                        {row.map((label, i) => (
                             <th
-                                key={h}
-                                className="px-4 py-2 text-left font-medium"
+                                key={i}
+                                className={`px-4 py-3 text-left font-medium whitespace-nowrap ${
+                                    i === 0 ? 'rounded-l-xl pl-6' : ''
+                                } ${i === row.length - 1 ? 'rounded-r-xl' : ''}`}
                             >
-                                {h}
+                                {label}
                             </th>
                         ))}
                     </tr>
                 </thead>
 
-                <tbody className="divide-y">
+                <tbody>
                     {loading ? (
                         <tr>
-                            <td
-                                colSpan={colCount}
-                                className="text-center py-8 text-muted-foreground"
-                            >
+                            <td colSpan={row.length} className="py-10 text-center opacity-60">
                                 Loading...
                             </td>
                         </tr>
-                    ) : list.length ? (
+                    ) : list.length === 0 ? (
+                        <tr>
+                            <td colSpan={row.length} className="py-10 text-center opacity-60">
+                                No records found.
+                            </td>
+                        </tr>
+                    ) : (
                         list.map((item) => (
                             <tr
                                 key={item.id}
-                                className="hover:bg-muted/40 transition"
+                                className="border-b last:border-b-0 hover:bg-black/[0.02] transition"
+                                style={{ borderColor: colors.border }}
                             >
-                                {dataRender.map((d, di) => {
-                                    const value = getValue(item, d.accessor);
-                                    const image = d.profile_picture
-                                        ? getValue(item, d.profile_picture)
-                                        : null;
+                                {dataRender.map(({ accessor, className = '', type }, i) => (
+                                    <td key={accessor} className={`px-4 py-3 ${i === 0 ? 'pl-6' : ''}`}>
+                                        {type === 'avatar' ? (
+                                            <div className="flex items-center gap-3">
+                                                <Avatar name={item[accessor]} src={item.photo} />
+                                                <span className={className}>{item[accessor]}</span>
+                                            </div>
+                                        ) : (
+                                            <span className={className}>{item[accessor]}</span>
+                                        )}
+                                    </td>
+                                ))}
 
-                                    const content = d.profile_picture ? (
-                                        <div className="flex items-center gap-3">
-                                            {image ? (
-                                                <img
-                                                    src={image}
-                                                    alt={`${item.first_name || ''} profile`}
-                                                    className="w-8 h-8 rounded-full object-cover"
-                                                />
-                                            ) : (
-                                                <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
-                                                    {item.first_name
-                                                        ?.charAt(0)
-                                                        ?.toUpperCase() || '?'}
-                                                </div>
-                                            )}
-
-                                            <span>{value}</span>
-                                        </div>
-                                    ) : (
-                                        value
-                                    );
-
-                                    return (
-                                        <td
-                                            key={di}
-                                            className={`${d.className || ''} ${
-                                                d.onClick
-                                                    ? 'cursor-pointer hover:underline'
-                                                    : ''
-                                            }`}
-                                            onClick={
-                                                d.onClick
-                                                    ? () => d.onClick(item)
-                                                    : undefined
-                                            }
-                                        >
-                                            {content}
-                                        </td>
-                                    );
-                                })}
-
-                                <td className="px-4 py-2">
-                                    <div className="flex items-center gap-2 justify-end">
+                                <td className="px-4 py-3">
+                                    <div className="flex items-center justify-end gap-3">
                                         <button
                                             onClick={() => handleEdit(item)}
-                                            disabled={
-                                                actionLoadingId === item.id
-                                            }
-                                            className="disabled:opacity-40"
+                                            title="Edit"
+                                            className="hover:opacity-60 transition"
                                         >
                                             <Pencil className="w-4 h-4" />
                                         </button>
-
                                         <button
                                             onClick={() => {
-                                                setDeleteTarget(item);
-                                                setDeleteOpen(true);
+                                                setDeleteTarget(item)
+                                                setDeleteOpen(true)
                                             }}
+                                            title="Delete"
+                                            className="hover:opacity-60 transition"
+                                            style={{ color: colors.dark }}
                                         >
                                             <Trash2 className="w-4 h-4" />
                                         </button>
@@ -120,18 +107,9 @@ export default function Table({
                                 </td>
                             </tr>
                         ))
-                    ) : (
-                        <tr>
-                            <td
-                                colSpan={colCount}
-                                className="text-center py-8 text-muted-foreground"
-                            >
-                                No records found.
-                            </td>
-                        </tr>
                     )}
                 </tbody>
             </table>
         </div>
-    );
+    )
 }
