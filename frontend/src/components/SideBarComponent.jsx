@@ -27,7 +27,6 @@ export default function SideBarComponent({
 
             <SidebarContent
                 className="px-3 pt-4"
-                style={{ backgroundColor: colors.background }}
             >
                 <SidebarGroup className="p-0">
                     <SidebarGroupContent>
@@ -69,7 +68,6 @@ export default function SideBarComponent({
             <SidebarFooter
                 className="border-t px-4 py-4"
                 style={{
-                    backgroundColor: colors.background,
                     borderColor: colors.border,
                 }}
             >
