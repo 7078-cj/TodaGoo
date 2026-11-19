@@ -28,6 +28,12 @@ class IncidentReport(models.Model):
         ("none", "None"),
     ]
 
+    SEVERITY_CHOICES = [
+        ("minor", "Minor"),
+        ("moderate", "Moderate"),
+        ("severe", "Severe"),
+    ]
+
     # relayed_to_mdrrmo: a TODA admin passed the report on to MDRRMO; still open (not resolved_at)
     RELAYED_TO_MDRRMO = "relayed_to_mdrrmo"
     STATUS_CHOICES = [
@@ -45,6 +51,14 @@ class IncidentReport(models.Model):
     details = models.TextField(blank=True)
     # list of REPORT_TAGS keys, e.g. ["unsafe", "threatening"]
     tags = models.JSONField(default=list, blank=True)
+
+    # how serious the incident is; existing reports default to "minor"
+    severity = models.CharField(
+        max_length=10,
+        choices=SEVERITY_CHOICES,
+        default="minor",
+        db_index=True,
+    )
 
     status = models.CharField(
         max_length=20,

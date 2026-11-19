@@ -17,6 +17,7 @@ from .serializers import (
 )
 
 from ..utils.filtering import apply_date_range_filter
+from django.utils.dateparse import parse_date
 
 
 from datetime import timedelta
@@ -109,6 +110,23 @@ class IncidentReportListCreateView(IdempotentAPIView, ListCreateAPIView):
             if incident_type not in valid_types:
                 raise ValidationError({"incident_types": f"Must be one of {list(valid_types)}."})
             qs = qs.filter(incident_types=incident_type)
+
+        severity = params.get("severity")
+        if severity:
+            valid_severities = dict(IncidentReport.SEVERITY_CHOICES)
+            if severity not in valid_severities:
+                raise ValidationError({"severity": f"Must be one of {list(valid_severities)}."})
+            qs = qs.filter(severity=severity)
+
+        # Single-day filter (YYYY-MM-DD), matched against created_at in the
+        # project's TIME_ZONE. Range filtering still goes through
+        # apply_date_range_filter below.
+        date_param = params.get("date")
+        if date_param:
+            parsed = parse_date(date_param)
+            if parsed is None:
+                raise ValidationError({"date": "Use the format YYYY-MM-DD."})
+            qs = qs.filter(created_at__date=parsed)
 
         return apply_date_range_filter(qs, params)
 
