@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.contrib.gis.db import models as geomodels
+from django.db.models.functions import Lower
 
 class RegisteredToda(models.Model):
     toda_number = models.CharField(max_length=20, unique=True)
@@ -11,6 +12,9 @@ class RegisteredToda(models.Model):
 
     def __str__(self):
         return f"{self.toda_number} - {self.driver_name}"
+
+    class Meta:
+        ordering = [Lower("toda__name"), Lower("driver_name"), "toda_number"]
     
 class Toda(models.Model):
     name = models.CharField(max_length=100)

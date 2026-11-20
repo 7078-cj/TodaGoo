@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react'
 import { Plus } from 'lucide-react'
 import {
@@ -68,15 +67,13 @@ export default function RegisteredTodaList() {
                 Math.max(1, Math.ceil((res.count || 0) / 10))
             )
 
-            // Populate TODA number options from available records
+            // Populate TODA station options from available records
             setTodaOptions((prev) => {
                 const names = new Set(prev)
 
                 results.forEach((item) => {
-                    const todaNumber = item.driver_profile?.toda_number
-
-                    if (todaNumber) {
-                        names.add(todaNumber)
+                    if (item.toda_name) {
+                        names.add(item.toda_name)
                     }
                 })
 
@@ -227,9 +224,10 @@ export default function RegisteredTodaList() {
             >
                 <Table
                     row={[
-                        'Drivers',
+                        'Driver',
                         'Plate No.',
                         'TODA Number',
+                        'TODA Station',
                         '',
                     ]}
                     list={list}
@@ -237,18 +235,19 @@ export default function RegisteredTodaList() {
                     page={page}
                     dataRender={[
                         {
-                            accessor: 'first_name',
-                            type: 'avatar',
+                            accessor: 'driver_name',
                             className: 'font-medium',
-                            profile_picture: 'driver_profile.profile_picture',
-                            last_name: 'last_name',
                         },
                         {
-                            accessor: 'driver_profile.vehicle_plate',
+                            accessor: 'vehicle_plate',
                             className: 'font-mono',
                         },
                         {
-                            accessor: 'driver_profile.toda_number',
+                            accessor: 'toda_number',
+                            className: '',
+                        },
+                        {
+                            accessor: 'toda_name',
                             className: '',
                         },
                     ]}
@@ -278,11 +277,7 @@ export default function RegisteredTodaList() {
                 onClose={() => setDeleteOpen(false)}
                 onConfirm={handleDeleteConfirm}
                 loading={deleteLoading}
-                itemName={
-                    deleteTarget
-                        ? `${deleteTarget.first_name} ${deleteTarget.last_name}`
-                        : ''
-                }
+                itemName={deleteTarget ? deleteTarget.driver_name : ''}
             />
         </div>
     )
