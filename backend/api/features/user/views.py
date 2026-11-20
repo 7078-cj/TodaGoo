@@ -26,6 +26,7 @@ from ..utils.password_reset import (
 from django.contrib.auth import get_user_model
 from rest_framework.exceptions import AuthenticationFailed
 from ..utils.roles import get_user_role, get_admin_department
+from rest_framework.exceptions import PermissionDenied
 
 User = get_user_model()
 
@@ -62,6 +63,7 @@ class AdminMyTokenObtainPairView(TokenObtainPairView):
     serializer_class = AdminMyTokenObtainPairSerializer
 
 
+
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
 
     @classmethod
@@ -77,6 +79,24 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
             else None
         )
         return token
+
+    def validate(self, attrs):
+        # Authenticates the credentials and sets self.user
+        data = super().validate(attrs)
+
+        # Missing reverse one-to-one profiles fall back to None here
+        profile = (
+            getattr(self.user, 'driver_profile', None)
+            or getattr(self.user, 'passenger_profile', None)
+        )
+
+        if profile is not None and profile.status == 'BLACKLISTED':
+            raise PermissionDenied(
+                detail="Your account has been blacklisted. Please contact your TODA administrator.",
+                code="account_blacklisted",
+            )
+
+        return data
 
 
 class MyTokenObtainPairView(TokenObtainPairView):
