@@ -1,6 +1,9 @@
 import React, { useState } from 'react'
 import { AlertTriangle, FileText, PackageSearch, CircleAlert } from 'lucide-react'
-import { updateIncidentReportsStatus } from '../../api/incident_reports';
+import {
+    updateIncidentReportsStatus,
+    updateIncidentReportsSeverity,
+} from '../../api/incident_reports';
 import { REPORT_STATUSES, reportStatusLabel, reportStatusStyle } from '../../constants/reportStatuses';
 import colors from '../../constants/colors'; // adjust path
 
@@ -9,6 +12,12 @@ const SEVERITY_STYLES = {
     moderate: 'bg-blue-50 text-blue-700 ring-blue-300',
     minor: 'bg-gray-50 text-gray-600 ring-gray-300',
 }
+
+const SEVERITY_CHOICES = [
+    { value: 'minor', label: 'Minor' },
+    { value: 'moderate', label: 'Moderate' },
+    { value: 'severe', label: 'Severe' },
+]
 
 // Icon + tint per incident type. Adjust the keys to match your incident_types values.
 function typeIcon(type = "") {
@@ -42,7 +51,15 @@ export default function IncidentReportCard({ report, selected, canUpdateStatus, 
 
     const { Icon, color, bg } = typeIcon(report.incident_types)
     const tags = report.tags ?? []
-    const severity = report.severity?.toLowerCase()
+    const severity = report.severity?.toLowerCase() ?? ""
+
+    // The PATCH response only returns the restricted fields
+    // (id, status, resolution, resolved_at, severity), so merge it into the
+    // existing report instead of replacing it.
+    const applyUpdate = (res, fallback) => {
+        const data = res?.data ?? res
+        onStatusUpdated({ ...report, ...fallback, ...(data && typeof data === "object" ? data : {}) })
+    }
 
     const handleStatusChange = async (e) => {
         const newStatus = e.target.value
@@ -52,9 +69,25 @@ export default function IncidentReportCard({ report, selected, canUpdateStatus, 
         setError(null)
         try {
             const res = await updateIncidentReportsStatus(report.id, newStatus)
-            onStatusUpdated(res.data ?? res ?? { ...report, status: newStatus })
+            applyUpdate(res, { status: newStatus })
         } catch {
             setError("Failed to update status.")
+        } finally {
+            setUpdating(false)
+        }
+    }
+
+    const handleSeverityChange = async (e) => {
+        const newSeverity = e.target.value
+        if (!newSeverity || newSeverity === severity) return
+
+        setUpdating(true)
+        setError(null)
+        try {
+            const res = await updateIncidentReportsSeverity(report.id, newSeverity)
+            applyUpdate(res, { severity: newSeverity })
+        } catch {
+            setError("Failed to update severity.")
         } finally {
             setUpdating(false)
         }
@@ -104,10 +137,32 @@ export default function IncidentReportCard({ report, selected, canUpdateStatus, 
 
             {/* Severity + status */}
             <div className="flex shrink-0 items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                {severity && (
-                    <Pill className={SEVERITY_STYLES[severity] ?? SEVERITY_STYLES.minor}>
-                        {titleCase(severity)}
-                    </Pill>
+                {canUpdateStatus ? (
+                    <select
+                        value={severity}
+                        onChange={handleSeverityChange}
+                        disabled={updating}
+                        aria-label="Severity"
+                        className="rounded-full border py-0.5 pl-2 pr-6 text-[11px] disabled:opacity-50"
+                        style={{ borderColor: colors.border, color: colors.dark }}
+                    >
+                        {!severity && (
+                            <option value="" disabled>
+                                Set severity
+                            </option>
+                        )}
+                        {SEVERITY_CHOICES.map((choice) => (
+                            <option key={choice.value} value={choice.value}>
+                                {choice.label}
+                            </option>
+                        ))}
+                    </select>
+                ) : (
+                    severity && (
+                        <Pill className={SEVERITY_STYLES[severity] ?? SEVERITY_STYLES.minor}>
+                            {titleCase(severity)}
+                        </Pill>
+                    )
                 )}
 
                 {canUpdateStatus ? (
@@ -115,6 +170,7 @@ export default function IncidentReportCard({ report, selected, canUpdateStatus, 
                         value={report.status}
                         onChange={handleStatusChange}
                         disabled={updating}
+                        aria-label="Status"
                         className="rounded-full border py-0.5 pl-2 pr-6 text-[11px] disabled:opacity-50"
                         style={{ borderColor: colors.border, color: colors.dark }}
                     >

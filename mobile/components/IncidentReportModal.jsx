@@ -44,12 +44,6 @@ function OptionRow({ label, selected, onPress, kind }) {
     );
 }
 
-const SEVERITY_OPTIONS = [
-    { key: "minor", label: "Minor" },
-    { key: "moderate", label: "Moderate" },
-    { key: "severe", label: "Severe" },
-];
-
 // Full-screen "Report an Incident" form. `booking` fills the auto-attached card;
 // `bookingId` is still accepted for older callers.
 export default function IncidentReportModal({ visible, onClose, onSubmit = null, booking = null, bookingId, isDriver = false }) {
@@ -62,12 +56,10 @@ export default function IncidentReportModal({ visible, onClose, onSubmit = null,
     const [error, setError] = useState("");
     const [location, setLocation] = useState(null);
     const [submitting, setSubmitting] = useState(false);
-    const [severity, setSeverity] = useState("minor"); 
 
     const resetForm = () => {
         setIncidentType(null);
         setInjuredParty("none");
-        setSeverity("minor");
         setTags([]);
         setDetails("");
         setImages([]);
@@ -97,7 +89,6 @@ export default function IncidentReportModal({ visible, onClose, onSubmit = null,
             const res = await submitIncidentReport({
                 incident_types: incidentType,
                 injured_party: injuredParty,
-                severity,                                          
                 tags,
                 details,
                 evidence_files: images,
@@ -164,11 +155,6 @@ export default function IncidentReportModal({ visible, onClose, onSubmit = null,
                     <SectionTitle>Who is Injured</SectionTitle>
                     {injuredOptions(isDriver).map(({ key, label }) => (
                         <OptionRow key={key} kind="radio" label={label} selected={injuredParty === key} onPress={() => setInjuredParty(key)} />
-                    ))}
-
-                    <SectionTitle>Severity</SectionTitle>
-                    {SEVERITY_OPTIONS.map(({ key, label }) => (
-                        <OptionRow key={key} kind="radio" label={label} selected={severity === key} onPress={() => setSeverity(key)} />
                     ))}
 
                     <SectionTitle>Tags</SectionTitle>

@@ -34,6 +34,7 @@ class IncidentReportSerializer(serializers.ModelSerializer):
             "details",
             "tags",
             "status",
+            "severity",
             "resolution",
             "resolved_at",
             "created_at",
@@ -117,7 +118,7 @@ class IncidentReportStatusUpdateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = IncidentReport
-        fields = ["id", "status", "resolution", "resolved_at"]
+        fields = ["id", "status", "resolution", "resolved_at", "severity"]
         read_only_fields = ["id", "resolved_at"]
 
     def update(self, instance, validated_data):

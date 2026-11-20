@@ -3,6 +3,8 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 from datetime import timedelta
 from ..admin.models import Toda,TodaStation
+from django.db.models import F
+from django.db.models.functions import Lower
 
 class Admin(models.Model):
     # TODA admins only; reports that need MDRRMO are marked "Relayed to MDRRMO" by a TODA admin
@@ -41,6 +43,14 @@ class Driver(models.Model):
     def __str__(self):
         return self.user.username
 
+    class Meta:
+        ordering = [
+            F("toda_station__name").asc(nulls_last=True),
+            Lower("user__first_name"),
+            Lower("user__last_name"),
+            "id",
+        ]
+
 class Passenger(models.Model):
     STATUS_CHOICES = [
             ('ACTIVE', 'Active'),
@@ -59,6 +69,9 @@ class Passenger(models.Model):
 
     def __str__(self):
         return self.user.username
+
+    class Meta:
+        ordering = [Lower("user__first_name"), Lower("user__last_name"), "id"]
 
 class Notification(models.Model):
     # The mobile app picks the redirect for a tapped notification by this type
