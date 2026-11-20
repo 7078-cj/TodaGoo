@@ -13,3 +13,8 @@ export async function updateIncidentReportsStatus(reportId, status,) {
     return response;
 }
 
+export async function updateIncidentReportsSeverity(reportId, severity) {
+    const access = Cookie.get("access");
+    const response = await patchRequest(`reports/${reportId}/`, { severity }, access);
+    return response;
+}
