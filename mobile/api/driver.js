@@ -50,3 +50,8 @@ export const getDriverEarnings = async () => {
     if (!res.success) throw new Error(res.error || "Failed to load earnings")
     return res.data
 }
+
+export const checkOrSendVerificationOtp = async (body) => {
+    const res = await postRequest('driver/otp/check/', body, true)
+    return res.data
+}

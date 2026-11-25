@@ -157,3 +157,21 @@ def get_earnings(request):
         },
         status=status.HTTP_200_OK,
     )
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def check_or_send_verification_otp(request):
+    """GET -> checks if the driver is verified; if not, sends an OTP to their contact number."""
+    driver = getattr(request.user, "driver_profile", None)
+    if driver is None:
+        return Response(
+            {"detail": "Driver profile not found."},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+
+    if driver.verified:
+        return Response({"verified": True}, status=status.HTTP_200_OK)
+
+    # If not verified, send an OTP
+    _resend_otp(request, Driver, ROLE_DRIVER)
+    return Response({"verified": False, "message": "OTP sent to your contact number."}, status=status.HTTP_200_OK)
