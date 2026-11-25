@@ -26,7 +26,7 @@ export const updatePassengerProfile = async (userId, body) => {
     return await patchRequest(`passenger/${userId}/`, body, true)
 }
 
-export const checkOrSendVerificationOtp = async (body) => {
+export const checkOrSendVerificationOtpPassenger = async (body) => {
     const res = await postRequest('passenger/otp/check/', body, true)
     return res.data
 }

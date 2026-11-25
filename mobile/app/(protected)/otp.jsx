@@ -16,8 +16,8 @@ import ButtonComponent from "@/components/ButtonComponent";
 import colors from "@/constants/colors";
 import { jwtDecode } from "jwt-decode";
 import AuthContext from "../../contexts/AuthContext"; // adjust path to your AuthProvider file
-import { verifyDriverOtp, resendDriverOtp } from "../../api/driver";
-import { verifyPassengerOtp, resendPassengerOtp } from "../../api/passenger";
+import { verifyDriverOtp, resendDriverOtp, checkOrSendVerificationOtpDriver } from "../../api/driver";
+import { verifyPassengerOtp, resendPassengerOtp, checkOrSendVerificationOtpPassenger } from "../../api/passenger";
 
 const OTP_LENGTH = 6;
 const RESEND_SECONDS = 60; // matches the backend resend cooldown
@@ -28,11 +28,13 @@ const ROLE_CONFIG = {
     driver: {
         verify: verifyDriverOtp,
         resend: resendDriverOtp,
+        checkOrSendVerificationOtp: checkOrSendVerificationOtpDriver,
         redirect: "/(protected)/driver/home",
     },
     passenger: {
         verify: verifyPassengerOtp,
         resend: resendPassengerOtp,
+        checkOrSendVerificationOtp: checkOrSendVerificationOtpPassenger,
         redirect: "/(protected)/passenger/home",
     },
 };
@@ -40,7 +42,7 @@ const ROLE_CONFIG = {
 export default function otp() {
     const insets = useSafeAreaInsets();
     const inputRef = useRef(null);
-    const { setToken, setUser: setAuthUser } = useContext(AuthContext);
+    const { setToken, setUser: setAuthUser, user: authUser } = useContext(AuthContext);
 
     const [user, setUser] = useState(null);
     const [loadingUser, setLoadingUser] = useState(true);
@@ -58,6 +60,18 @@ export default function otp() {
             try {
                 const raw = await AsyncStorage.getItem("user");
                 if (mounted) setUser(raw ? JSON.parse(raw) : null);
+
+                if (mounted) {
+                    // Check if the user is already verified. If so, redirect to their home.
+                    const role = user ? user.role?.toLowerCase() : authUser ? authUser.role?.toLowerCase() : null;
+                    const config = ROLE_CONFIG[role];
+                    if (config) {
+                        const data = await config.checkOrSendVerificationOtp({}); // empty body; backend uses the token to identify the user
+                        if (data?.verified) {
+                            router.replace(config.redirect);
+                        }
+                    }
+                }
             } catch {
                 if (mounted) setUser(null);
             } finally {
@@ -76,7 +90,8 @@ export default function otp() {
         return () => clearTimeout(t);
     }, [cooldown]);
 
-    const role = user?.role?.toLowerCase();
+    
+    const role = user ? user.role?.toLowerCase() : authUser ? authUser.role?.toLowerCase() : null;
     const config = ROLE_CONFIG[role];
 
     const getMessage = (e, fallback) =>

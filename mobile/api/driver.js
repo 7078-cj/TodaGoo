@@ -51,7 +51,7 @@ export const getDriverEarnings = async () => {
     return res.data
 }
 
-export const checkOrSendVerificationOtp = async (body) => {
-    const res = await postRequest('driver/otp/check/', body, true)
+export const checkOrSendVerificationOtpDriver = async (body) => {
+    const res = await getRequest('driver/otp/check/', body, true)
     return res.data
 }
