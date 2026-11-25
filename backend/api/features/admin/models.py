@@ -21,7 +21,7 @@ class Toda(models.Model):
     area = geomodels.PolygonField()
     base_fare = models.IntegerField()
     color = models.CharField(max_length=7)  
-    prefix = models.CharField(max_length=2, default='00')
+    prefix = models.CharField(max_length=2, default='00', unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
 class TodaStation(models.Model):
