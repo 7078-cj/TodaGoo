@@ -142,18 +142,19 @@ class BoundaryListCreateTests(TodaBase):
         data.update(overrides)
         return data
 
-    # ----- permissions -----
+ # ----- permissions -----
     def test_anonymous_cannot_list(self):
         self.assertIn(self.client.get(self.url).status_code, DENIED)
 
-    def test_non_admin_cannot_list(self):
-        # KNOWN BUG: TodaAdminPermission only defines has_object_permission, which DRF
-        # never calls on list/create endpoints, so any logged-in user gets through.
+    def test_non_admin_can_list(self):
+        # Boundaries are readable by any authenticated user (map overlays for
+        # passengers/drivers). Only writes are admin-only.
         self.client.force_authenticate(self.outsider)
-        self.assertEqual(self.client.get(self.url).status_code, status.HTTP_403_FORBIDDEN)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual({t["name"] for t in response.data}, {"Toda A", "Toda B"})
 
     def test_non_admin_cannot_create(self):
-        # KNOWN BUG: same missing has_permission.
         self.client.force_authenticate(self.outsider)
         response = self.client.post(self.url, self.payload(), format="json")
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
