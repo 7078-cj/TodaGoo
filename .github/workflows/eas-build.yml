@@ -1,4 +1,4 @@
-name: EAS Build
+name: EAS Build (Android APK)
 
 on:
   push:
@@ -83,9 +83,10 @@ jobs:
             fi
           done
 
-      - name: Build on EAS
+      - name: Build Android APK on EAS
         env:
           APP_VARIANT: production
+          EAS_BUILD_NO_EXPO_GO_WARNING: "true"
         run: |
           echo "APP_VARIANT=$APP_VARIANT"
-          eas build --platform all --profile production --non-interactive --no-wait
+          eas build --platform android --profile production --non-interactive --no-wait
