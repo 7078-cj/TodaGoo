@@ -11,9 +11,12 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     defaults:
       run:
         working-directory: mobile
+    env:
+      APP_NAME: TodaGoo
     steps:
       - uses: actions/checkout@v4
 
@@ -37,7 +40,6 @@ jobs:
             exit 1
           fi
 
-          # Format checks (no values printed)
           case "$EXPO_PUBLIC_API_URL" in
             https://*/api/) echo "OK: EXPO_PUBLIC_API_URL format" ;;
             *) echo "::error::EXPO_PUBLIC_API_URL must be https and end with /api/"; exit 1 ;;
@@ -64,23 +66,20 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Create .env.production
+      - name: Sync env vars to EAS production environment
+        env:
+          EXPO_PUBLIC_API_URL: ${{ secrets.EXPO_PUBLIC_API_URL }}
+          EXPO_PUBLIC_WS_URL: ${{ secrets.EXPO_PUBLIC_WS_URL }}
+          EXPO_PUBLIC_ORS_API_KEY: ${{ secrets.EXPO_PUBLIC_ORS_API_KEY }}
         run: |
-          {
-            echo "EXPO_PUBLIC_API_URL=${{ secrets.EXPO_PUBLIC_API_URL }}"
-            echo "EXPO_PUBLIC_WS_URL=${{ secrets.EXPO_PUBLIC_WS_URL }}"
-            echo "EXPO_PUBLIC_ORS_API_KEY=${{ secrets.EXPO_PUBLIC_ORS_API_KEY }}"
-          } > .env.production
-
-      - name: Verify .env.production contents
-        run: |
-          for key in EXPO_PUBLIC_API_URL EXPO_PUBLIC_WS_URL EXPO_PUBLIC_ORS_API_KEY; do
-            if grep -Eq "^${key}=.+" .env.production; then
-              echo "OK: $key present in .env.production"
-            else
-              echo "::error::$key missing or empty in .env.production"
-              exit 1
-            fi
+          for name in EXPO_PUBLIC_API_URL EXPO_PUBLIC_WS_URL EXPO_PUBLIC_ORS_API_KEY; do
+            eas env:create --environment production \
+              --name "$name" \
+              --value "${!name}" \
+              --visibility plaintext \
+              --scope project \
+              --force \
+              --non-interactive
           done
 
       - name: Build Android APK on EAS
@@ -89,4 +88,29 @@ jobs:
           EAS_BUILD_NO_EXPO_GO_WARNING: "true"
         run: |
           echo "APP_VARIANT=$APP_VARIANT"
-          eas build --platform android --profile production --non-interactive --no-wait
+          eas build --platform android --profile production --non-interactive --json > build.json
+
+          status=$(jq -r '.[0].status' build.json)
+          if [ "$status" != "FINISHED" ]; then
+            echo "::error::EAS build ended with status: $status"
+            jq -r '.[0] | {id, status, error}' build.json
+            exit 1
+          fi
+
+          version=$(jq -r '.[0].appVersion' build.json)
+          code=$(jq -r '.[0].appBuildVersion' build.json)
+          url=$(jq -r '.[0].artifacts.buildUrl' build.json)
+          apk="${APP_NAME}-v${version}-${code}.apk"
+
+          echo "Downloading $apk"
+          curl -fL "$url" -o "$apk"
+
+          echo "APK_FILE=$apk" >> "$GITHUB_ENV"
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.APK_FILE }}
+          path: mobile/${{ env.APK_FILE }}
+          if-no-files-found: error
+          retention-days: 30
