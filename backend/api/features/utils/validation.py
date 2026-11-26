@@ -124,3 +124,34 @@ def normalize_ph_mobile(value):
     elif digits.startswith("9") and len(digits) == 10:
         digits = "0" + digits
     return digits if re.fullmatch(r"09\d{9}", digits) else None
+
+class TodaValidationMixin:
+
+    def validate_toda_number(self, value):
+        """
+        Format: 01-DDD to 11-DDD
+        Examples: 01-123, 10-400, 11-999
+        """
+        pattern = r'^(0[1-9]|1[01])-\d{3}$'
+
+        if not re.fullmatch(pattern, value):
+            raise serializers.ValidationError(
+                "Format must be 01-XXX to 11-XXX (e.g., 01-123 or 10-400)"
+            )
+
+        return value
+
+    def validate_vehicle_plate(self, value):
+        """
+        Basic PH plate validation (flexible).
+        Accepts: ABC1234, ABC-1234, XYZ 5678
+        """
+        pattern = r'^[A-Z]{2,3}[-\s]?\d{3,4}$'
+
+        if not re.fullmatch(pattern, value.upper()):
+            raise serializers.ValidationError(
+                "Invalid vehicle plate format (e.g., ABC1234 or ABC-1234)."
+            )
+
+        return value.upper()
+
