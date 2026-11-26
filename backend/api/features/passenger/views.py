@@ -83,6 +83,24 @@ def get_profile(request):
     serializer = PassengerSerializer(user, context={"request": request})
     return Response(serializer.data, status=status.HTTP_200_OK)
 
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def check_or_send_verification_otp(request):
+    """GET -> checks if the passenger is verified; if not, sends an OTP to their contact number."""
+    passenger = getattr(request.user, "passenger_profile", None)
+    if passenger is None:
+        return Response(
+            {"detail": "Passenger profile not found."},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+
+    if passenger.verified:
+        return Response({"verified": True}, status=status.HTTP_200_OK)
+
+    # If not verified, send an OTP
+    _resend_otp(request, Passenger, ROLE_PASSENGER)
+    return Response({"verified": False, "message": "OTP sent to your contact number."}, status=status.HTTP_200_OK)
+
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def verify_passenger_otp(request):

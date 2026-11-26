@@ -11,7 +11,7 @@ from rest_framework.test import APITestCase
 # Adjust these imports to match your project layout
 from ..features.user.models import Admin, Driver
 from .factories import next_driver_number
-from..features.admin.models import Toda, TodaStation, RegisteredToda
+from ..features.admin.models import Toda, TodaStation, RegisteredToda
 
 # Adjust to your url names
 LIST_CREATE_URL = "list_create_driver"
@@ -22,7 +22,13 @@ DETAIL_URL = "retrieve_update_delete_driver"
 # Factories for Toda / TodaStation / RegisteredToda (field names taken from
 # your models). The tests only call these helpers.
 # ---------------------------------------------------------------------------
-def make_toda(name="Toda A"):
+def make_toda(name="Toda A", prefix=None):
+    # Toda.prefix is CharField(max_length=2, unique=True), so each Toda in a
+    # test needs its own 2-character prefix. If none is given, derive one from
+    # the first letters of the name ("Toda A" -> "TA") and cut it to 2 chars.
+    # Pass prefix explicitly when names would produce duplicates.
+    if prefix is None:
+        prefix = "".join(word[0] for word in name.split()).upper()[:2]
     return Toda.objects.create(
         name=name,
         area=Polygon(
@@ -31,7 +37,7 @@ def make_toda(name="Toda A"):
         ),
         base_fare=15,
         color="#FF0000",
-        prefix="TA",
+        prefix=prefix,
     )
 
 
@@ -100,8 +106,8 @@ class DriverListCreateViewTests(APITestCase):
         self.url = reverse(LIST_CREATE_URL)
         self.admin = make_admin()
 
-        self.toda_a = make_toda("Toda A")
-        self.toda_b = make_toda("Toda B")
+        self.toda_a = make_toda("Toda A", prefix="TA")
+        self.toda_b = make_toda("Toda B", prefix="TB")
         self.station_a = make_station(self.toda_a, "Station A")
         self.station_b = make_station(self.toda_b, "Station B")
 
@@ -333,7 +339,7 @@ class DriverListCreateViewTests(APITestCase):
 class DriverRetrieveUpdateDestroyViewTests(APITestCase):
     def setUp(self):
         self.admin = make_admin()
-        self.toda_a = make_toda("Toda A")
+        self.toda_a = make_toda("Toda A", prefix="TA")
         self.station_a = make_station(self.toda_a, "Station A")
         self.station_a2 = make_station(self.toda_a, "Station A2")
 
