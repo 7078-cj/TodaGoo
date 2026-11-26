@@ -58,8 +58,14 @@ def protected_error_response(error, what):
 
 
 class TodaBoundariesListCreateAPIView(ListCreateAPIView):
-    permission_classes = [IsAuthenticated, TodaAdminPermission]
     queryset = Toda.objects.all()
+
+    def get_permissions(self):
+        if self.request.method == "GET":
+            permission_classes = [IsAuthenticated]
+        else:
+            permission_classes = [IsAuthenticated, TodaAdminPermission]
+        return [permission() for permission in permission_classes]
 
     def get_serializer_class(self):
         if self.request.method == "POST":

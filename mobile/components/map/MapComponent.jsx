@@ -14,10 +14,58 @@ import { initLocation } from "../../utils/mapUtils/initLocation";
 import { handleSearch } from "../../utils/mapUtils/handleSearch";
 import { fetchOsrmRoutes } from "../../utils/mapUtils/fetchOsrmRoutes";
 import { ReverseGeolocation } from "../../utils/mapUtils/reverseGeolocation";
+import { getAllBoundaries } from "../../api/toda"; // adjust to wherever getAllBoundaries lives
 import MapControls from "./MapControls";
 
 const EMPTY = [];
 const DEFAULT_CENTER = { lat: 14.949553352698302, lng: 120.75886839058785 };
+
+// Module-level cache: the request runs once per app session instead of
+// every time MapComponent mounts. On failure the cache is cleared so the
+// next mount retries. Set `boundariesPromise = null` after admin edits
+// if changes should show up without an app reload.
+let boundariesPromise = null;
+const loadBoundaries = () => {
+    if (!boundariesPromise) {
+        boundariesPromise = (async () => getAllBoundaries())().catch((err) => {
+            boundariesPromise = null; // allow a retry after a failure
+            throw err;
+        });
+    }
+    return boundariesPromise;
+};
+
+const isValidRing = (ring) =>
+    Array.isArray(ring) &&
+    ring.length >= 3 &&
+    ring.every(
+        (pt) => Array.isArray(pt) && Number.isFinite(pt[0]) && Number.isFinite(pt[1])
+    );
+
+// API `area` is already [ring[[lng, lat], ...], ...], which is exactly what
+// LeafletMapView's normaliseArea expects, so it goes through untouched.
+const toArea = (b) => ({
+    id: `boundary-${b.id}`,
+    name: b.name,
+    color: b.color,
+    coordinates: b.area,
+    base_fare: b.base_fare,
+    prefix: b.prefix,
+});
+
+// Never throws: bad data just results in no areas (or skips the bad entries).
+const toAreas = (data) => {
+    if (!Array.isArray(data)) return EMPTY;
+    return data
+        .filter(
+            (b) =>
+                b &&
+                Array.isArray(b.area) &&
+                b.area.length > 0 &&
+                b.area.every(isValidRing)
+        )
+        .map(toArea);
+};
 
 function markerTypeFromId(id) {
     if (id === "start") return "start";
@@ -32,6 +80,7 @@ const MapComponent = forwardRef(function MapComponent(
         setLocation,
         markers = EMPTY,
         areas = EMPTY,
+        showBoundaries = true,
         editMode = false,
         userLocation = true,
         // false = the user can't drag / pinch / double-tap zoom the map.
@@ -50,6 +99,7 @@ const MapComponent = forwardRef(function MapComponent(
     const [searchQuery, setSearchQuery] = useState("");
     const [userLoc, setUserLoc] = useState(null);
     const [fetchedRoute, setFetchedRoute] = useState(EMPTY);
+    const [boundaries, setBoundaries] = useState(EMPTY);
     const mapHandleRef = useRef(null);
     const debounceTimer = useRef(null);
     const lastRequestId = useRef(0);
@@ -63,10 +113,36 @@ const MapComponent = forwardRef(function MapComponent(
     // marker is only shown when we're not editing.
     const showUserMarker = !!userLoc && !editMode;
 
-    const normalisedAreas = useMemo(
-        () => (Array.isArray(areas) ? areas : areas ? [areas] : EMPTY),
-        [areas]
-    );
+    // Fetch TODA boundaries once on mount. Any failure leaves areas empty.
+    useEffect(() => {
+        if (!showBoundaries) {
+            setBoundaries(EMPTY);
+            return;
+        }
+
+        let cancelled = false;
+
+        (async () => {
+            try {
+                const data = await loadBoundaries();
+                if (!cancelled) setBoundaries(toAreas(data));
+            } catch (err) {
+                console.warn("Failed to load boundaries:", err?.message);
+                if (!cancelled) setBoundaries(EMPTY);
+            }
+        })();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [showBoundaries]);
+
+    // Boundaries from the API, plus any areas passed in via props.
+    const normalisedAreas = useMemo(() => {
+        const fromProp = Array.isArray(areas) ? areas : areas ? [areas] : EMPTY;
+        if (!showBoundaries || boundaries.length === 0) return fromProp;
+        return [...boundaries, ...fromProp];
+    }, [areas, boundaries, showBoundaries]);
 
     const hasExternalRoute = Array.isArray(routeProp) && routeProp.length > 0;
     const route = hasExternalRoute ? routeProp : fetchedRoute;
