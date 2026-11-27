@@ -12,14 +12,14 @@ from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from api.features.booking.helpers.offer_guard import is_booking_offered_to
-from api.features.utils.password_reset import (
+from backend.api.utils.password_reset import (
     RESET_LOCKED, RESET_OK, check_reset_code, issue_reset_code,
 )
-from api.features.utils.security import (
+from backend.api.utils.security import (
     get_user_by_email, initial_driver_status, parse_lat_lng,
     require_current_password, validate_booking_payload,
 )
-from api.features.utils.uploads import validate_file_count, validate_file_size
+from backend.api.utils.uploads import validate_file_count, validate_file_size
 from websocket.auth import get_token_from_scope
 
 STRONG_PASSWORD = "N3w-Str0ng!Passw0rd"

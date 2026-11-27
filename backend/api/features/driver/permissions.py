@@ -1,6 +1,6 @@
 from rest_framework.permissions import BasePermission
-from ..utils.roles import is_admin, is_driver
-from ..utils.security import is_deletion_allowed
+from ...utils.roles import is_admin, is_driver
+from ...utils.security import is_deletion_allowed
 
 
 class IsDriverOwnerOrAdmin(BasePermission):

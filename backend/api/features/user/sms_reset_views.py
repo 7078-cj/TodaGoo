@@ -17,8 +17,8 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.throttling import SimpleRateThrottle
 
-from ..utils import sms_password_reset as reset
-from ..utils.validation import normalize_ph_mobile
+from ...utils import sms_password_reset as reset
+from ...utils.validation import normalize_ph_mobile
 
 SENT_MESSAGE = "We sent a 6-digit code to this number."
 NO_ACCOUNT_MESSAGE = "No account is registered with this number."

@@ -1,6 +1,6 @@
 from rest_framework.permissions import BasePermission
-from ..utils.roles import is_passenger, is_admin
-from ..utils.security import is_deletion_allowed
+from ...utils.roles import is_passenger, is_admin
+from ...utils.security import is_deletion_allowed
 
 
 class IsPassengerOwnerOrAdmin(BasePermission):

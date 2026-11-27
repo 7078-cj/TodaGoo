@@ -2,7 +2,7 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 
 from ..user.models import Driver
-from ..utils.otp import _queue_otp, ROLE_DRIVER
+from ...utils.otp import _queue_otp, ROLE_DRIVER
 
 
 @receiver(post_save, sender=Driver)

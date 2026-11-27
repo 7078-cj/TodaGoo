@@ -2,7 +2,7 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 
 from ..user.models import Passenger
-from ..utils.otp import _queue_otp, ROLE_PASSENGER
+from ...utils.otp import _queue_otp, ROLE_PASSENGER
 
 
 

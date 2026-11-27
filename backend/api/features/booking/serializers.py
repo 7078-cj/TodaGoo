@@ -4,7 +4,7 @@ from .models import Booking, BookingLog, Stop, DriverQueue, Rate, User
 from ..driver.serializers import DriverReadSerializer
 from ..passenger.serializers import PassengerReadSerializer
 from rest_framework.exceptions import PermissionDenied
-from ..utils.fields import PointField
+from ...utils.fields import PointField
 from ..chat.models import Message
 
 

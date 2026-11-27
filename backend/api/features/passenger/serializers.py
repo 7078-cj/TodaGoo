@@ -2,8 +2,8 @@ from rest_framework import serializers
 from django.contrib.auth.models import User
 from ..user.models import Passenger
 from ..user.serializers import UserSerializer
-from ..utils.validation import PassengerValidationMixin
-from ..utils.uploads import validate_file_size
+from ...utils.validation import PassengerValidationMixin
+from ...utils.uploads import validate_file_size
 
 
 class PassengerProfileSerializer(PassengerValidationMixin, serializers.ModelSerializer):

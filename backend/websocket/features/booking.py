@@ -7,7 +7,7 @@ from django.core.cache import cache
 
 from api.features.booking.models import Booking
 from api.features.booking.serializers import BookingSerializer
-from api.features.utils.security import parse_lat_lng
+from backend.api.utils.security import parse_lat_lng
 from api.features.notifications.triggers import notify_if_driver_nearby
 from api.features.notifications.chat_presence import set_chat_open, set_chat_closed
 

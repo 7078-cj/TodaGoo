@@ -22,7 +22,7 @@ import re
 from rest_framework import status
 from django.db.models.deletion import ProtectedError
 from ...idempotency import IdempotentAPIView
-from ..utils.uploads import validate_excel_upload
+from ...utils.uploads import validate_excel_upload
 from django.utils import timezone
 
 

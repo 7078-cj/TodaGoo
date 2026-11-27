@@ -1,8 +1,8 @@
 from rest_framework import serializers
 from .models import RegisteredToda, Toda, TodaStation, BookingSettings
 from django.contrib.gis.geos import Polygon
-from ..utils.fields import PointField
-from ..utils.validation import TodaValidationMixin
+from ...utils.fields import PointField
+from ...utils.validation import TodaValidationMixin
 
         
 class TodaReadSerializer(serializers.ModelSerializer):

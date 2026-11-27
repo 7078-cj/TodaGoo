@@ -12,10 +12,10 @@ from .serializers import UserSerializer, NotificationSerializer
 from ...rate_limit.TestThrottle import TestThrottle
 from rest_framework import status
 from .utils import send_reset_email, delete_notifications
-from ..utils.security import get_user_by_email, blacklist_user_tokens
-from ..utils.password_change import change_password as apply_password_change
+from ...utils.security import get_user_by_email, blacklist_user_tokens
+from ...utils.password_change import change_password as apply_password_change
 from rest_framework.permissions import IsAuthenticated
-from ..utils.password_reset import (
+from ...utils.password_reset import (
     issue_reset_code,
     check_reset_code,
     RESET_OK,
@@ -25,7 +25,7 @@ from ..utils.password_reset import (
 )
 from django.contrib.auth import get_user_model
 from rest_framework.exceptions import AuthenticationFailed
-from ..utils.roles import get_user_role, get_admin_department
+from ...utils.roles import get_user_role, get_admin_department
 from rest_framework.exceptions import PermissionDenied
 
 User = get_user_model()

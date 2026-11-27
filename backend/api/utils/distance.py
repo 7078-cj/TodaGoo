@@ -1,6 +1,6 @@
 from django.contrib.gis.geos import Point
 from math import radians, sin, cos, sqrt, atan2
-from ..admin.models import Toda, BookingSettings
+from ..features.admin.models import Toda, BookingSettings
 from datetime import time
 from zoneinfo import ZoneInfo
 

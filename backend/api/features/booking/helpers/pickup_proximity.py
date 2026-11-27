@@ -1,8 +1,8 @@
 from django.contrib.gis.geos import Point
 from django.core.cache import cache
 
-from ...utils.distance import haversine_distance
-from ...utils.security import parse_lat_lng
+from ....utils.distance import haversine_distance
+from ....utils.security import parse_lat_lng
 
 # How close the driver must be to the pickup point to start the ride.
 # Also used for the "driver is near" notification so both happen at the same moment.

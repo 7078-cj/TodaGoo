@@ -1,5 +1,5 @@
 from rest_framework.permissions import BasePermission
-from ..utils.roles import is_admin, is_toda_admin
+from ...utils.roles import is_admin, is_toda_admin
 
 
 class IsAdminProfile(BasePermission):

@@ -3,9 +3,9 @@ from django.utils import timezone
 from rest_framework import serializers
 
 from .models import IncidentReport, IncidentEvidence, REPORT_TAGS
-from ..utils.fields import PointField
+from ...utils.fields import PointField
 from ..booking.serializers import BookingSerializer
-from ..utils.uploads import validate_file_size, validate_file_count
+from ...utils.uploads import validate_file_size, validate_file_count
 
 class IncidentEvidenceSerializer(serializers.ModelSerializer):
     class Meta:
