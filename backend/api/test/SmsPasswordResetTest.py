@@ -91,7 +91,7 @@ class ResetTestMixin:
         super().setUp()
         self.clock = FakeClock()
         self.sms = SmsOutbox()
-        for patcher in (mock.patch("time.time", self.clock), mock.patch("backend.utils.otp.send_otp", self.sms)):
+        for patcher in (mock.patch("time.time", self.clock), mock.patch("api.utils.otp.send_otp", self.sms)):
             patcher.start()
             self.addCleanup(patcher.stop)
         cache.clear()
