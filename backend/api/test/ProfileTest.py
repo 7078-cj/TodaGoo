@@ -17,7 +17,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from api.features.booking.models import Booking
 from ..utils import password_change
-from ..utils import PH_TZ
+from ..utils.distance import PH_TZ
 
 from .factories import PASSWORD, make_booking, make_driver, make_passenger, make_station, make_toda
 
