@@ -24,7 +24,7 @@ from django.core.cache import cache
 from django.db.models import Q
 from django.utils.crypto import constant_time_compare, salted_hmac
 
-from ..features.utils import otp
+from . import otp
 from .security import blacklist_user_tokens
 from .validation import normalize_ph_mobile
 
