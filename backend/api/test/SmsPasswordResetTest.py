@@ -297,8 +297,8 @@ class RequestCodeApiTests(ResetTestMixin, APITestCase):
 
     def test_sms_failure_says_so_and_allows_an_immediate_retry(self):
         self.sms.fail = True
-        with mock.patch("backend.utils.otp.send_otp.generate_otp", return_value="482913"), \
-                self.assertLogs("backend.utils.sms_password_reset", level="ERROR") as logs:
+        with mock.patch("api.utils.otp.send_otp.generate_otp", return_value="482913"), \
+                self.assertLogs("api.utils.sms_password_reset", level="ERROR") as logs:
             res = self.post(PHONE)
         self.assertEqual(res.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
         self.assertIn("couldn't send", res.data["error"])
