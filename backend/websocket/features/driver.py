@@ -16,7 +16,7 @@ import asyncio
 from api.features.booking.serializers import BookingSerializer
 from api.features.booking.helpers.offer_guard import claim_offer
 from api.broadcast import broadcast
-from backend.api.utils.security import parse_lat_lng
+from api.utils.security import parse_lat_lng
 from api.features.notifications.triggers import notify_booking_accepted
 from api.features.booking.logs import log_accepted, log_offer_declined, log_offer_expired
 

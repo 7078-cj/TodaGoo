@@ -21,9 +21,9 @@ from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from api.features.user.models import Admin, Driver, Passenger
-from backend.api.utils import sms_password_reset as reset
-from backend.api.utils.otp import generate_otp
-from backend.api.utils.validation import normalize_ph_mobile
+from ..utils import sms_password_reset as reset
+from ..utils.otp import generate_otp
+from ..utils.validation import normalize_ph_mobile
 
 LOCMEM = {"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache", "LOCATION": "sms-reset-tests"}}
 OLD_PASSWORD = "Old-Passw0rd!x"
